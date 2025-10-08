@@ -1,0 +1,314 @@
+---
+title: "Migration von Mem0.ai zu Supermemory"
+description: "Umfassende Anleitung zur Migration Ihrer Daten und Anwendungen von Mem0.ai zu Supermemory"
+sidebarTitle: "Von Mem0"
+---
+
+Die Migration von Mem0.ai zu Supermemory ist unkompliziert. Diese Anleitung führt Sie Schritt für Schritt durch das Exportieren Ihrer Speicher-Einträge aus Mem0 und das anschließende Importieren in Supermemory.
+
+<div id="why-migrate-to-supermemory">
+  ## Warum zu Supermemory wechseln?
+</div>
+
+Supermemory bietet erweiterte Funktionen gegenüber Mem0.ai:
+
+* **Memory Router** für Zero‑Code‑Integration mit LLMs
+* **Knowledge‑Graph**‑Architektur für bessere Kontextbeziehungen
+* **Mehrere Inhaltstypen** (URLs, PDFs, Bilder, Videos)
+* **Großzügiges Free‑Tier** (100k Tokens) mit günstiger Preisgestaltung
+* **Mehrere Integrationsoptionen** (API, Router, MCP, SDKs)
+
+<div id="quick-migration-all-in-one">
+  ## Schnelle Migration (All-in-One)
+</div>
+
+Komplette Migration in einem einzigen Skript:
+
+```python
+from mem0 import MemoryClient
+from supermemory import Supermemory
+import json, time
+
+# Export aus Mem0
+mem0 = MemoryClient(api_key="your_mem0_api_key")
+export = mem0.create_memory_export(
+    schema={"type": "object", "properties": {"memories": {"type": "array", "items": {"type": "object"}}}},
+    filters={}
+)
+time.sleep(5)
+data = mem0.get_memory_export(memory_export_id=export["id"])
+
+# Import in Supermemory
+supermemory = Supermemory(api_key="your_supermemory_api_key")
+for memory in data["memories"]:
+    if memory.get("content"):
+        supermemory.memories.add(
+            content=memory["content"],
+            container_tags=["imported_from_mem0"]
+        )
+        print(f"✅ {memory['content'][:50]}...")
+
+print("Migration abgeschlossen!")
+```
+
+<div id="step-by-step-migration">
+  ## Schritt-für-Schritt-Migration
+</div>
+
+<Steps>
+  <Step title="Export aus Mem0.ai">
+    Mem0 bietet zwei Möglichkeiten, Ihre Speicher-Einträge zu exportieren:
+
+    ### Option 1: Export über das Dashboard (empfohlen)
+
+    1. Melden Sie sich in Ihrem [Mem0-Dashboard](https://app.mem0.ai) an
+    2. Navigieren Sie zum Exportbereich
+    3. Laden Sie Ihre Speicher-Einträge als JSON herunter
+
+    ### Option 2: Export über die API
+
+    Einfaches Skript, um alle Ihre Speicher-Einträge aus Mem0 zu exportieren:
+
+    ```python
+    from mem0 import MemoryClient
+    import json
+    import time
+
+    # Verbindung zu Mem0 herstellen
+    client = MemoryClient(api_key="your_mem0_api_key")
+
+    # Exportauftrag erstellen
+    schema = {
+        "type": "object",
+        "properties": {
+            "memories": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "content": {"type": "string"},
+                        "metadata": {"type": "object"},
+                        "created_at": {"type": "string"}
+                    }
+                }
+            }
+        }
+    }
+
+    response = client.create_memory_export(schema=schema, filters={})
+    export_id = response["id"]
+
+    # Warten und abrufen
+    print("Speicher-Einträge werden exportiert...")
+    time.sleep(5)
+    export_data = client.get_memory_export(memory_export_id=export_id)
+
+    # In Datei speichern
+    with open("mem0_export.json", "w") as f:
+        json.dump(export_data, f, indent=2)
+
+    print(f"Exportiert: {len(export_data['memories'])} Speicher-Einträge")
+    ```
+  </Step>
+
+  <Step title="Supermemory einrichten">
+    Erstellen Sie Ihr Supermemory-Konto und holen Sie sich Ihren API-Schlüssel:
+
+    1. Registrieren Sie sich unter [console.supermemory.ai](https://console.supermemory.ai)
+    2. Erstellen Sie ein neues Projekt
+    3. Generieren Sie im Dashboard einen API-Schlüssel
+
+    ```bash
+    # Setzen Sie Ihre Umgebungsvariable
+    export SUPERMEMORY_API_KEY="your_supermemory_api_key"
+    ```
+  </Step>
+
+  <Step title="In Supermemory importieren">
+    Einfaches Skript, um Ihre Mem0-Speicher-Einträge in Supermemory zu importieren:
+
+    ```python
+    import json
+    from supermemory import Supermemory
+
+    # Mem0-Export laden
+    with open("mem0_export.json", "r") as f:
+        mem0_data = json.load(f)
+
+    # Verbindung zu Supermemory herstellen
+    client = Supermemory(api_key="your_supermemory_api_key")
+
+    # Speicher-Einträge importieren
+    for memory in mem0_data["memories"]:
+        content = memory.get("content", "")
+
+        # Leere Speicher-Einträge überspringen
+        if not content:
+            continue
+
+        # In Supermemory importieren
+        try:
+            result = client.memories.add(
+                content=content,
+                container_tags=["imported_from_mem0"],
+                metadata={
+                    "source": "mem0",
+                    "created_at": memory.get("created_at"),
+                    **(memory.get("metadata") or {})
+                }
+            )
+            print(f"Importiert: {content[:50]}...")
+        except Exception as e:
+            print(f"Fehlgeschlagen: {e}")
+
+    print("Migration abgeschlossen!")
+    ```
+  </Step>
+</Steps>
+
+<div id="api-migration-reference">
+  ## Referenz zur API-Migration
+</div>
+
+So lassen sich gängige Mem0.ai-Operationen Supermemory zuordnen:
+
+<div id="adding-memories">
+  ### Speicher hinzufügen
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  from mem0 import MemoryClient
+
+  client = MemoryClient(api_key="...")
+  client.add(
+      messages="Der Nutzer bevorzugt den Dunkelmodus",
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  from supermemory import Supermemory
+
+  client = Supermemory(api_key="...")
+  client.memories.add(
+      content="Der Nutzer bevorzugt den Dunkelmodus",
+      container_tags=["user_alice"]
+  )
+  ```
+</CodeGroup>
+
+<div id="searching-memories">
+  ### Speicher durchsuchen
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  results = client.search(
+      query="user preferences",
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  results = client.memories.search(
+      query="user preferences",
+      container_tags=["user_alice"]
+  )
+  ```
+</CodeGroup>
+
+<div id="getting-all-memories">
+  ### Alle Speicher abrufen
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  memories = client.get_all(
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  memories = client.memories.list(
+      container_tags=["user_alice"],
+      limit=100
+  )
+  ```
+</CodeGroup>
+
+<div id="deleting-memories">
+  ### Speicher löschen
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  client.delete(memory_id="mem_123")
+  ```
+
+  ```python Supermemory
+  client.memories.delete("mem_123")
+  ```
+</CodeGroup>
+
+<div id="using-memory-router-easiest-migration">
+  ## Verwendung des Memory Router (einfachste Migration)
+</div>
+
+Für den einfachsten Migrationspfad verwenden Sie den Memory Router von Supermemory, der nur minimale Codeänderungen erfordert:
+
+<CodeGroup>
+  ```python Before (Mem0 + OpenAI)
+  from openai import OpenAI
+  from mem0 import MemoryClient
+
+  # Zwei separate Clients erforderlich
+  openai = OpenAI(api_key="sk-...")
+  memory = MemoryClient(api_key="mem0_key")
+
+  # Manuelles Speicher-Management
+  context = memory.search("user preferences", user_id="alice")
+  messages = [
+      {"role": "system", "content": f"Context: {context}"},
+      {"role": "user", "content": "What are my preferences?"}
+  ]
+
+  response = openai.chat.completions.create(
+      model="gpt-5",
+      messages=messages
+  )
+  ```
+
+  ```python After (Supermemory Router)
+  from openai import OpenAI
+
+  # Ein einzelner Client mit automatischem Speicher-Management
+  client = OpenAI(
+      api_key="sk-...",
+      base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1",
+      default_headers={
+          "x-supermemory-api-key": "your_supermemory_key",
+          "x-supermemory-user-id": "alice"
+      }
+  )
+
+  # Speicher wird automatisch verwaltet!
+  response = client.chat.completions.create(
+      model="gpt-5",
+      messages=[{"role": "user", "content": "What are my preferences?"}]
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  Für Enterprise-Migrationen [kontaktieren Sie uns](mailto:dhravya@supermemory.com) für Unterstützung.
+</Note>
+
+<div id="next-steps">
+  ## Nächste Schritte
+</div>
+
+1. [Entdecke](/de/how-it-works), wie Supermemory funktioniert
+2. Lies den [Quickstart](/de/quickstart) und füge deine ersten Speicher-Einträge hinzu und rufe sie ab
+3. [Verbinde](/de/connectors/overview) Google Drive, Notion und OneDrive mit automatischer Synchronisierung

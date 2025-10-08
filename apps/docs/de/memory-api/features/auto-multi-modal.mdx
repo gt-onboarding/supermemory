@@ -1,0 +1,194 @@
+---
+title: "Automatisch multimodal"
+description: "supermemory erkennt automatisch den Inhaltstyp des hinzugefügten Dokuments."
+icon: "sparkles"
+---
+
+supermemory ist nativ multimodal und erkennt automatisch den Inhaltstyp des Dokuments, das Sie hinzufügen.
+
+Wir nutzen erstklassige Tools, um Inhalte aus URLs zu extrahieren und sie für eine optimale Speicherung als Speicher aufzubereiten.
+
+<div id="automatic-content-type-detection">
+  ## Automatische Erkennung von Inhaltstypen
+</div>
+
+supermemory erkennt automatisch den Inhaltstyp des Dokuments, das du hinzufügst. Übermittle einfach deinen Inhalt an die API, und supermemory übernimmt den Rest.
+
+<Tabs>
+  <Tab title="Funktionsweise">
+    Das System zur Inhaltserkennung analysiert:
+    - URL‑Muster und Domains
+    - Dateierweiterungen und MIME-Typen
+    - Inhaltsstruktur und Metadata
+    - Header und Antworttypen
+  </Tab>
+  <Tab title="Best Practices">
+    <Accordion title="Best Practices für Inhaltstypen" defaultOpen icon="sparkles">
+      1. **Typauswahl**
+         - Verwende `note` für einfachen Text
+         - Verwende `webpage` für Online-Inhalte
+         - Verwende nach Möglichkeit native Typen
+
+      2. **URL-Inhalte**
+         - Sende bereinigte URLs ohne Tracking-Parameter
+         - Verwende Artikel-URLs, nicht Startseiten-URLs
+         - Prüfe die Erreichbarkeit der URL vor dem Senden
+    </Accordion>
+
+  </Tab>
+</Tabs>
+
+<div id="quick-implementation">
+  ### Schnelle Implementierung
+</div>
+
+Alles, was Sie tun müssen, ist den Inhalt an den Endpunkt `/documents` zu senden:
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/documents \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  -d '{"content": "https://example.com/article"}'
+```
+
+```typescript
+await client.add.create({
+  content: "https://example.com/article",
+});
+```
+
+```python
+client.add.create(
+    content="https://example.com/article"
+)
+```
+
+</CodeGroup>
+
+<Note>
+  supermemory verwendet [Markdowner](https://md.dhr.wtf), um Inhalte aus URLs zu extrahieren.
+</Note>
+
+<div id="supported-content-types">
+  ## Unterstützte Inhaltstypen
+</div>
+
+supermemory unterstützt eine breite Palette von Inhaltsformaten, um Vielseitigkeit bei der Erstellung von Speicher zu gewährleisten:
+
+<Grid cols={2}>
+  <Card title="Textinhalte" icon="document-text">
+    - `note`: Reintext-Notizen und documents
+    - Verarbeitet Rohtext direkt
+    - Teilt Inhalte automatisch in Chunks für optimale Wiederauffindbarkeit
+    - Bewahrt Formatierung und Struktur
+  </Card>
+
+  <Card title="Webinhalte" icon="globe">
+    - `webpage`: Webseiten (einfach die url angeben)
+    - Extrahiert den Hauptinhalt intelligent
+    - Bewahrt wichtige Metadata (title, Beschreibung, Bilder)
+    - Extrahiert OpenGraph-Metadata, wenn verfügbar
+
+    - `tweet`: Twitter-Inhalte
+    - Erfasst Tweet-Text, Medien und Metadata
+    - Bewahrt die Thread-Struktur, falls zutreffend
+
+  </Card>
+
+  <Card title="Dokumenttypen" icon="document">
+    - `pdf`: PDF-Dateien
+    - Extrahiert Textinhalte unter Beibehaltung der Struktur
+    - Verarbeitet sowohl durchsuchbare PDFs als auch gescannte Dokumente mit OCR (Optische Zeichenerkennung)
+    - Bewahrt Seitenumbrüche und Formatierung
+
+    - `google_doc`: Google-Dokumente
+    - Integriert sich nahtlos in die Google Docs API
+    - Bewahrt Dokumentformatierung und -struktur
+    - Aktualisiert sich automatisch, wenn sich das Quelldokument ändert
+
+    - `notion_doc`: Notion-Seiten
+    - Extrahiert Inhalte unter Beibehaltung der Blockstruktur von Notion
+    - Verarbeitet Rich-Text-Formatierung und eingebettete Inhalte
+
+  </Card>
+
+  <Card title="Medientypen" icon="photo">
+    - `image`: Bilder mit Textinhalt
+    - Erweiterte OCR (Optische Zeichenerkennung) zur Textextraktion
+    - Analyse und Beschreibung visueller Inhalte
+
+    - `video`: Videoinhalte
+    - Transkription und Inhaltsextraktion
+    - Analyse von Schlüsselframes
+
+  </Card>
+</Grid>
+
+<div id="processing-pipeline">
+  ## Verarbeitungs-Pipeline
+</div>
+
+<Steps>
+  <Step title="Inhaltserkennung">
+    supermemory erkennt automatisch den Inhaltstyp anhand der bereitgestellten Eingabe.
+  </Step>
+
+<Step title="Inhaltsextraktion">
+  Typspezifische Extraktoren verarbeiten die Inhalte mit: – Speziellem Parsing für
+  jedes Format – Fehlerbehandlung mit Wiederholversuchen – Verwaltung von Rate Limits
+</Step>
+
+  <Step title="KI-Optimierung">
+    ```typescript
+    interface ProcessedContent {
+      content: string;      // Extrahierter Text
+      summary?: string;     // KI-generierte Zusammenfassung
+      tags?: string[];     // Extrahierte Tags
+      categories?: string[]; // Inhaltskategorien
+    }
+    ```
+  </Step>
+
+  <Step title="Chunking & Indexierung">
+    - Satzweises Aufteilen
+    - Überlappung von 2 Sätzen
+    - Kontextbewahrung
+    - Semantische Kohärenz
+  </Step>
+</Steps>
+
+<div id="technical-specifications">
+  ## Technische Spezifikationen
+</div>
+
+<div id="size-limits">
+  ### Größenlimits
+</div>
+
+| Inhaltstyp   | Max. Größe |
+| ------------ | ---------- |
+| Text/Notiz   | 1 MB       |
+| PDF          | 10 MB      |
+| Bild         | 5 MB       |
+| Video        | 100 MB     |
+| Webseite     | k. A.      |
+| Google Doc   | k. A.      |
+| Notion-Seite | k. A.      |
+| Tweet        | k. A.      |
+
+<div id="processing-time">
+  ### Verarbeitungszeit
+</div>
+
+| Inhaltstyp   | Verarbeitungszeit |
+| ------------ | ------------------ |
+| Text/Notiz   | Beinahe sofort     |
+| PDF          | 1–5 Sekunden       |
+| Bild         | 2–10 Sekunden      |
+| Video        | 10+ Sekunden       |
+| Webseite     | 1–3 Sekunden       |
+| Google Doc   | k. A.              |
+| Notion-Seite | k. A.              |
+| Tweet        | k. A.              |

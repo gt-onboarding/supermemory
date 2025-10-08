@@ -1,0 +1,48 @@
+---
+title: "重排"
+description: "在 supermemory 中对搜索结果进行重排"
+icon: "chart-bar-increasing"
+---
+
+重排是一项功能，可根据查询对搜索结果进行重新排序。
+
+![重排](/images/rerank.png)
+
+<div id="usage">
+  ### 使用方法
+</div>
+
+在 Supermemory 中，可在搜索 API 中将 `rerank` 参数设为 `true` 以启用答案重写。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search?q=What+is+the+capital+of+France?&rerank=true \
+  --request GET \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rerank: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rerank=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### 注意事项与限制
+</div>
+
+- 我们目前使用 `bge-reranker-base` 模型进行重排。
+- 重排不产生额外费用。
+- 虽然重排能显著提升结果质量，但也会**带来额外的 Latency**。
+- 其他功能（如过滤、混合搜索、新近性偏置等）同样适用于重排后的结果。

@@ -1,0 +1,810 @@
+---
+title: "Assistant IA personnel"
+description: "Créez un assistant IA qui se souvient des préférences, des habitudes et du contexte de l’utilisateur tout au long de ses conversations"
+---
+
+Créez un assistant IA personnel qui apprend et retient tout sur l’utilisateur — ses préférences, ses habitudes, son contexte de travail et l’historique de ses conversations. Cette recette montre comment créer une expérience d’IA véritablement personnalisée à l’aide des Memory Tools de Supermemory.
+
+<div id="what-youll-build">
+  ## Ce que vous allez construire
+</div>
+
+Un assistant IA personnel qui :
+
+- **Se souvient des préférences de l’utilisateur** (restrictions alimentaires, emploi du temps, style de communication)
+- **Apprend des conversations** et améliore ses réponses au fil du temps
+- **Maintient le contexte** sur plusieurs sessions de chat
+- **Fournit des recommandations personnalisées** en fonction de l’historique de l’utilisateur
+- **Gère plusieurs sujets de conversation** tout en préservant le contexte
+
+<div id="prerequisites">
+  ## Prérequis
+</div>
+
+- Node.js 18+ ou Python 3.8+
+- Clé d’API Supermemory
+- Clé d’API OpenAI ou Anthropic
+- Notions de base sur les applications de chat
+
+<div id="implementation">
+  ## Mise en œuvre
+</div>
+
+<div id="step-1-project-setup">
+  ### Étape 1 : Configuration du projet
+</div>
+
+<Tabs>
+  <Tab title="Next.js (TypeScript)">
+    ```bash
+    npx create-next-app@latest personal-ai --typescript --tailwind --eslint
+    cd personal-ai
+    npm install @supermemory/tools ai openai
+    ```
+
+    Créez vos variables d’environnement :
+    ```bash .env.local
+    SUPERMEMORY_API_KEY=your_supermemory_key
+    OPENAI_API_KEY=your_openai_key
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```bash
+    mkdir personal-ai && cd personal-ai
+    python -m venv venv
+    source venv/bin/activate  # Sous Windows : venv\Scripts\activate
+    pip install supermemory openai fastapi uvicorn python-multipart
+    ```
+
+    Créez vos variables d’environnement :
+    ```bash .env
+    SUPERMEMORY_API_KEY=your_supermemory_key
+    OPENAI_API_KEY=your_openai_key
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-2-core-assistant-logic">
+  ### Étape 2 : logique de base de l’assistant
+</div>
+
+<Tabs>
+  <Tab title="Route API Next.js">
+    ```typescript app/api/chat/route.ts
+    import { streamText } from 'ai'
+    import { createOpenAI } from '@ai-sdk/openai'
+    import { supermemoryTools } from '@supermemory/tools/ai-sdk'
+
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY!
+    })
+
+    export async function POST(request: Request) {
+      const { messages, userId = 'default-user' } = await request.json()
+
+      const result = await streamText({
+        model: openai('gpt-5'),
+        messages,
+        tools: supermemoryTools(process.env.SUPERMEMORY_API_KEY!, {
+          containerTags: [userId]
+        }),
+        system: `Vous êtes un assistant IA hautement personnalisé. Votre objectif principal est d'apprendre à connaître l'utilisateur et de fournir une aide de plus en plus personnalisée au fil du temps.
+
+    GESTION DE LA MÉMOIRE :
+    1. Lorsque les utilisateurs partagent des informations personnelles, des préférences ou du contexte, utilisez immédiatement addMemory pour les stocker
+    2. Avant de répondre aux demandes, recherchez dans vos memories le contexte pertinent concernant l'utilisateur
+    3. Utilisez les conversations passées pour éclairer les réponses actuelles
+    4. Retenez le style de communication de l'utilisateur, ses préférences et les sujets fréquemment abordés
+
+    PERSONNALITÉ :
+    - Adaptez votre style de communication aux préférences de l'utilisateur
+    - Référencez naturellement les conversations passées lorsque c'est pertinent
+    - Offrez proactivement de l'aide basée sur les modèles appris
+    - Soyez véritablement utile tout en respectant la vie privée
+
+    EXEMPLES DE CE QU'IL FAUT RETENIR :
+    - Horaires de travail et rôle
+    - Préférences/restrictions alimentaires
+    - Préférences de communication (formel/décontracté)
+    - Sujets d'intérêt fréquents
+    - Objectifs et projets sur lesquels ils travaillent
+    - Contexte familial/personnel qu'ils partagent
+    - Outils et flux de travail préférés
+    - Fuseau horaire et disponibilité
+
+    Recherchez toujours dans les memories avant de répondre pour fournir une aide personnalisée et contextuelle.`
+      })
+
+      return result.toAIStreamResponse()
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python FastAPI">
+    ```python main.py
+    from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    import openai
+    from supermemory import Supermemory
+    import json
+    import os
+    from typing import List, Dict, Any
+    import asyncio
+
+    app = FastAPI()
+
+    openai_client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    supermemory_client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+    SYSTEM_PROMPT = """Vous êtes un assistant IA hautement personnalisé. Votre objectif principal est d'apprendre à connaître l'utilisateur et de fournir une aide de plus en plus personnalisée au fil du temps.
+
+    GESTION DE LA MÉMOIRE :
+    1. Lorsque les utilisateurs partagent des informations personnelles, des préférences ou du contexte, stockez-les immédiatement
+    2. Avant de répondre aux demandes, recherchez le contexte pertinent sur l'utilisateur
+    3. Utilisez les conversations passées pour informer les réponses actuelles
+    4. Retenez le style de communication de l'utilisateur, ses préférences et les sujets fréquemment abordés
+
+    PERSONNALITÉ :
+    - Adaptez votre style de communication pour correspondre aux préférences de l'utilisateur
+    - Référencez naturellement les conversations passées lorsque c'est pertinent
+    - Offrez proactivement de l'aide basée sur les modèles appris
+    - Soyez véritablement utile tout en respectant la vie privée
+
+    Recherchez toujours dans les memories avant de répondre pour fournir une aide personnalisée et contextuelle."""
+
+    async def search_user_memories(query: str, user_id: str) -> str:
+        """Rechercher dans les memories de l'utilisateur pour un contexte pertinent"""
+        try:
+            results = supermemory_client.search.memories(
+                q=query,
+                container_tag=f"user_{user_id}",
+                limit=5
+            )
+
+            if results.results:
+                context = "\n".join([r.memory for r in results.results])
+                return f"Memories pertinentes sur l'utilisateur :\n{context}"
+            return "Aucune memory pertinente trouvée."
+        except Exception as e:
+            return f"Erreur lors de la recherche des memories : {e}"
+
+    async def add_user_memory(content: str, user_id: str):
+        """Ajouter de nouvelles informations à la memory de l'utilisateur"""
+        try:
+            supermemory_client.memories.add(
+                content=content,
+                container_tag=f"user_{user_id}",
+                metadata={"type": "personal_info", "timestamp": "auto"}
+            )
+        except Exception as e:
+            print(f"Erreur lors de l'ajout de la memory : {e}")
+
+    @app.post("/chat")
+    async def chat_endpoint(data: dict):
+        messages = data.get("messages", [])
+        user_id = data.get("userId", "default-user")
+
+        if not messages:
+            raise HTTPException(status_code=400, detail="Aucun message fourni")
+
+        # Obtenir le dernier message de l'utilisateur pour la recherche de memory
+        user_message = messages[-1]["content"] if messages else ""
+
+        # Rechercher les memories pertinentes
+        memory_context = await search_user_memories(user_message, user_id)
+
+        # Ajouter un message système avec le contexte de memory
+        enhanced_messages = [
+            {"role": "system", "content": f"{SYSTEM_PROMPT}\n\n{memory_context}"}
+        ] + messages
+
+        try:
+            response = await openai_client.chat.completions.create(
+                model="gpt-5",
+                messages=enhanced_messages,
+                stream=True,
+                temperature=0.7
+            )
+
+            async def generate():
+                full_response = ""
+                async for chunk in response:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        full_response += content
+                        yield f"data: {json.dumps({'content': content})}\n\n"
+
+                # Une fois la réponse terminée, analyser le contenu digne d'être mémorisé
+                if "remember" in user_message.lower() or any(word in user_message.lower() for word in ["prefer", "like", "dislike", "work", "schedule", "diet"]):
+                    await add_user_memory(user_message, user_id)
+
+            return StreamingResponse(generate(), media_type="text/plain")
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    if __name__ == "__main__":
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-3-frontend-interface">
+  ### Étape 3 : Interface front-end
+</div>
+
+<Tabs>
+  <Tab title="Composant de chat Next.js">
+    ```tsx app/page.tsx
+    'use client'
+
+    import { useChat } from 'ai/react'
+    import { useState, useEffect } from 'react'
+
+    export default function PersonalAssistant() {
+      const [userId, setUserId] = useState('')
+      const [userName, setUserName] = useState('')
+
+      const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+        api: '/api/chat',
+        body: {
+          userId
+        }
+      })
+
+      // Générer ou récupérer l'ID utilisateur
+      useEffect(() => {
+        const storedUserId = localStorage.getItem('personal-ai-user-id')
+        const storedUserName = localStorage.getItem('personal-ai-user-name')
+
+        if (storedUserId) {
+          setUserId(storedUserId)
+          setUserName(storedUserName || '')
+        } else {
+          const newUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          localStorage.setItem('personal-ai-user-id', newUserId)
+          setUserId(newUserId)
+        }
+      }, [])
+
+      const handleNameSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (userName.trim()) {
+          localStorage.setItem('personal-ai-user-name', userName)
+          // Envoyer le message d'introduction
+          handleSubmit(e, {
+            data: {
+              content: `Salut ! Je m'appelle ${userName}. Je cherche un assistant IA personnel qui peut apprendre à me connaître et m'aider avec diverses tâches.`
+            }
+          })
+        }
+      }
+
+      return (
+        <div className="flex flex-col h-screen max-w-4xl mx-auto p-4">
+          {/* En-tête */}
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg mb-6">
+            <h1 className="text-2xl font-bold">Assistant IA Personnel</h1>
+            <p className="text-blue-100">
+              {userName ? `Bonjour ${userName} !` : 'Votre IA qui apprend et se souvient'}
+            </p>
+          </div>
+
+          {/* Configuration du nom */}
+          {!userName && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <form onSubmit={handleNameSubmit} className="flex gap-2">
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="Comment dois-je vous appeler ?"
+                  className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Commencer
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+            {messages.length === 0 && userName && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-gray-600">
+                  Bonjour {userName} ! Je suis votre assistant IA personnel. J'apprendrai vos préférences,
+                  votre style de travail et vos centres d'intérêt au fur et à mesure de nos conversations. N'hésitez pas à partager tout ce que vous aimeriez que je retienne !
+                </p>
+                <div className="mt-3 text-sm text-gray-500">
+                  <p><strong>Essayez par exemple :</strong></p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>« Je travaille comme ingénieur logiciel et je préfère les réponses concises »</li>
+                    <li>« Retenez que je suis végétarien et allergique aux noix »</li>
+                    <li>« Je travaille généralement de 9h à 17h EST et je déjeune à midi »</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`p-4 rounded-lg ${
+                  message.role === 'user'
+                    ? 'bg-blue-500 text-white ml-auto max-w-2xl'
+                    : 'bg-white border border-gray-200 max-w-2xl'
+                }`}
+              >
+                <div className="flex items-start space-x-2">
+                  {message.role === 'assistant' && (
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      AI
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-2xl">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    AI
+                  </div>
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Saisie */}
+          {userName && (
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                value={input}
+                onChange={handleInputChange}
+                placeholder="Parlez-moi de vous ou demandez de l'aide..."
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Envoyer
+              </button>
+            </form>
+          )}
+        </div>
+      )
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python Streamlit">
+    ```python streamlit_app.py
+    import streamlit as st
+    import requests
+    import json
+    import uuid
+
+    st.set_page_config(page_title="Assistant IA Personnel", page_icon="🤖", layout="wide")
+
+    # Initialiser l'état de session
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+    if 'user_id' not in st.session_state:
+        st.session_state.user_id = f"user_{uuid.uuid4().hex[:8]}"
+    if 'user_name' not in st.session_state:
+        st.session_state.user_name = None
+
+    # En-tête
+    st.title("🤖 Assistant IA Personnel")
+    st.markdown("*Votre IA qui apprend et se souvient*")
+
+    # Barre latérale pour les informations utilisateur
+    with st.sidebar:
+        st.header("👤 Profil Utilisateur")
+
+        if not st.session_state.user_name:
+            name = st.text_input("Comment dois-je vous appeler ?")
+            if st.button("Commencer") and name:
+                st.session_state.user_name = name
+                st.session_state.messages.append({
+                    "role": "user",
+                    "content": f"Salut ! Je m'appelle {name}. Je cherche un assistant IA personnel."
+                })
+                st.rerun()
+        else:
+            st.write(f"**Nom :** {st.session_state.user_name}")
+            st.write(f"**ID Utilisateur :** {st.session_state.user_id[:12]}...")
+
+            if st.button("Réinitialiser la Conversation"):
+                st.session_state.messages = []
+                st.rerun()
+
+        st.markdown("---")
+        st.markdown("""
+        ### 💡 Essayez de dire :
+        - "Je travaille comme ingénieur logiciel et je préfère des réponses concises"
+        - "N'oubliez pas que je suis végétarien"
+        - "Je travaille généralement de 9h à 17h EST"
+        """)
+
+    # Interface de chat principale
+    if st.session_state.user_name:
+        # Afficher les messages
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # Saisie de chat
+        if prompt := st.chat_input("Parlez-moi de vous, ou demandez de l'aide..."):
+            # Ajouter le message utilisateur
+            st.session_state.messages.append({"role": "user", "content": prompt})
+
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Obtenir la réponse de l'IA
+            with st.chat_message("assistant"):
+                with st.spinner("Réflexion en cours..."):
+                    try:
+                        response = requests.post(
+                            "http://localhost:8000/chat",
+                            json={
+                                "messages": st.session_state.messages,
+                                "userId": st.session_state.user_id
+                            },
+                            timeout=30
+                        )
+
+                        if response.status_code == 200:
+                            # Gérer la réponse en streaming
+                            full_response = ""
+                            for line in response.iter_lines():
+                                if line:
+                                    try:
+                                        data = json.loads(line.decode('utf-8').replace('data: ', ''))
+                                        if 'content' in data:
+                                            full_response += data['content']
+                                    except:
+                                        continue
+
+                            st.markdown(full_response)
+                            st.session_state.messages.append({
+                                "role": "assistant",
+                                "content": full_response
+                            })
+                        else:
+                            st.error(f"Erreur : {response.status_code}")
+                    except Exception as e:
+                        st.error(f"Erreur de connexion : {e}")
+
+    else:
+        st.info("👆 Veuillez saisir votre nom dans la barre latérale pour commencer !")
+
+    # Exécuter avec : streamlit run streamlit_app.py
+    ```
+  </Tab>
+</Tabs>
+
+<div id="testing-your-assistant">
+  ## Tester votre Assistant
+</div>
+
+<div id="step-4-test-memory-formation">
+  ### Étape 4 : Tester la formation de memory
+</div>
+
+Essayez ces enchaînements de conversation pour évaluer les capacités de memory :
+
+1. **Préférences personnelles** :
+   ```
+   User: "Salut ! Je suis Sarah, cheffe de produit dans une startup tech. Je préfère des réponses brèves et actionnables, et je suis souvent prise par des études utilisateurs."
+
+   Assistant: [Doit se souvenir du prénom, du rôle, et des préférences de communication]
+
+   User: "Quelle est une bonne façon de prioriser les fonctionnalités ?"
+
+   Assistant: [Doit mentionner que vous êtes PM et que vous préférez des réponses brèves]
+   ```
+
+2. **Alimentation et mode de vie** :
+   ```
+   User: "Souviens-toi que je suis végane et que je m’entraîne tous les matins à 6 h."
+
+   User: "Propose un petit-déjeuner rapide pour demain."
+
+   Assistant: [Doit proposer des options véganes adaptées au pré/post entraînement]
+   ```
+
+3. **Contexte de travail** :
+   ```
+   User: "Je travaille sur un projet React et je préfère TypeScript à JavaScript."
+
+   User: "Aide-moi avec la gestion d’état."
+
+   Assistant: [Doit suggérer des solutions spécifiques à TypeScript]
+   ```
+
+<div id="step-5-verify-memory-storage">
+  ### Étape 5 : Vérifier le stockage des memories
+</div>
+
+Vérifiez que les memories sont correctement stockées :
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript scripts/check-memories.ts
+    import { Supermemory } from '@supermemory/tools'
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    })
+
+    async function checkUserMemories(userId: string) {
+      try {
+        const memories = await client.memories.list({
+          containerTags: [userId],
+          limit: 20,
+          sort: 'updatedAt',
+          order: 'desc'
+        })
+
+        console.log(`Found ${memories.memories.length} memories for ${userId}:`)
+        memories.memories.forEach((memory, i) => {
+          console.log(`${i + 1}. ${memory.content.substring(0, 100)}...`)
+        })
+
+        // Test search
+        const searchResults = await client.search.memories({
+          q: "preferences work",
+          containerTag: userId,
+          limit: 5
+        })
+
+        console.log('\nSearch Results:')
+        searchResults.results.forEach((result, i) => {
+          console.log(`${i + 1}. (${result.similarity}) ${result.memory.substring(0, 100)}...`)
+        })
+
+      } catch (error) {
+        console.error('Error:', error)
+      }
+    }
+
+    // Run: npx ts-node scripts/check-memories.ts USER_ID_HERE
+    checkUserMemories(process.argv[2] || 'default-user')
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python check_memories.py
+    from supermemory import Supermemory
+    import os
+    import sys
+
+    client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+    def check_user_memories(user_id):
+        try:
+            # List all memories for user
+            memories = client.memories.list(
+                container_tags=[user_id],
+                limit=20,
+                sort="updatedAt",
+                order="desc"
+            )
+
+            print(f"Found {len(memories.memories)} memories for {user_id}:")
+            for i, memory in enumerate(memories.memories):
+                print(f"{i + 1}. {memory.content[:100]}...")
+
+            # Test search
+            search_results = client.search.memories(
+                q="preferences work",
+                container_tag=user_id,
+                limit=5
+            )
+
+            print('\nSearch Results:')
+            for i, result in enumerate(search_results.results):
+                print(f"{i + 1}. ({result.similarity}) {result.memory[:100]}...")
+
+        except Exception as error:
+            print(f'Error: {error}')
+
+    # Run: python check_memories.py USER_ID_HERE
+    user_id = sys.argv[1] if len(sys.argv) > 1 else 'default-user'
+    check_user_memories(user_id)
+    ```
+  </Tab>
+</Tabs>
+
+<div id="production-considerations">
+  ## Considérations pour la mise en production
+</div>
+
+<div id="security-privacy">
+  ### Sécurité et confidentialité
+</div>
+
+1. **Isolation des utilisateurs** :
+   ```typescript
+   // Utilisez toujours des tags de conteneur propres à l'utilisateur
+   const tools = supermemoryTools(apiKey, {
+     containerTags: [userId]
+   })
+   ```
+
+2. **Chiffrement des memories** :
+   ```typescript
+   // Pour les données sensibles, envisagez un chiffrement côté client
+   const encryptedContent = encrypt(sensitiveData, userKey)
+   await client.memories.add({
+     content: encryptedContent,
+     containerTag: userId,
+     metadata: { encrypted: true }
+   })
+   ```
+
+<div id="performance-optimization">
+  ### Optimisation des performances
+</div>
+
+1. **Optimisation de la recherche de memory** :
+   ```typescript
+   // Utilisez des valeurs de threshold adaptées pour l’équilibre vitesse/précision
+   const quickSearch = await client.search.memories({
+     q: userQuery,
+     containerTag: userId,
+     threshold: 0.6,     // Équilibré
+     rerank: false,      // Ignorer pour gagner en vitesse
+     limit: 3            // Moins de résultats
+   })
+   ```
+
+2. **Stratégie de mise en cache** :
+   ```typescript
+   // Mettre en cache le contexte utilisateur fréquemment consulté
+   const userContext = await redis.get(`user_context:${userId}`)
+   if (!userContext) {
+     const memories = await client.search.memories({
+       q: "user preferences work style",
+       containerTag: userId,
+       limit: 10
+     })
+     await redis.setex(`user_context:${userId}`, 300, JSON.stringify(memories))
+   }
+   ```
+
+### Supervision &amp; analyses
+
+```typescript
+// Suivre la formation et la récupération de memory
+const analytics = {
+  memoriesCreated: await redis.incr(`memories_created:${userId}`),
+  searchesPerformed: await redis.incr(`searches:${userId}`),
+  conversationLength: messages.length
+}
+
+// Enregistrer pour analyse
+console.log('Interaction Utilisateur:', {
+  userId,
+  action: 'chat_response',
+  memoriesFound: searchResults.results.length,
+  responseTime: Date.now() - startTime,
+  ...analytics
+})
+```
+
+
+<div id="extensions-customization">
+  ## Extensions et personnalisation
+</div>
+
+<div id="1-add-personality-profiles">
+  ### 1. Ajoutez des profils de personnalité
+</div>
+
+```typescript
+const personalityProfiles = {
+  professional: "Répondez avec un ton formel et professionnel",
+  casual: "Utilisez un ton amical et conversationnel avec de l'humour occasionnel",
+  technical: "Fournissez des explications techniques détaillées avec des exemples",
+  concise: "Gardez les réponses brèves et directes"
+}
+
+// Ajouter à l'invite système selon la préférence utilisateur
+const userProfile = await getUserProfile(userId)
+const systemPrompt = `${basePrompt}\n\nStyle de Communication: ${personalityProfiles[userProfile.style]}`
+```
+
+
+<div id="2-smart-notifications">
+  ### 2. Notifications intelligentes
+</div>
+
+```typescript
+// Suggestions proactives basées sur les habitudes de l'utilisateur
+const shouldSuggest = await analyzeUserPatterns(userId)
+if (shouldSuggest.type === 'daily_standup') {
+  return {
+    message: "D'après votre planning, souhaitez-vous que je vous aide à préparer votre standup de 9h ?",
+    suggestedActions: ["Examiner les progrès d'hier", "Préparer les objectifs d'aujourd'hui"]
+  }
+}
+```
+
+
+<div id="3-multi-modal-memory">
+  ### 3. memory multimodale
+</div>
+
+```typescript
+// Gérer les images et documents
+if (message.attachments) {
+  for (const attachment of message.attachments) {
+    await client.memories.uploadFile({
+      file: attachment,
+      containerTag: userId,
+      metadata: {
+        type: 'user_shared',
+        context: message.content
+      }
+    })
+  }
+}
+```
+
+
+<div id="next-steps">
+  ## Prochaines étapes
+</div>
+
+- **Passer à plusieurs utilisateurs** : Ajouter l’authentification des utilisateurs et une isolation appropriée
+- **Ajouter l’interaction vocale** : Intégrer des API de transcription vocale et de synthèse vocale
+- **Application mobile** : Créer une version mobile avec React Native ou Flutter
+- **Intégrations** : Se connecter au calendrier, à l’e-mail et aux outils de gestion des tâches
+- **Fonctionnalités d’IA avancées** : Ajouter la détection des émotions et la synthèse/résumé de conversation
+
+<div id="troubleshooting">
+  ## Dépannage
+</div>
+
+**La memory ne persiste pas ?**
+
+- Vérifiez que l’en-tête `x-sm-user-id` est cohérent
+- Vérifiez que la clé d’API dispose des autorisations d’écriture
+- Assurez-vous que les tags de conteneur sont correctement configurés
+
+**Les réponses ne sont pas personnalisées ?**
+
+- Augmentez le limit de recherche pour trouver des memories plus pertinentes
+- Abaissez le threshold pour élargir le périmètre de recherche
+- Vérifiez que des memories sont ajoutées avec le contexte approprié
+
+**Problèmes de performance ?**
+
+- Réduisez les limits de recherche pour des réponses plus rapides
+- Mettez en place une mise en cache pour les recherches fréquentes
+- Utilisez des thresholds adaptés pour équilibrer vitesse et précision
+
+---
+
+*Cette recette constitue la base d’un assistant IA personnel. Personnalisez-la selon vos besoins et cas d’usage spécifiques.*

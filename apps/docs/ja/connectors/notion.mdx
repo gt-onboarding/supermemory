@@ -1,0 +1,464 @@
+---
+title: "Notion Connector"
+description: "リアルタイムWebhookとワークスペース統合で、Notionのページ、データベース、ブロックを同期"
+icon: "notion"
+---
+
+Notionワークスペースを接続すると、ページ、データベース、コンテンツブロックをSupermemoryのナレッジベースに自動同期できます。リアルタイム更新、リッチな書式、データベースプロパティに対応しています。
+
+<div id="quick-setup">
+  ## クイックセットアップ
+</div>
+
+<div id="1-create-notion-connection">
+  ### 1. Notion 連携を作成
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const connection = await client.connections.create('notion', {
+      redirectUrl: 'https://yourapp.com/auth/notion/callback',
+      containerTags: ['user-123', 'notion-workspace'],
+      documentLimit: 2000,
+      metadata: {
+        source: 'notion',
+        workspaceType: 'team',
+        department: 'product'
+      }
+    });
+
+    // ユーザーを Notion の OAuth にリダイレクトします
+    window.location.href = connection.authLink;
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    connection = client.connections.create(
+        'notion',
+        redirect_url='https://yourapp.com/auth/notion/callback',
+        container_tags=['user-123', 'notion-workspace'],
+        document_limit=2000,
+        metadata={
+            'source': 'notion',
+            'workspaceType': 'team',
+            'department': 'product'
+        }
+    )
+
+    # ユーザーを Notion の OAuth にリダイレクトします
+    print(f'Redirect to: {connection.auth_link}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "redirectUrl": "https://yourapp.com/auth/notion/callback",
+        "containerTags": ["user-123", "notion-workspace"],
+        "documentLimit": 2000,
+        "metadata": {
+          "source": "notion",
+          "workspaceType": "team",
+          "department": "product"
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="2-handle-oauth-flow">
+  ### 2. OAuth フローを処理する
+</div>
+
+ユーザーがワークスペースへのアクセスを許可すると、Notion がコールバックの url にリダイレクトします。連携は自動的に確立されます。
+
+<div id="3-monitor-sync-progress">
+  ### 3. 同期の進捗を監視する
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 連携の詳細を確認
+    const connection = await client.connections.getByTags('notion', {
+      containerTags: ['user-123', 'notion-workspace']
+    });
+
+    console.log('接続中のワークスペース:', connection.email);
+    console.log('連携の作成日時:', connection.createdAt);
+
+    // 同期済みのページとデータベースを一覧表示
+    const documents = await client.connections.listDocuments('notion', {
+      containerTags: ['user-123', 'notion-workspace']
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 連携の詳細を確認
+    connection = client.connections.get_by_tags(
+        'notion',
+        container_tags=['user-123', 'notion-workspace']
+    )
+
+    print(f'接続中のワークスペース: {connection.email}')
+    print(f'連携の作成日時: {connection.created_at}')
+
+    # 同期済みのページとデータベースを一覧表示
+    documents = client.connections.list_documents(
+        'notion',
+        container_tags=['user-123', 'notion-workspace']
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # プロバイダとタグで連携の詳細を取得
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion/connection" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123", "notion-workspace"]}'
+
+    # レスポンスには連携の詳細が含まれます:
+    # {
+    #   "id": "conn_abc123",
+    #   "provider": "notion",
+    #   "email": "workspace@example.com",
+    #   "createdAt": "2024-01-15T10:00:00Z",
+    #   "documentLimit": 2000,
+    #   "metadata": {...}
+    # }
+
+    # 同期済みの documents を一覧表示
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion/documents" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123", "notion-workspace"]}'
+
+    # レスポンス: 同期 status を含む document オブジェクトの配列
+    # [
+    #   {"title": "Product Roadmap", "type": "notion_database", "status": "done"},
+    #   {"title": "Meeting Notes", "type": "notion_page", "status": "done"}
+    # ]
+    ```
+  </Tab>
+</Tabs>
+
+<div id="supported-content-types">
+  ## サポート対象のコンテンツタイプ
+</div>
+
+<div id="notion-pages">
+  ### Notion ページ
+</div>
+
+- 書式を保持した**リッチテキストブロック**
+- **ネストされたページ**と階層構造
+- **埋め込みコンテンツ**（画像、動画、ファイル）
+- 構文ハイライト付きの**コードブロック**
+- **コールアウト**と**引用**をMarkdownに変換
+
+<div id="notion-databases">
+  ### Notion データベース
+</div>
+
+- 各**データベースエントリ**を個別の documents として同期
+- **プロパティ**はメタデータに含まれる
+- **データベースエントリ間のリレーション**
+- **数式とロールアップ**による計算値
+- **マルチセレクト／セレクト**プロパティ
+
+<div id="block-types">
+  ### ブロックタイプ
+</div>
+
+| ブロックタイプ | 処理 | Markdown 出力 |
+|------------|------------|-----------------|
+| **テキスト** | 書式を保持 | `**bold**`, `*italic*`, `~~strikethrough~~` |
+| **見出し** | 階層を維持 | `# H1`, `## H2`, `### H3` |
+| **コード** | 言語を自動判別 | ````python\ncode here\n```` |
+| **引用** | 引用ブロック形式 | `> quoted text` |
+| **コールアウト** | カスタム書式 | `> 💡 **Note:** callout text` |
+| **リスト** | 構造を保持 | `- item 1\n  - nested item` |
+| **テーブル** | Markdown テーブル | `| Col 1 | Col 2 |\n|-------|-------|` |
+| **画像** | メタデータ参照付き | `![alt text](url)` |
+| **埋め込み** | コンテキスト付きリンク | `[Embedded Content](url)` |
+
+<div id="delete-connection">
+  ## 連携を削除する
+</div>
+
+不要になった Notion 連携を削除します:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Delete by connection ID
+    const result = await client.connections.delete('connection_id_123');
+    console.log('Deleted connection:', result.id);
+
+    // Delete by provider and container tags
+    const providerResult = await client.connections.deleteByProvider('notion', {
+      containerTags: ['user-123']
+    });
+    console.log('Deleted Notion connection for user');
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Delete by connection ID
+    result = client.connections.delete('connection_id_123')
+    print(f'Deleted connection: {result.id}')
+
+    # Delete by provider and container tags
+    provider_result = client.connections.delete_by_provider(
+        'notion',
+        container_tags=['user-123']
+    )
+    print('Deleted Notion connection for user')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Delete by connection ID
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+    # Delete by provider and container tags
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/notion" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123"]}'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+連携を削除すると、次のことが行われます:
+- 今後、Notion からの同期はすべて停止します
+- OAuth の認可が解除されます
+- 既存の同期済み documents は Supermemory に保持されます（削除されません）
+</Note>
+
+<div id="advanced-configuration">
+  ## 詳細設定
+</div>
+
+<div id="custom-notion-integration">
+  ### カスタム Notion 連携
+</div>
+
+本番運用では、独自の Notion 連携を作成します:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // まず、Notion アプリのクレデンシャルで組織設定を更新します
+    await client.settings.update({
+      notionCustomKeyEnabled: true,
+      notionClientId: 'your-notion-client-id',
+      notionClientSecret: 'your-notion-client-secret'
+    });
+
+    // 次に、カスタム連携を使って連携（connection）を作成します
+    const connection = await client.connections.create('notion', {
+      redirectUrl: 'https://yourapp.com/callback',
+      containerTags: ['org-456', 'user-789'],
+      metadata: { customIntegration: true }
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # まず、Notion アプリのクレデンシャルで組織設定を更新します
+    client.settings.update(
+        notion_custom_key_enabled=True,
+        notion_client_id='your-notion-client-id',
+        notion_client_secret='your-notion-client-secret'
+    )
+
+    # 次に、カスタム連携を使って連携（connection）を作成します
+    connection = client.connections.create(
+        'notion',
+        redirect_url='https://yourapp.com/callback',
+        container_tags=['org-456', 'user-789'],
+        metadata={'customIntegration': True}
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 組織設定を更新
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "notionCustomKeyEnabled": true,
+        "notionClientId": "your-notion-client-id",
+        "notionClientSecret": "your-notion-client-secret"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="content-filtering">
+  ### コンテンツのフィルタリング
+</div>
+
+同期対象にする Notion コンテンツを制御します:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Notion コンテンツのインテリジェントなフィルタリングを設定
+    await client.settings.update({
+      shouldLLMFilter: true,
+      includeItems: {
+        pageTypes: ['page', 'database'],
+        titlePatterns: ['*Spec*', '*Documentation*', '*Meeting Notes*'],
+        databases: ['Project Tracker', 'Knowledge Base', 'Team Wiki']
+      },
+      excludeItems: {
+        titlePatterns: ['*Draft*', '*Personal*', '*Archive*'],
+        databases: ['Personal Tasks', 'Scratchpad']
+      },
+      filterPrompt: "業務ドキュメント、プロジェクト仕様、ミーティングノート、チームナレッジを同期。個人メモ、下書き、アーカイブ済みのコンテンツは除外。"
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Notion コンテンツのインテリジェントなフィルタリングを設定
+    client.settings.update(
+        should_llm_filter=True,
+        include_items={
+            'pageTypes': ['page', 'database'],
+            'titlePatterns': ['*Spec*', '*Documentation*', '*Meeting Notes*'],
+            'databases': ['Project Tracker', 'Knowledge Base', 'Team Wiki']
+        },
+        exclude_items={
+            'titlePatterns': ['*Draft*', '*Personal*', '*Archive*'],
+            'databases': ['Personal Tasks', 'Scratchpad']
+        },
+        filter_prompt="業務ドキュメント、プロジェクト仕様、ミーティングノート、チームナレッジを同期。個人メモ、下書き、アーカイブ済みのコンテンツは除外。"
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Notion コンテンツのインテリジェントなフィルタリングを設定
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "includeItems": {
+          "pageTypes": ["page", "database"],
+          "titlePatterns": ["*Spec*", "*Documentation*", "*Meeting Notes*"],
+          "databases": ["Project Tracker", "Knowledge Base", "Team Wiki"]
+        },
+        "excludeItems": {
+          "titlePatterns": ["*Draft*", "*Personal*", "*Archive*"],
+          "databases": ["Personal Tasks", "Scratchpad"]
+        },
+        "filterPrompt": "業務ドキュメント、プロジェクト仕様、ミーティングノート、チームナレッジを同期。個人メモ、下書き、アーカイブ済みのコンテンツは除外。"
+      }'
+
+    # Response:
+    # {
+    #   "success": true,
+    #   "message": "設定を更新しました"
+    # }
+    ```
+  </Tab>
+</Tabs>
+
+<div id="workspace-permissions">
+  ## ワークスペースの権限
+</div>
+
+Notion コネクタはワークスペースの権限に準拠します:
+
+| 権限レベル | 同期動作 |
+|-----------------|---------------|
+| **Admin** | ワークスペースへの完全アクセス |
+| **Member** | 読み取り権限のあるページのみ |
+| **Guest** | 共有されているページのみ |
+| **No Access** | インデックスから除外 |
+
+<div id="database-integration">
+  ## データベース連携
+</div>
+
+<div id="database-properties">
+  ### データベースのプロパティ
+</div>
+
+Notion のデータベースプロパティはメタデータに対応付けられます。
+
+```typescript
+// 例: プロパティを持つプロジェクトデータベース
+const documents = await client.connections.listDocuments('notion', {
+  containerTags: ['user-123']
+});
+
+// データベースエントリを検索
+const projectEntries = documents.filter(doc =>
+  doc.metadata?.database === 'Projects'
+);
+
+// データベースプロパティは検索可能なメタデータになります
+const projectWithStatus = await client.search.documents({
+  q: "機械学習プロジェクト",
+  containerTags: ['user-123'],
+  filters: JSON.stringify({
+    AND: [
+      { key: "status", value: "In Progress", negate: false },
+      { key: "priority", value: "High", negate: false }
+    ]
+  })
+});
+```
+
+
+<div id="optimization-strategies">
+  ### 最適化戦略
+</div>
+
+1. ワークスペースの規模に応じて**適切なドキュメント上限**を設定する
+2. 効率的に整理するために**用途に合わせたコンテナタグ**を使う
+3. 大規模データセットでは**データベース同期のパフォーマンスを監視**する
+4. **コンテンツフィルタリングを実装**して関連ページのみ同期する
+5. **Webhook の遅延を適切に処理**してアプリケーションで滑らかに対応する
+
+<Callout type="info">
+**Notion 固有の利点:**
+- Webhook によるリアルタイム同期で即時更新
+- リッチな書式とブロック構造を保持
+- データベースのプロパティが検索可能なメタデータになる
+- 階層的なページ構造を維持
+- コラボレーション向けワークスペースをサポート
+</Callout>
+
+<Warning>
+**重要な制限事項:**
+- 複雑なブロックの書式は Markdown 変換時に簡略化される場合がある
+- 大規模データベースは初回同期に時間がかかる場合がある
+- ワークスペースの権限によりアクセス可能なコンテンツが異なる
+- Notion API のレート制限が大規模ワークスペースの同期速度に影響する場合がある
+- 埋め込みファイルや画像は直接保存されず、参照として扱われる
+</Warning>

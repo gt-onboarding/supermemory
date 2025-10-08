@@ -1,0 +1,64 @@
+---
+title: "Memory API vs Router — Quale dovrei usare?"
+sidebarTitle: "Memory API vs Router"
+description: "Due modi per aggiungere memory a lungo termine ai tuoi LLM. Stesso motore sotto il cofano. Scegli velocità (Router) o controllo (Memory API), oppure usali insieme."
+---
+
+<Tip>
+### <strong>In breve</strong>
+- <strong>Memory API:</strong> Gestisci tu stesso ingest/search/filter delle memorie salvate e decidi esattamente cosa inserire nel prompt. Massimo controllo per app di produzione e retrieval personalizzato. <br/>
+- <strong>Memory Router:</strong> Mantieni il tuo client LLM esistente e puntalo semplicemente a Supermemory. Recuperiamo automaticamente le memorie rilevanti e le aggiungiamo al tuo prompt. <br />
+
+Entrambi usano lo stesso motore di memory sottostante e condividono una chiave comune (`user_id`). Quindi, tutto ciò che archivi tramite l’API è disponibile per il Router, e viceversa, purché l’`user_id` corrisponda.
+</Tip>
+
+Spiegheremo prima come funziona il Router, perché l’API è piuttosto semplice.
+
+![](./images/infinite-context.png)
+
+Invii una richiesta al tuo LLM e Supermemory funge da proxy. Il Router rimuove automaticamente il contesto non necessario dal messaggio, cerca nelle memorie salvate dell’utente ulteriore contesto rilevante, lo aggiunge al prompt e lo invia all’LLM. 
+
+Scrive anche nuove memorie in modo asincrono, così il tuo contesto continua a espandersi senza blocchi. Il Router è progettato specificamente per la memory conversazionale nelle applicazioni di chat, e la sua utilità emerge quando le conversazioni diventano molto lunghe.
+
+Per te, questo significa:
+
+- Nessun refactoring del codice: basta sostituire la base url con quella fornita da Supermemory. Leggi il quickstart per saperne di più.
+- Prestazioni migliori del chatbot grazie al recupero su thread lunghi, quando le conversazioni superano la finestra del modello.
+- Risparmio sui costi grazie al nostro chunking automatico e alla gestione del contesto.
+
+L’API, invece, è una API completa che puoi chiamare nella tua app per eseguire ingest di Documenti, creare memorie salvate, cercarle, fare Reranking, ecc., con controllo molto granulare. Il Router è costruito sopra la nostra API.
+
+Tecnicamente, potresti costruire anche tu un Memory Router sopra la nostra API, ma non avresti la stessa integrazione in una riga, facilità d’uso, latenza minima e budgeting intelligente dei token.
+
+Di nuovo, entrambi usano lo stesso motore di memory sotto il cofano, quindi le tue memorie sono disponibili su entrambi i prodotti.
+
+Ecco un rapido flusso da 30 secondi per decidere quale usare per il tuo caso d’uso specifico:
+
+- <strong> Hai già una chat LLM funzionante e vuoi solo che ricordi? </strong> Inizia con il Router.
+
+
+- <strong> Stai costruendo una nuova app o hai bisogno di tenancy rigorosa, filters, ranking o prompt personalizzati? </strong> Vai alla Memory API.
+
+
+- <strong> Ti servono entrambi? </strong> Esegui ingest tramite API, chatta tramite Router; mantieni coerente lo user_id.
+
+
+- <strong> Non sei ancora sicuro? </strong> Parti con il Router, poi migra parti del flusso alla API quando ti serve più controllo.
+
+Ora, vai al quickstart per integrare API/Router nella tua app in 5 minuti.
+
+<div id="faqs">
+  ## Domande frequenti
+</div>
+
+<AccordionGroup>
+  <Accordion title="Il Router chiama semplicemente la Memory API dietro le quinte?">
+    Concettualmente, sì. Il Router orchestra le stesse operazioni del motore di Supermemory (retrieve, re-rank, budget, cite) e le applica alla tua chiamata al modello.
+  </Accordion>
+  <Accordion title="Il Router salva automaticamente nuove memory?">
+    Può farlo. Il passaggio di creazione della memory è asincrono, quindi la risposta dell’utente non subisce ritardi.
+  </Accordion>
+  <Accordion title="Cosa identifica la memory dell’utente tra Router e API?">
+    <code>user_id</code>. Mantienilo coerente tra le chiamate al Router e all'API per condividere lo stesso pool di memory.
+  </Accordion>
+</AccordionGroup>

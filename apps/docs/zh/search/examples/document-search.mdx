@@ -1,0 +1,618 @@
+---
+title: "Documents 搜索（/v3/search）"
+description: "功能完备的搜索，提供对排序、过滤与结果的精细控制"
+---
+
+Documents 搜索（`POST /v3/search`）通过丰富的参数，为搜索行为提供最大程度的可控性，便于对结果进行精细调优。
+
+<div id="basic-implementation">
+  ## 基础实现
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const results = await client.search.documents({
+      q: "machine learning neural networks",
+      limit: 5
+    });
+
+    console.log(`Found ${results.total} documents in ${results.timing}ms`);
+
+    // 示例输出结构
+    results.results.forEach((doc, i) => {
+      console.log(`${i + 1}. ${doc.title} (Score: ${doc.score})`);
+      console.log(`   ${doc.chunks.length} chunks found`);
+    });
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    results = client.search.documents(
+        q="machine learning neural networks",
+        limit=5
+    )
+
+    print(f"Found {results.total} documents in {results.timing}ms")
+
+    # 示例输出结构
+    for i, doc in enumerate(results.results):
+        print(f"{i + 1}. {doc.title} (Score: {doc.score})")
+        print(f"   {len(doc.chunks)} chunks found")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning neural networks",
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**示例输出：**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_ml_guide_2024",
+      "title": "神经网络机器学习：完整指南",
+      "score": 0.89,
+      "chunks": [
+        {
+          "content": "神经网络是受生物神经网络启发的计算模型。它们由相互连接的节点（神经元）组成，通过加权连接处理信息...",
+          "score": 0.92,
+          "isRelevant": true
+        },
+        {
+          "content": "深度学习是机器学习的一个分支，使用具有多个隐藏层的神经网络来学习数据中的复杂模式...",
+          "score": 0.87,
+          "isRelevant": true
+        }
+      ],
+      "createdAt": "2024-01-15T10:30:00Z",
+      "metadata": {
+        "category": "ai",
+        "difficulty": "中级"
+      }
+    }
+  ],
+  "total": 12,
+  "timing": 156
+}
+```
+
+
+<div id="container-tags-filtering">
+  ## 容器标签过滤
+</div>
+
+容器标签是按用户、项目或组织隔离搜索结果的主要方式。
+
+**关键特性：**
+
+- **数组传入**：与 `/v4/search` 不同，此端点接收以数组形式传入的多个容器标签
+- **精确数组匹配**：Documents 必须具有与之“完全相同”的容器标签数组才能匹配
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "quarterly reports",
+      containerTags: ["user_123"],
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="quarterly reports",
+        container_tags=["user_123"],
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "quarterly reports",
+        "containerTags": ["user_123"],
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="metadata-filtering">
+  ## Metadata 过滤
+</div>
+
+Metadata 过滤允许对附加在你的 Documents 上的结构化数据设置复杂条件。后端采用类 SQL 的查询构造，要求显式的 AND/OR 结构。
+
+**过滤结构规则：**
+
+* **必须将条件放入 AND 或 OR 数组中**，即使只有一个条件
+* **支持字符串精确匹配**、数值比较运算符，以及数组包含
+* **可通过 `negate: true` 对任意条件取反（negate）**
+* **可与容器标签组合使用**——两类 filters 将同时生效
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning",
+      filters: {
+        AND: [
+          {
+            key: "category",
+            value: "technology",
+            negate: false
+          },
+          {
+            filterType: "numeric",
+            key: "readingTime",
+            value: "5",
+            negate: false,
+            numericOperator: "<="
+          }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning",
+        filters={
+            "AND": [
+                {
+                    "key": "category",
+                    "value": "technology",
+                    "negate": False
+                },
+                {
+                    "filterType": "numeric",
+                    "key": "readingTime",
+                    "value": "5",
+                    "negate": False,
+                    "numericOperator": "<="
+                }
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning",
+        "filters": {
+          "AND": [
+            {
+              "key": "category",
+              "value": "technology",
+              "negate": false
+            },
+            {
+              "filterType": "numeric",
+              "key": "readingTime",
+              "value": "5",
+              "negate": false,
+              "numericOperator": "<="
+            }
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**示例输出：**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_tech_trends_2024",
+      "title": "机器学习的技术趋势",
+      "score": 0.91,
+      "chunks": [
+        {
+          "content": "随着新架构与优化技术的涌现，机器学习持续演进。本文为全面概览，阅读时间约 8 分钟……",
+          "score": 0.88,
+          "isRelevant": true
+        }
+      ],
+      "metadata": {
+        "category": "technology",
+        "readingTime": 8,
+        "difficulty": "intermediate"
+        "published": true
+      }
+    }
+  ],
+  "total": 6,
+  "timing": 189
+}
+```
+
+
+<div id="array-contains-filtering">
+  ## 数组包含筛选
+</div>
+
+当你的 Metadata 包含数组（如参与者列表、标签或分类）时，可使用 `array_contains` 判断数组是否包含某个特定值。
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "meeting discussion",
+      filters: {
+        AND: [
+          {
+            key: "participants",
+            value: "john.doe",
+            filterType: "array_contains"
+          }
+        ]
+      },
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="meeting discussion",
+        filters={
+            "AND": [
+                {
+                    "key": "participants",
+                    "value": "john.doe",
+                    "filterType": "array_contains"
+                }
+            ]
+        },
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "meeting discussion",
+        "filters": {
+          "AND": [
+            {
+              "key": "participants",
+              "value": "john.doe",
+              "filterType": "array_contains"
+            }
+          ]
+        },
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="threshold-control">
+  ## 阈值控制
+</div>
+
+用敏感度阈值来控制结果质量：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "artificial intelligence",
+      documentThreshold: 0.7,  // 值越高 → 返回更少、但更相关的 Documents
+      chunkThreshold: 0.8,     // 值越高 → 返回更少、但更相关的 chunk（文档片段）
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="artificial intelligence",
+        document_threshold=0.7,  # 值越高 → 返回更少、但更相关的 documents
+        chunk_threshold=0.8,     # 值越高 → 返回更少、但更相关的 chunks（文档片段）
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "artificial intelligence",
+        "documentThreshold": 0.7,
+        "chunkThreshold": 0.8,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="query-rewriting">
+  ## 查询重写
+</div>
+
+通过自动查询重写提升搜索准确性：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "What is the capital of France?",
+      rewriteQuery: true,  // 约 +400ms latency，但结果更好
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="What is the capital of France?",
+        rewrite_query=True,  # 约 +400ms latency，但结果更好
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "What is the capital of France?",
+        "rewriteQuery": true,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+查询重写会生成多个查询变体，对它们分别进行搜索后再合并结果。无需额外费用，但会增加约 400ms 的 latency。
+</Note>
+
+<div id="reranking">
+  ## 重排
+</div>
+
+通过二次排序提升结果质量：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning applications",
+      rerank: true,  // Apply secondary ranking algorithm
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning applications",
+        rerank=True,  # Apply secondary ranking algorithm
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning applications",
+        "rerank": true,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="document-specific-search">
+  ## 针对特定文档的搜索
+</div>
+
+在单个大型文档内执行搜索：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "neural networks",
+      docId: "doc_123",  // 仅在此文档内搜索
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="neural networks",
+        doc_id="doc_123",  # 仅在此文档内搜索
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural networks",
+        "docId": "doc_123",
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="full-context-options">
+  ## 完整上下文选项
+</div>
+
+包含完整文档内容和摘要：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "research findings",
+      includeFullDocs: true,    // 包含完整文档内容
+      includeSummary: true,     // 包含文档摘要
+      onlyMatchingChunks: false, // 返回所有 chunk，而非仅匹配的
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="research findings",
+        include_full_docs=True,    # 包含完整文档内容
+        include_summary=True,      # 包含文档摘要
+        only_matching_chunks=False, # 返回所有 chunk，而非仅匹配的
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "research findings",
+        "includeFullDocs": true,
+        "includeSummary": true,
+        "onlyMatchingChunks": false,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="complete-advanced-example">
+  ## 完整高级示例
+</div>
+
+将所有功能组合使用以获得最大程度的控制：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning performance metrics",
+      containerTags: ["research_project"],
+      filters: {
+        AND: [
+          { key: "category", value: "ai", negate: false },
+          { key: "status", value: "published", negate: false }
+        ]
+      },
+      documentThreshold: 0.6,
+      chunkThreshold: 0.7,
+      rewriteQuery: true,
+      rerank: true,
+      includeFullDocs: false,
+      includeSummary: true,
+      onlyMatchingChunks: true,
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning performance metrics",
+        container_tags=["research_project"],
+        filters={
+            "AND": [
+                {"key": "category", "value": "ai", "negate": False},
+                {"key": "status", "value": "published", "negate": False}
+            ]
+        },
+        document_threshold=0.6,
+        chunk_threshold=0.7,
+        rewrite_query=True,
+        rerank=True,
+        include_full_docs=False,
+        include_summary=True,
+        only_matching_chunks=True,
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning performance metrics",
+        "containerTags": ["research_project"],
+        "filters": {
+          "AND": [
+            {"key": "category", "value": "ai", "negate": false},
+            {"key": "status", "value": "published", "negate": false}
+          ]
+        },
+        "documentThreshold": 0.6,
+        "chunkThreshold": 0.7,
+        "rewriteQuery": true,
+        "rerank": true,
+        "includeFullDocs": false,
+        "includeSummary": true,
+        "onlyMatchingChunks": true,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>

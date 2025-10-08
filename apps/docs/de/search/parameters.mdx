@@ -1,0 +1,250 @@
+---
+title: "Suchparameter"
+description: "Vollständige Referenz aller Suchparameter und ihrer Auswirkungen"
+---
+
+Vollständige Parameterreferenz für alle drei Suchendpunkte: Dokumentensuche, Speicher­suche und Execute-Suche.
+
+<div id="common-parameters">
+  ## Allgemeine Parameter
+</div>
+
+Diese Parameter gelten für alle Suchendpunkte:
+
+<ParamField query="q" type="string" required>
+  **Suchabfrage (Query-String)**
+
+  Der Text, nach dem Sie suchen möchten. Kann natürliche Sprache, Schlüsselwörter oder Fragen enthalten.
+
+  ```typescript
+  q: "machine learning neural networks"
+  q: "What are the applications of quantum computing?"
+  q: "python tutorial beginner"
+  ```
+</ParamField>
+
+<ParamField query="limit" type="number" default="10">
+  **Maximale Anzahl zurückzugebender Ergebnisse**
+
+  Legt fest, wie viele Ergebnisse zurückgegeben werden. Höhere limit-Werte erhöhen Antwortzeit und Datenmenge.
+
+  ```typescript
+  limit: 5    // Schnelle, fokussierte Ergebnisse
+  limit: 20   // Umfassendere Ergebnisse
+  limit: 100  // Maximal empfohlen
+  ```
+</ParamField>
+
+<ParamField query="containerTags" type="Array<string>">
+  **Nach Container-Tags filtern**
+
+  Organisationstags zum Filtern der Ergebnisse. Verwendet **exaktes Array-Matching** – es müssen alle Tags in derselben Reihenfolge übereinstimmen.
+
+  ```typescript
+  containerTags: ["user_123"]                    // Einzelnes Tag
+  containerTags: ["user_123", "project_ai"]      // Mehrere Tags (exakte Übereinstimmung)
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **Metadata-Filterung mit SQL-ähnlicher Struktur**
+
+  JSON-String mit AND/OR-Logik zum Filtern nach Metadata-Feldern. Verwendet dieselbe Struktur wie die Speicherlisten-Filter.
+
+  ```typescript
+  filters: JSON.stringify({
+    AND: [
+      { key: "category", value: "tutorial", negate: false },
+      { key: "difficulty", value: "beginner", negate: false }
+    ]
+  })
+  ```
+
+  <Note>
+    Siehe [Leitfaden zur Metadata-Filterung](/de/search/filtering) für vollständige Syntax und Beispiele.
+  </Note>
+</ParamField>
+
+<ParamField query="rerank" type="boolean" default="false">
+  **Ergebnisse für bessere Relevanz neu bewerten**
+
+  Wendet einen sekundären Ranking-Algorithmus an, um die Ergebnisqualität zu verbessern. Fügt ~100–200 ms Latenz hinzu, erhöht jedoch die Genauigkeit.
+
+  ```typescript
+  rerank: true   // Bessere Genauigkeit, langsamer
+  rerank: false  // Schneller, Standardgenauigkeit
+  ```
+</ParamField>
+
+<ParamField query="rewriteQuery" type="boolean" default="false">
+  **Abfrage erweitern und verbessern**
+
+  Schreibt Ihre Abfrage um, um relevantere Ergebnisse zu finden. Besonders nützlich für Abkürzungen und domänenspezifische Begriffe. **Fügt ~400 ms Latenz hinzu**.
+
+  ```typescript
+  // Beispiele für Query Rewriting:
+  "ML" → "machine learning artificial intelligence"
+  "JS" → "JavaScript programming language"
+  "API" → "application programming interface REST"
+  ```
+
+  <Warning>
+    Query Rewriting erhöht die Latenz deutlich. Nur verwenden, wenn die Suchqualität wichtiger ist als die Geschwindigkeit.
+  </Warning>
+</ParamField>
+
+<div id="document-search-parameters-post-v3search">
+  ## Parameter für die Dokumentensuche (POST `/v3/search`)
+</div>
+
+Diese Parameter sind spezifisch für `client.search.documents()`:
+
+<ParamField query="chunkThreshold" type="number" range="0-1" default="0.5">
+  **Empfindlichkeit der Chunk-Auswahl**
+
+  Steuert, welche Text-Chunks in die Ergebnisse aufgenommen werden:
+
+  * **0.0** = Geringste Empfindlichkeit (mehr Chunks, mehr Ergebnisse)
+  * **1.0** = Höchste Empfindlichkeit (weniger Chunks, höhere Qualität)
+
+  ```typescript
+  chunkThreshold: 0.2   // Breite Suche, viele Chunks
+  chunkThreshold: 0.8   // Präzise Suche, nur relevante Chunks
+  ```
+</ParamField>
+
+<ParamField query="documentThreshold" type="number" range="0-1" default="0.5">
+  **Empfindlichkeit der Dokumentauswahl**
+
+  Steuert, welche documents für die Suche berücksichtigt werden:
+
+  * **0.0** = Mehr documents durchsuchen (umfassend)
+  * **1.0** = Nur hochrelevante documents durchsuchen (fokussiert)
+
+  ```typescript
+  documentThreshold: 0.1   // Weites Suchnetz auswerfen
+  documentThreshold: 0.9   // Nur sehr relevante documents
+  ```
+</ParamField>
+
+<ParamField query="docId" type="string">
+  **In einem bestimmten Dokument suchen**
+
+  Beschränkt die Suche auf Chunks innerhalb eines einzelnen Dokuments. Nützlich, um Inhalte in großen Dokumenten zu finden.
+
+  ```typescript
+  docId: "doc_abc123"  // Nur dieses Dokument durchsuchen
+  ```
+</ParamField>
+
+<ParamField query="onlyMatchingChunks" type="boolean" default="false">
+  **Nur exakt passende Chunks zurückgeben**
+
+  Standardmäßig fügt Supermemory umgebende Chunks für Kontext hinzu. Auf `true` setzen, um nur den exakt passenden Text zu erhalten.
+
+  ```typescript
+  onlyMatchingChunks: false  // Kontext-Chunks einbeziehen (Standard)
+  onlyMatchingChunks: true   // Nur passende Chunks
+  ```
+
+  <Note>
+    Kontext-Chunks helfen LLMs, die vollständige Bedeutung zu erfassen. Deaktivieren Sie dies nur, wenn Sie eine präzise Textextraktion benötigen.
+  </Note>
+</ParamField>
+
+<ParamField query="includeFullDocs" type="boolean" default="false">
+  **Vollständigen Dokumentinhalt einbeziehen**
+
+  Fügt den vollständigen Dokumenttext zu jedem Ergebnis hinzu. Nützlich für Chatbots, die vollständigen Kontext benötigen.
+
+  ```typescript
+  includeFullDocs: true   // Vollständiges Dokument in der Antwort
+  includeFullDocs: false  // Nur Chunks und Metadata
+  ```
+
+  <Warning>
+    Das Einbeziehen vollständiger Dokumente kann Antworten sehr groß machen. Sparsam und mit geeigneten Limits verwenden.
+  </Warning>
+</ParamField>
+
+<ParamField query="includeSummary" type="boolean" default="false">
+  **Dokumentzusammenfassungen einbeziehen**
+
+  Fügt KI-generierte Dokumentzusammenfassungen zu den Ergebnissen hinzu. Guter Mittelweg zwischen Chunks und vollständigen Dokumenten.
+
+  ```typescript
+  includeSummary: true   // Dokumentzusammenfassungen einbeziehen
+  includeSummary: false  // Keine Zusammenfassungen
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **Nach Metadata mit SQL-Abfragen filtern**
+
+  ```typescript
+
+  // Verwenden Sie stattdessen Folgendes:
+  filters: JSON.stringify({
+    OR: [
+      { key: "category", value: "technology", negate: false },
+      { key: "category", value: "science", negate: false }
+    ]
+  })
+  ```
+</ParamField>
+
+<div id="memory-search-parameters-post-v4search">
+  ## Parameter für die Speichersuche (POST `/v4/search`)
+</div>
+
+Diese Parameter sind spezifisch für `client.search.memories()`:
+
+<ParamField query="threshold" type="number" range="0-1" default="0.5">
+  **Empfindlichkeit der Speicherauswahl**
+
+  Steuert, welche Speicher-Einträge basierend auf der Relevanz zurückgegeben werden:
+
+  * **0.0** = Mehr Speicher-Einträge zurückgeben (breite Suche)
+  * **1.0** = Nur sehr ähnliche Speicher-Einträge zurückgeben (präzise Suche)
+
+  ```typescript
+  threshold: 0.3   // Breitere Speichersuche
+  threshold: 0.8   // Nur sehr ähnliche Speicher-Einträge
+  ```
+</ParamField>
+
+<ParamField query="containerTag" type="string">
+  **Nach einem einzelnen Container-Tag filtern**
+
+  Hinweis: Die Speichersuche verwendet `containerTag` (Singular), während die Dokumentensuche `containerTags` (Plural, Array) verwendet.
+
+  ```typescript
+  containerTag: "user_123"  // Einzelner Tag für die Speichersuche
+  ```
+</ParamField>
+
+<ParamField query="include" type="object">
+  **Steuern, welche zusätzlichen Daten einbezogen werden**
+
+  Objekt, das angibt, welche kontextuellen Informationen zusammen mit Speicherergebnissen einbezogen werden.
+
+  <ParamField query="include.documents" type="boolean" default="false">
+    Zugehörige documents für jeden Speicher-Eintrag einbeziehen
+  </ParamField>
+
+  <ParamField query="include.relatedMemories" type="boolean" default="false">
+    Übergeordnete und untergeordnete Speicher-Einträge einbeziehen (kontextuelle Beziehungen)
+  </ParamField>
+
+  <ParamField query="include.summaries" type="boolean" default="false">
+    Speicherzusammenfassungen einbeziehen
+  </ParamField>
+
+  ```typescript
+  include: {
+    documents: true,        // Zugehörige documents anzeigen
+    relatedMemories: true,  // Über-/untergeordnete Speicher-Einträge anzeigen
+    summaries: true         // Zusammenfassungen einbeziehen
+  }
+  ```
+</ParamField>

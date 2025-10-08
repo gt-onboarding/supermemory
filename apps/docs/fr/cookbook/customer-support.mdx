@@ -1,0 +1,1064 @@
+---
+title: "Assistant de support client"
+description: "Créez un système d’assistance intelligent qui se souvient de l’historique des clients et fournit une aide personnalisée"
+---
+
+Créez un système de support client qui mémorise chaque interaction, suit les problèmes au fil des conversations et offre une assistance personnalisée en fonction de l’historique et des préférences des clients.
+
+<div id="what-youll-build">
+  ## Ce que vous allez construire
+</div>
+
+Un bot d’assistance client qui :
+
+- **Mémorise l’historique client** sur l’ensemble des conversations et des canaux
+- **Suit les problèmes en cours** et relance automatiquement
+- **Fournit des réponses personnalisées** selon la catégorie du client et ses préférences
+- **Transmet les problèmes complexes** à des agents humains avec tout le contexte
+- **Apprend des résolutions** pour améliorer les réponses futures
+
+<div id="prerequisites">
+  ## Prérequis
+</div>
+
+- Node.js 18+ ou Python 3.8+
+- Clé d’API Supermemory
+- Clé d’API OpenAI
+- Base de données clients ou intégration CRM
+- Notions de base sur les workflows de support client
+
+<div id="implementation">
+  ## Implémentation
+</div>
+
+<div id="step-1-customer-context-management">
+  ### Étape 1 : Gestion du contexte client
+</div>
+
+<Tabs>
+  <Tab title="Next.js">
+    ```typescript lib/customer-context.ts
+    import { Supermemory } from 'supermemory'
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    })
+
+    interface Customer {
+      id: string
+      email: string
+      name: string
+      tier: 'free' | 'pro' | 'enterprise'
+      joinDate: string
+      preferences?: Record<string, any>
+    }
+
+    interface SupportTicket {
+      id: string
+      customerId: string
+      subject: string
+      status: 'open' | 'pending' | 'resolved' | 'closed'
+      priority: 'low' | 'medium' | 'high' | 'urgent'
+      category: string
+      createdAt: string
+      updatedAt: string
+      assignedAgent?: string
+    }
+
+    export class CustomerContextManager {
+      private getContainerTag(customerId: string): string {
+        return `customer_${customerId}`
+      }
+
+      async addInteraction(customerId: string, interaction: {
+        type: 'chat' | 'email' | 'phone' | 'ticket'
+        content: string
+        channel: string
+        outcome?: 'resolved' | 'escalated' | 'pending'
+        agentId?: string
+        metadata?: Record<string, any>
+      }) {
+        try {
+          const result = await client.memories.add({
+            content: `${interaction.type.toUpperCase()}: ${interaction.content}`,
+            containerTag: this.getContainerTag(customerId),
+            metadata: {
+              type: 'customer_interaction',
+              interactionType: interaction.type,
+              channel: interaction.channel,
+              outcome: interaction.outcome,
+              agentId: interaction.agentId,
+              timestamp: new Date().toISOString(),
+              ...interaction.metadata
+            }
+          })
+
+          return result
+        } catch (error) {
+          console.error('Échec de l\'ajout de l\'interaction client :', error)
+          throw error
+        }
+      }
+
+      async getCustomerHistory(customerId: string, limit: number = 10) {
+        try {
+          const memories = await client.memories.list({
+            containerTags: [this.getContainerTag(customerId)],
+            limit,
+            sort: 'updatedAt',
+            order: 'desc'
+          })
+
+          return memories.memories.map(memory => ({
+            id: memory.id,
+            content: memory.content,
+            type: memory.metadata?.interactionType || 'unknown',
+            channel: memory.metadata?.channel,
+            outcome: memory.metadata?.outcome,
+            timestamp: memory.metadata?.timestamp || memory.createdAt,
+            agentId: memory.metadata?.agentId
+          }))
+        } catch (error) {
+          console.error('Échec de la récupération de l\'historique client :', error)
+          throw error
+        }
+      }
+
+      async searchCustomerContext(customerId: string, query: string) {
+        try {
+          const results = await client.search.memories({
+            q: query,
+            containerTag: this.getContainerTag(customerId),
+            threshold: 0.6,
+            limit: 5,
+            rerank: true
+          })
+
+          return results.results.map(result => ({
+            content: result.memory,
+            similarity: result.similarity,
+            metadata: result.metadata
+          }))
+        } catch (error) {
+          console.error('Échec de la recherche du contexte client :', error)
+          throw error
+        }
+      }
+
+      async trackIssue(customerId: string, issue: {
+        subject: string
+        description: string
+        category: string
+        priority: 'low' | 'medium' | 'high' | 'urgent'
+        status: 'open' | 'pending' | 'resolved'
+      }) {
+        try {
+          const issueContent = `PROBLÈME : ${issue.subject}\n\nDescription : ${issue.description}\nCatégorie : ${issue.category}\nPriorité : ${issue.priority}\nStatut : ${issue.status}`
+
+          const result = await client.memories.add({
+            content: issueContent,
+            containerTag: this.getContainerTag(customerId),
+            metadata: {
+              type: 'support_issue',
+              subject: issue.subject,
+              category: issue.category,
+              priority: issue.priority,
+              status: issue.status,
+              createdAt: new Date().toISOString()
+            }
+          })
+
+          return result
+        } catch (error) {
+          console.error('Échec du suivi du problème :', error)
+          throw error
+        }
+      }
+
+      async updateIssueStatus(issueId: string, status: 'open' | 'pending' | 'resolved' | 'closed', resolution?: string) {
+        try {
+          // Note : Dans une implémentation réelle, vous mettriez à jour la memory
+          // Pour l'instant, nous allons ajouter une mise à jour de statut
+          const memory = await client.memories.get(issueId)
+          const customerId = memory.containerTag.replace('customer_', '')
+
+          const updateContent = `MISE À JOUR DU PROBLÈME : ${memory.metadata?.subject}\nStatut changé vers : ${status}${resolution ? `\nRésolution : ${resolution}` : ''}`
+
+          return await this.addInteraction(customerId, {
+            type: 'ticket',
+            content: updateContent,
+            channel: 'internal',
+            outcome: status === 'resolved' ? 'resolved' : 'pending',
+            metadata: {
+              originalIssueId: issueId,
+              statusUpdate: true
+            }
+          })
+        } catch (error) {
+          console.error('Échec de la mise à jour du statut du problème :', error)
+          throw error
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python customer_context.py
+    from supermemory import Supermemory
+    import os
+    from typing import Dict, List, Any, Optional
+    from datetime import datetime
+    from enum import Enum
+
+    class InteractionType(Enum):
+        CHAT = "chat"
+        EMAIL = "email"
+        PHONE = "phone"
+        TICKET = "ticket"
+
+    class Priority(Enum):
+        LOW = "low"
+        MEDIUM = "medium"
+        HIGH = "high"
+        URGENT = "urgent"
+
+    class Status(Enum):
+        OPEN = "open"
+        PENDING = "pending"
+        RESOLVED = "resolved"
+        CLOSED = "closed"
+
+    class CustomerContextManager:
+        def __init__(self):
+            self.client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+        def _get_container_tag(self, customer_id: str) -> str:
+            return f"customer_{customer_id}"
+
+        def add_interaction(self, customer_id: str, interaction: Dict[str, Any]) -> Dict:
+            """Ajouter une interaction client à la mémoire"""
+            try:
+                content = f"{interaction['type'].upper()}: {interaction['content']}"
+
+                result = self.client.memories.add(
+                    content=content,
+                    container_tag=self._get_container_tag(customer_id),
+                    metadata={
+                        'type': 'customer_interaction',
+                        'interactionType': interaction['type'],
+                        'channel': interaction['channel'],
+                        'outcome': interaction.get('outcome'),
+                        'agentId': interaction.get('agentId'),
+                        'timestamp': datetime.now().isoformat(),
+                        **interaction.get('metadata', {})
+                    }
+                )
+                return result
+            except Exception as e:
+                print(f"Échec de l'ajout de l'interaction client : {e}")
+                raise
+
+        def get_customer_history(self, customer_id: str, limit: int = 10) -> List[Dict]:
+            """Obtenir l'historique des interactions client"""
+            try:
+                memories = self.client.memories.list(
+                    container_tags=[self._get_container_tag(customer_id)],
+                    limit=limit,
+                    sort='updatedAt',
+                    order='desc'
+                )
+
+                return [
+                    {
+                        'id': memory.id,
+                        'content': memory.content,
+                        'type': memory.metadata.get('interactionType', 'unknown') if memory.metadata else 'unknown',
+                        'channel': memory.metadata.get('channel') if memory.metadata else None,
+                        'outcome': memory.metadata.get('outcome') if memory.metadata else None,
+                        'timestamp': memory.metadata.get('timestamp', memory.created_at) if memory.metadata else memory.created_at,
+                        'agentId': memory.metadata.get('agentId') if memory.metadata else None
+                    }
+                    for memory in memories.memories
+                ]
+            except Exception as e:
+                print(f"Échec de l'obtention de l'historique client : {e}")
+                raise
+
+        def search_customer_context(self, customer_id: str, query: str) -> List[Dict]:
+            """Rechercher l'historique des interactions du client"""
+            try:
+                results = self.client.search.memories(
+                    q=query,
+                    container_tag=self._get_container_tag(customer_id),
+                    threshold=0.6,
+                    limit=5,
+                    rerank=True
+                )
+
+                return [
+                    {
+                        'content': result.memory,
+                        'similarity': result.similarity,
+                        'metadata': result.metadata
+                    }
+                    for result in results.results
+                ]
+            except Exception as e:
+                print(f"Échec de la recherche du contexte client : {e}")
+                raise
+
+        def track_issue(self, customer_id: str, issue: Dict[str, str]) -> Dict:
+            """Suivre un problème de support client"""
+            try:
+                issue_content = f"""PROBLÈME : {issue['subject']}
+
+    Description : {issue['description']}
+    Catégorie : {issue['category']}
+    Priorité : {issue['priority']}
+    Statut : {issue['status']}"""
+
+                result = self.client.memories.add(
+                    content=issue_content,
+                    container_tag=self._get_container_tag(customer_id),
+                    metadata={
+                        'type': 'support_issue',
+                        'subject': issue['subject'],
+                        'category': issue['category'],
+                        'priority': issue['priority'],
+                        'status': issue['status'],
+                        'createdAt': datetime.now().isoformat()
+                    }
+                )
+                return result
+            except Exception as e:
+                print(f"Échec du suivi du problème : {e}")
+                raise
+
+        def update_issue_status(self, issue_id: str, status: str, resolution: Optional[str] = None) -> Dict:
+            """Mettre à jour le statut d'un problème de support"""
+            try:
+                # Obtenir le problème original
+                memory = self.client.memories.get(issue_id)
+                customer_id = memory.container_tag.replace('customer_', '')
+
+                update_content = f"MISE À JOUR DU PROBLÈME : {memory.metadata.get('subject', 'Inconnu')}\nStatut changé vers : {status}"
+                if resolution:
+                    update_content += f"\nRésolution : {resolution}"
+
+                return self.add_interaction(customer_id, {
+                    'type': 'ticket',
+                    'content': update_content,
+                    'channel': 'internal',
+                    'outcome': 'resolved' if status == 'resolved' else 'pending',
+                    'metadata': {
+                        'originalIssueId': issue_id,
+                        'statusUpdate': True
+                    }
+                })
+            except Exception as e:
+                print(f"Échec de la mise à jour du statut du problème : {e}")
+                raise
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-2-support-api-with-context">
+  ### Étape 2 : Prise en charge de l’API avec contexte
+</div>
+
+<Tabs>
+  <Tab title="Route API Next.js">
+    ```typescript app/api/support/chat/route.ts
+    import { streamText } from 'ai'
+    import { createOpenAI } from '@ai-sdk/openai'
+    import { CustomerContextManager } from '@/lib/customer-context'
+
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY!
+    })
+
+    const contextManager = new CustomerContextManager()
+
+    interface Customer {
+      id: string
+      name: string
+      email: string
+      tier: 'free' | 'pro' | 'enterprise'
+      joinDate: string
+    }
+
+    export async function POST(request: Request) {
+      const {
+        message,
+        customerId,
+        customer,
+        conversationHistory = [],
+        agentId
+      } = await request.json()
+
+      try {
+        // Récupérer l'historique et le contexte du client
+        const [history, contextResults] = await Promise.all([
+          contextManager.getCustomerHistory(customerId, 5),
+          contextManager.searchCustomerContext(customerId, message)
+        ])
+
+        // Construire le contexte client
+        const customerContext = `
+    PROFIL CLIENT :
+    - Nom : ${customer.name}
+    - Email : ${customer.email}
+    - Niveau : ${customer.tier.toUpperCase()}
+    - Membre depuis : ${customer.joinDate}
+
+    INTERACTIONS RÉCENTES (5 dernières) :
+    ${history.map(h => `- ${h.timestamp}: ${h.type.toUpperCase()} - ${h.content.substring(0, 100)}...`).join('\n')}
+
+    CONTEXTE PERTINENT :
+    ${contextResults.map(c => `- ${c.content.substring(0, 150)}... (${(c.similarity * 100).toFixed(1)}% de pertinence)`).join('\n')}
+        `.trim()
+
+        // Déterminer si une escalade est nécessaire
+        const escalationKeywords = ['angry', 'frustrated', 'cancel', 'refund', 'legal', 'complaint', 'manager', 'supervisor']
+        const needsEscalation = escalationKeywords.some(keyword =>
+          message.toLowerCase().includes(keyword)
+        ) || customer.tier === 'enterprise'
+
+        const systemPrompt = `Vous êtes un agent de support client serviable avec accès à l'historique complet et au contexte du client.
+
+    CONTEXTE CLIENT :
+    ${customerContext}
+
+    DIRECTIVES DE SUPPORT :
+    1. **Personnalisation** : Adressez-vous au client par son nom et référencez son niveau/historique lorsque pertinent
+    2. **Prise en compte du contexte** : Utilisez les interactions précédentes pour éclairer votre réponse
+    3. **Service adapté au niveau** :
+    - Gratuit : Support standard, orientation vers les ressources d'auto-assistance
+    - Pro : Support prioritaire, explications détaillées, suggestions proactives
+    - Entreprise : Service sur mesure, escalade immédiate, attention dédiée
+
+    4. **Suivi des problèmes** : S'il s'agit d'un nouveau problème, catégorisez-le (facturation, technique, compte, produit)
+    5. **Escalade** : ${needsEscalation ? 'Cette interaction peut nécessiter une escalade vers un agent humain - fournissez une réponse utile mais préparez un résumé d\'escalade' : 'Traitez directement sauf si le client demande spécifiquement un agent humain'}
+
+    STYLE DE RÉPONSE :
+    - Professionnel mais convivial
+    - Référencez des détails spécifiques de l'historique client lorsque pertinent
+    - Fournissez des étapes d'action concrètes
+    - Incluez des liens ou ressources pertinents pour leur niveau
+
+    Si vous ne pouvez pas résoudre entièrement le problème, préparez un résumé clair pour l'escalade vers des agents humains.`
+
+        const messages = [
+          { role: 'system' as const, content: systemPrompt },
+          ...conversationHistory,
+          { role: 'user' as const, content: message }
+        ]
+
+        const result = await streamText({
+          model: openai('gpt-5'),
+          messages,
+          temperature: 0.3,
+          maxTokens: 800,
+          onFinish: async (completion) => {
+            // Enregistrer cette interaction
+            await contextManager.addInteraction(customerId, {
+              type: 'chat',
+              content: `Client : ${message}\nAgent : ${completion.text}`,
+              channel: 'web_chat',
+              outcome: needsEscalation ? 'escalated' : 'resolved',
+              agentId,
+              metadata: {
+                customerTier: customer.tier,
+                needsEscalation,
+                responseLength: completion.text.length
+              }
+            })
+
+            // Si cela semble être un nouveau problème, le suivre
+            if (message.length > 50 && !contextResults.some(c => c.similarity > 0.8)) {
+              const issueCategory = categorizeIssue(message)
+              const priority = determinePriority(customer.tier, message)
+
+              await contextManager.trackIssue(customerId, {
+                subject: message.substring(0, 100),
+                description: message,
+                category: issueCategory,
+                priority,
+                status: needsEscalation ? 'pending' : 'open'
+              })
+            }
+          }
+        })
+
+        return result.toAIStreamResponse({
+          data: {
+            needsEscalation,
+            customerTier: customer.tier,
+            contextCount: contextResults.length
+          }
+        })
+
+      } catch (error) {
+        console.error('Erreur de chat support :', error)
+        return Response.json(
+          { error: 'Échec du traitement de la demande de support', details: error.message },
+          { status: 500 }
+        )
+      }
+    }
+
+    function categorizeIssue(message: string): string {
+      const categories = {
+        billing: ['bill', 'charge', 'payment', 'refund', 'price', 'cost'],
+        technical: ['error', 'bug', 'broken', 'not working', 'crash', 'slow'],
+        account: ['login', 'password', 'access', 'settings', 'profile'],
+        product: ['feature', 'how to', 'tutorial', 'help', 'guide']
+      }
+
+      const messageLower = message.toLowerCase()
+
+      for (const [category, keywords] of Object.entries(categories)) {
+        if (keywords.some(keyword => messageLower.includes(keyword))) {
+          return category
+        }
+      }
+
+      return 'general'
+    }
+
+    function determinePriority(tier: string, message: string): 'low' | 'medium' | 'high' | 'urgent' {
+      const urgentKeywords = ['urgent', 'critical', 'emergency', 'down', 'broken']
+      const highKeywords = ['important', 'asap', 'soon', 'problem']
+
+      const messageLower = message.toLowerCase()
+
+      if (urgentKeywords.some(keyword => messageLower.includes(keyword))) {
+        return 'urgent'
+      }
+
+      if (tier === 'enterprise') {
+        return highKeywords.some(keyword => messageLower.includes(keyword)) ? 'urgent' : 'high'
+      }
+
+      if (tier === 'pro') {
+        return highKeywords.some(keyword => messageLower.includes(keyword)) ? 'high' : 'medium'
+      }
+
+      return 'low'
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python FastAPI">
+    ```python support_api.py
+    from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    from pydantic import BaseModel
+    from typing import List, Dict, Any, Optional
+    import openai
+    from customer_context import CustomerContextManager
+    import json
+    import os
+    import re
+
+    app = FastAPI()
+
+    openai_client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    context_manager = CustomerContextManager()
+
+    class Customer(BaseModel):
+        id: str
+        name: str
+        email: str
+        tier: str
+        joinDate: str
+
+    class SupportRequest(BaseModel):
+        message: str
+        customerId: str
+        customer: Customer
+        conversationHistory: List[Dict[str, str]] = []
+        agentId: Optional[str] = None
+
+    def categorize_issue(message: str) -> str:
+        """Catégorise le problème de support en fonction du contenu du message"""
+        categories = {
+            'billing': ['bill', 'charge', 'payment', 'refund', 'price', 'cost'],
+            'technical': ['error', 'bug', 'broken', 'not working', 'crash', 'slow'],
+            'account': ['login', 'password', 'access', 'settings', 'profile'],
+            'product': ['feature', 'how to', 'tutorial', 'help', 'guide']
+        }
+
+        message_lower = message.lower()
+
+        for category, keywords in categories.items():
+            if any(keyword in message_lower for keyword in keywords):
+                return category
+
+        return 'general'
+
+    def determine_priority(tier: str, message: str) -> str:
+        """Détermine la priorité du problème en fonction du niveau et du contenu du message"""
+        urgent_keywords = ['urgent', 'critical', 'emergency', 'down', 'broken']
+        high_keywords = ['important', 'asap', 'soon', 'problem']
+
+        message_lower = message.lower()
+
+        if any(keyword in message_lower for keyword in urgent_keywords):
+            return 'urgent'
+
+        if tier == 'enterprise':
+            return 'urgent' if any(keyword in message_lower for keyword in high_keywords) else 'high'
+
+        if tier == 'pro':
+            return 'high' if any(keyword in message_lower for keyword in high_keywords) else 'medium'
+
+        return 'low'
+
+    @app.post("/support/chat")
+    async def support_chat(request: SupportRequest):
+        try:
+            # Récupérer l'historique et le contexte du client
+            history = context_manager.get_customer_history(request.customerId, 5)
+            context_results = context_manager.search_customer_context(request.customerId, request.message)
+
+            # Construire le contexte client
+            customer_context = f"""
+    PROFIL CLIENT :
+    - Nom : {request.customer.name}
+    - Email : {request.customer.email}
+    - Niveau : {request.customer.tier.upper()}
+    - Membre depuis : {request.customer.joinDate}
+
+    INTERACTIONS RÉCENTES (5 dernières) :
+    {chr(10).join([f"- {h['timestamp']}: {h['type'].upper()} - {h['content'][:100]}..." for h in history])}
+
+    CONTEXTE PERTINENT :
+    {chr(10).join([f"- {c['content'][:150]}... ({c['similarity']*100:.1f}% pertinent)" for c in context_results])}
+            """.strip()
+
+            # Déterminer si une escalade est nécessaire
+            escalation_keywords = ['angry', 'frustrated', 'cancel', 'refund', 'legal', 'complaint', 'manager', 'supervisor']
+            needs_escalation = any(keyword in request.message.lower() for keyword in escalation_keywords) or request.customer.tier == 'enterprise'
+
+            system_prompt = f"""Vous êtes un agent de support client utile avec accès à l'historique complet et au contexte du client.
+
+    CONTEXTE CLIENT :
+    {customer_context}
+
+    DIRECTIVES DE SUPPORT :
+    1. **Personnalisation** : Adressez-vous au client par son nom et référencez son niveau/historique lorsque pertinent
+    2. **Prise en compte du contexte** : Utilisez les interactions précédentes pour éclairer votre réponse
+    3. **Service spécifique au niveau** :
+    - Gratuit : Support standard, orientation vers les ressources d'auto-assistance
+    - Pro : Support prioritaire, explications détaillées, suggestions proactives
+    - Enterprise : Service sur mesure, escalade immédiate, attention dédiée
+
+    4. **Suivi des problèmes** : S'il s'agit d'un nouveau problème, catégorisez-le (facturation, technique, compte, produit)
+    5. **Escalade** : {'Cette interaction peut nécessiter une escalade vers un agent humain - fournissez une réponse utile mais préparez un résumé d'escalade' if needs_escalation else 'Gérez directement sauf si le client demande spécifiquement un agent humain'}
+
+    STYLE DE RÉPONSE :
+    - Professionnel mais convivial
+    - Référencez des détails spécifiques de l'historique client lorsque pertinent
+    - Fournissez des étapes d'action concrètes
+    - Incluez des liens ou ressources pertinents pour leur niveau
+
+    Si vous ne pouvez pas résoudre complètement le problème, préparez un résumé clair pour l'escalade vers des agents humains."""
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                *request.conversationHistory,
+                {"role": "user", "content": request.message}
+            ]
+
+            response = await openai_client.chat.completions.create(
+                model="gpt-5",
+                messages=messages,
+                temperature=0.3,
+                max_tokens=800,
+                stream=True
+            )
+
+            async def generate():
+                full_response = ""
+                async for chunk in response:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        full_response += content
+                        yield f"data: {json.dumps({'content': content})}\n\n"
+
+                # Enregistrer l'interaction après completion
+                context_manager.add_interaction(request.customerId, {
+                    'type': 'chat',
+                    'content': f"Client : {request.message}\nAgent : {full_response}",
+                    'channel': 'web_chat',
+                    'outcome': 'escalated' if needs_escalation else 'resolved',
+                    'agentId': request.agentId,
+                    'metadata': {
+                        'customerTier': request.customer.tier,
+                        'needsEscalation': needs_escalation,
+                        'responseLength': len(full_response)
+                    }
+                })
+
+                # Suivre les nouveaux problèmes
+                if len(request.message) > 50 and not any(c['similarity'] > 0.8 for c in context_results):
+                    issue_category = categorize_issue(request.message)
+                    priority = determine_priority(request.customer.tier, request.message)
+
+                    context_manager.track_issue(request.customerId, {
+                        'subject': request.message[:100],
+                        'description': request.message,
+                        'category': issue_category,
+                        'priority': priority,
+                        'status': 'pending' if needs_escalation else 'open'
+                    })
+
+                yield f"data: {json.dumps({'done': True, 'needsEscalation': needs_escalation})}\n\n"
+
+            return StreamingResponse(generate(), media_type="text/plain")
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Erreur de chat support : {str(e)}")
+
+    if __name__ == "__main__":
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-3-support-dashboard-interface">
+  ### Étape 3 : Interface du tableau de bord de support
+</div>
+
+```tsx app/support/page.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useChat } from 'ai/react'
+import { CustomerContextManager } from '@/lib/customer-context'
+
+interface Customer {
+  id: string
+  name: string
+  email: string
+  tier: 'free' | 'pro' | 'enterprise'
+  joinDate: string
+}
+
+interface SupportTicket {
+  id: string
+  subject: string
+  status: 'open' | 'pending' | 'resolved' | 'closed'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  category: string
+  createdAt: string
+}
+
+export default function SupportDashboard() {
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [customerHistory, setCustomerHistory] = useState<any[]>([])
+  const [tickets, setTickets] = useState<SupportTicket[]>([])
+  const [showEscalation, setShowEscalation] = useState(false)
+  const [agentId] = useState('agent_001') // Dans une vraie app, récupérer depuis l'auth
+
+  const contextManager = new CustomerContextManager()
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: '/api/support/chat',
+    body: {
+      customerId: selectedCustomer?.id,
+      customer: selectedCustomer,
+      agentId
+    },
+    onFinish: (message, { data }) => {
+      if (data?.needsEscalation) {
+        setShowEscalation(true)
+      }
+      // Actualiser l'historique client
+      if (selectedCustomer) {
+        loadCustomerHistory(selectedCustomer.id)
+      }
+    }
+  })
+
+  // Clients fictifs - dans une vraie app, récupérer depuis votre base de données clients
+  const mockCustomers: Customer[] = [
+    {
+      id: 'cust_001',
+      name: 'Sarah Johnson',
+      email: 'sarah@example.com',
+      tier: 'pro',
+      joinDate: '2023-06-15'
+    },
+    {
+      id: 'cust_002',
+      name: 'TechCorp Inc',
+      email: 'support@techcorp.com',
+      tier: 'enterprise',
+      joinDate: '2022-03-20'
+    },
+    {
+      id: 'cust_003',
+      name: 'Mike Chen',
+      email: 'mike@startup.com',
+      tier: 'free',
+      joinDate: '2024-01-10'
+    }
+  ]
+
+  const loadCustomerHistory = async (customerId: string) => {
+    try {
+      const history = await contextManager.getCustomerHistory(customerId, 10)
+      setCustomerHistory(history)
+    } catch (error) {
+      console.error('Échec du chargement de l\'historique client:', error)
+    }
+  }
+
+  const handleCustomerSelect = async (customer: Customer) => {
+    setSelectedCustomer(customer)
+    await loadCustomerHistory(customer.id)
+    setShowEscalation(false)
+  }
+
+  const getTierColor = (tier: string) => {
+    switch (tier) {
+      case 'enterprise': return 'bg-purple-100 text-purple-800'
+      case 'pro': return 'bg-blue-100 text-blue-800'
+      case 'free': return 'bg-gray-100 text-gray-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-800'
+      case 'high': return 'bg-orange-100 text-orange-800'
+      case 'medium': return 'bg-yellow-100 text-yellow-800'
+      case 'low': return 'bg-green-100 text-green-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  return (
+    <div className="h-screen flex">
+      {/* Barre latérale de liste des clients */}
+      <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold">Clients</h2>
+        </div>
+        <div className="divide-y divide-gray-200">
+          {mockCustomers.map((customer) => (
+            <div
+              key={customer.id}
+              onClick={() => handleCustomerSelect(customer)}
+              className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                selectedCustomer?.id === customer.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-medium text-gray-900">{customer.name}</div>
+                <span className={`px-2 py-1 text-xs rounded-full ${getTierColor(customer.tier)}`}>
+                  {customer.tier}
+                </span>
+              </div>
+              <div className="text-sm text-gray-600">{customer.email}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                Membre depuis {customer.joinDate}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Contenu principal */}
+      <div className="flex-1 flex flex-col">
+        {selectedCustomer ? (
+          <>
+            {/* En-tête client */}
+            <div className="bg-white border-b border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold">{selectedCustomer.name}</h1>
+                  <p className="text-gray-600">{selectedCustomer.email}</p>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <span className={`px-3 py-1 text-sm rounded-full ${getTierColor(selectedCustomer.tier)}`}>
+                    {selectedCustomer.tier.toUpperCase()} Client
+                  </span>
+                  {showEscalation && (
+                    <div className="bg-red-100 text-red-800 px-3 py-1 text-sm rounded-full">
+                      Nécessite une escalade
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 flex">
+              {/* Zone de chat */}
+              <div className="flex-1 flex flex-col">
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {messages.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="text-lg font-medium">Bienvenue dans le chat de support</div>
+                      <p className="mt-2">
+                        Commencez une conversation avec {selectedCustomer.name}
+                      </p>
+                      <div className="mt-4 text-sm">
+                        <p><strong>Niveau client :</strong> {selectedCustomer.tier}</p>
+                        <p><strong>Date d'inscription :</strong> {selectedCustomer.joinDate}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div
+                        className={`max-w-2xl p-4 rounded-lg ${
+                          message.role === 'user'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-900'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="text-sm font-medium">
+                            {message.role === 'user' ? selectedCustomer.name : 'Agent de support'}
+                          </span>
+                          <span className="text-xs opacity-75">
+                            {new Date().toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className="whitespace-pre-wrap">{message.content}</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="max-w-2xl p-4 bg-gray-100 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          <span className="text-sm">L'agent est en train d'écrire...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Saisie de chat */}
+                <div className="border-t border-gray-200 p-4">
+                  <form onSubmit={handleSubmit} className="flex space-x-2">
+                    <input
+                      value={input}
+                      onChange={handleInputChange}
+                      placeholder={`Répondre à ${selectedCustomer.name}...`}
+                      className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isLoading || !input.trim()}
+                      className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Envoyer
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* Barre latérale de l'historique client */}
+              <div className="w-80 bg-gray-50 border-l border-gray-200 overflow-y-auto">
+                <div className="p-4 border-b bg-white">
+                  <h3 className="font-medium">Historique client</h3>
+                </div>
+                <div className="p-4 space-y-3">
+                  {customerHistory.map((interaction, index) => (
+                    <div key={index} className="bg-white p-3 rounded-lg border text-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium capitalize">{interaction.type}</span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(interaction.timestamp).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 line-clamp-3">
+                        {interaction.content.length > 100
+                          ? `${interaction.content.substring(0, 100)}...`
+                          : interaction.content
+                        }
+                      </p>
+                      {interaction.outcome && (
+                        <div className="mt-2">
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            interaction.outcome === 'resolved'
+                              ? 'bg-green-100 text-green-800'
+                              : interaction.outcome === 'escalated'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {interaction.outcome}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {customerHistory.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>Aucune interaction antérieure</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <div className="text-lg font-medium">Support client</div>
+              <p className="mt-2">Sélectionnez un client pour démarrer une conversation de support</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+```
+
+<div id="testing-your-support-system">
+  ## Tester votre système d’assistance
+</div>
+
+<div id="step-4-test-support-scenarios">
+  ### Étape 4 : Tester les scénarios d’assistance
+</div>
+
+1. **Tester les niveaux de clientèle** :
+   - Gratuit : Réponses de base, assistance en libre-service
+   - Pro : Aide détaillée, suggestions proactives
+   - Enterprise : Service « gants blancs », préparation à l’escalade
+
+2. **Tester la memory et le contexte** :
+   - Poser des questions sur un problème antérieur
+   - Se référer aux préférences du client
+   - Assurer le suivi des tickets non résolus
+
+3. **Tester les déclencheurs d’escalade** :
+   - Utiliser des mots-clés comme « angry », « manager », « refund »
+   - Tester l’escalade automatique pour les clients Enterprise
+
+Cette recette complète d’assistance client constitue la base pour créer des systèmes d’assistance intelligents et contextuels qui améliorent la satisfaction client grâce à un service personnalisé.
+
+---
+
+*Personnalisez cette recette en fonction de vos flux de travail d’assistance et des besoins de vos clients.*

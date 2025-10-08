@@ -1,0 +1,114 @@
+---
+title: "ページネーション"
+description: "ページネーションで大規模なメモリーコレクションを扱う"
+---
+
+ページネーションを活用してデータを扱いやすいchunks（ドキュメントのセグメント）に分割し、大規模なメモリーコレクションを効率的に処理します。
+
+<div id="basic-pagination">
+  ## 基本的なページネーション
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 1ページ目を取得
+    const page1 = await client.memories.list({
+      limit: 20,
+      page: 1
+    });
+
+    // 次のページを取得
+    const page2 = await client.memories.list({
+      limit: 20,
+      page: 2
+    });
+
+    console.log(`Page 1: ${page1.memories.length} memories`);
+    console.log(`Page 2: ${page2.memories.length} memories`);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 1ページ目を取得
+    page1 = client.memories.list(limit=20, page=1)
+
+    # 次のページを取得
+    page2 = client.memories.list(limit=20, page=2)
+
+    print(f"Page 1: {len(page1.memories)} memories")
+    print(f"Page 2: {len(page2.memories)} memories")
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 1ページ目を取得
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 20, "page": 1}'
+
+    # 次のページを取得
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 20, "page": 2}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="loop-through-pages">
+  ## ページを順に処理する
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    let currentPage = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await client.memories.list({
+        page: currentPage,
+        limit: 50
+      });
+
+      console.log(`Page ${currentPage}: ${response.memories.length} memories`);
+
+      hasMore = currentPage < response.pagination.totalPages;
+      currentPage++;
+    }
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    current_page = 1
+    has_more = True
+
+    while has_more:
+        response = client.memories.list(page=current_page, limit=50)
+
+        print(f"Page {current_page}: {len(response.memories)} memories")
+
+        has_more = current_page < response.pagination.total_pages
+        current_page += 1
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # bash のループを使った手動ページネーション
+    for page in {1..5}; do
+      echo "=== Page $page ==="
+      curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+        -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{\"page\": $page, \"limit\": 20}" | \
+        jq '.memories | length'
+    done
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  ページネーションでは `limit` を大きめ（50〜100）に設定し、必要な API 呼び出し回数を減らしてください。
+</Info>

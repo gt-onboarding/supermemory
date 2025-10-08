@@ -1,0 +1,291 @@
+---
+title: "自托管"
+description: "在 Cloudflare Workers 上部署您自有的 supermemory API 实例"
+---
+
+<Warning>
+本指南仅适用于在企业方案中选择自托管的**企业客户**。如果您使用的是标准方案，请使用我们托管的 API：[console.supermemory.ai](https://console.supermemory.ai)。
+</Warning>
+
+<div id="prerequisites">
+  ## 先决条件
+</div>
+
+在开始之前，你需要准备多个 API 密钥，并在不同服务上创建账户。本指南将逐步带你获取每个必需的组件。
+
+<div id="enterprise-deployment-package">
+  ### 企业部署包
+</div>
+
+您的企业部署包由 Supermemory 团队提供，内容包括：
+
+- 您的唯一 Host ID（`NEXT_PUBLIC_HOST_ID`）
+- 已编译的 JavaScript bundle
+- 部署脚本
+
+请联系您的 Supermemory 企业代表以获取部署包。
+
+<div id="cloudflare">
+  ### Cloudflare
+</div>
+
+<div id="create-account">
+  #### 创建账户
+</div>
+
+1. 前往 [cloudflare.com](https://dash.cloudflare.com/sign-up) 并创建账户
+3. 你的 **Account ID** 是地址栏中的一长串随机字符串
+
+<div id="create-api-token">
+  #### 创建 API 令牌
+</div>
+
+1. 前往 [Cloudflare API Tokens](https://dash.cloudflare.com/?to=/:account/api-tokens)
+2. 点击 **"Create Token"**
+3. 选择 **"Custom token"** 模板
+4. 按以下权限配置令牌：
+   - **Account:AI Gateway:Edit**
+   - **Account:Hyperdrive:Edit**
+   - **Account:Workers KV Storage:Edit**
+   - **Account:Workers R2 Storage:Edit**
+7. 点击 **"Continue to summary"** → **"Create Token"**
+8. **重要**：请立即复制并妥善保存该令牌（之后将无法再次查看）
+
+<div id="enable-workers">
+  #### 启用 Workers
+</div>
+
+1. 在 Cloudflare 控制台中，进入 **Workers & Pages**
+2. 如有提示，请同意 Workers 的服务条款
+3. 为你的 Workers 选择一个子域名（例如 `yourcompany.workers.dev`）
+
+你的 `CLOUDFLARE_ACCOUNT_ID` 和 `CLOUDFLARE_API_TOKEN` 现已准备就绪。
+
+<div id="database">
+  ### 数据库
+</div>
+
+你需要通过 `DATABASE_URL` 环境变量提供一个 PostgreSQL 连接字符串。
+
+数据库必须：
+
+* 支持用于向量操作的 **pgvector 扩展**
+* 可从 Cloudflare Workers 访问
+* 支持 SSL 连接
+* 允许来自 Cloudflare 的 IP 段发起连接
+
+你的连接字符串应遵循以下格式：
+
+```
+postgresql://username:password@hostname:port/database
+```
+
+
+<div id="llm-providers">
+  ### LLM provider
+</div>
+
+<div id="openai">
+  #### OpenAI
+</div>
+
+1. 前往 [platform.openai.com](https://platform.openai.com)
+2. 登录或创建账户
+3. 在左侧边栏进入 **API Keys**
+4. 点击 **“Create new secret key”**
+5. 为密钥命名（例如：“supermemory Self-Hosted”）
+6. 复制密钥并妥善保存
+7. 如未添加账单信息，请先添加
+
+<div id="anthropic">
+  #### Anthropic
+</div>
+
+1. 前往 [console.anthropic.com](https://console.anthropic.com)
+2. 创建账户并完成验证
+3. 进入 **API Keys**
+4. 点击 **“Create Key”**
+5. 为密钥命名并妥善复制保存
+
+<div id="gemini">
+  #### Gemini
+</div>
+
+1. 前往 [Google AI Studio](https://aistudio.google.com)
+2. 使用你的 Google 账号登录
+3. 点击 **“Get API key”** → **“Create API key”**
+4. 选择现有的 Google Cloud 项目或创建新项目
+5. 复制你的 API 密钥
+
+<div id="groq">
+  #### Groq
+</div>
+
+1. 前往 [console.groq.com](https://console.groq.com)
+2. 注册账户
+3. 打开 **API Keys**
+4. 点击 **"Create API Key"**
+5. 为密钥命名并复制
+
+{/* TODO: 添加 OAuth 文档 */}
+
+{/* ### Authentication Providers
+#### GitHub OAuth（可选）
+
+1. 前往 [GitHub Developer Settings](https://github.com/settings/developers)
+2. 点击 **"New OAuth App"**
+3. 填写应用信息：
+   - **Application name**：你的应用名称
+   - **Homepage URL**：你的 API 域名（例如：`https://api.yourdomain.com`）
+   - **Authorization callback URL**：`https://api.yourdomain.com/api/auth/callback/github`
+4. 点击 **"Register application"**
+5. 记录 **Client ID** 并生成 **Client Secret**
+6. 将它们用于 `AUTH_GITHUB_ID` 和 `AUTH_GITHUB_SECRET`
+
+#### Google OAuth（可选）
+
+1. 前往 [Google Cloud Console](https://console.cloud.google.com)
+2. 创建新项目或选择现有项目
+3. 启用 **Google+ API**
+4. 前往 **Credentials** → **Create Credentials** → **OAuth client ID**
+5. 选择 **Web application**
+6. 将你的域名添加到 **Authorized JavaScript origins**
+7. 将 `https://api.yourdomain.com/api/auth/callback/google` 添加到 **Authorized redirect URIs**
+8. 复制 **Client ID** 和 **Client secret**
+9. 将它们用于 `AUTH_GOOGLE_ID` 和 `AUTH_GOOGLE_SECRET` */}
+
+<div id="email-service-setup">
+  ### 电子邮件服务设置
+</div>
+
+<div id="resend">
+  #### Resend
+</div>
+
+1. 访问 [resend.com](https://resend.com) 并创建账户
+2. 前往 **API Keys**
+3. 点击 **"Create API Key"**
+4. 为你的密钥命名（例如："supermemory Production"）
+5. 复制该密钥并设置为 `RESEND_API_KEY`
+6. 在 **Domains** 部分验证你的发件域名
+
+<div id="connectors-optional">
+  ### 连接器（可选）
+</div>
+
+<div id="google-drive">
+  #### Google Drive
+</div>
+
+1. 前往 [Google Cloud Console](https://console.cloud.google.com)
+2. 创建或选择一个项目
+3. 启用 **Google Drive API**
+4. 前往 **Credentials** → **Create Credentials** → **OAuth client ID**
+5. 按需配置 OAuth 授权同意页面
+6. 选择 **Web application**
+7. 为你的域名添加授权的重定向 URI
+8. 复制 `GOOGLE_CLIENT_ID` 和 `GOOGLE_CLIENT_SECRET`
+
+<div id="microsoft-onedrive">
+  #### Microsoft OneDrive
+</div>
+
+1. 前往 [Azure Portal](https://portal.azure.com)
+2. 进入 **Microsoft Entra ID** → **App registrations**
+3. 点击 **New registration**
+4. 为应用命名并设置重定向 URI
+5. 打开 **Certificates & secrets** → **New client secret**
+6. 复制 **Application (client) ID** 和 **Client secret**
+7. 分别填入 `MICROSOFT_CLIENT_ID` 和 `MICROSOFT_CLIENT_SECRET`
+
+<div id="notion">
+  #### Notion
+</div>
+
+1. 前往 [Notion Developers](https://developers.notion.com)
+2. 点击 **“Create new integration”**
+3. 填写集成信息
+4. 复制 **Internal Integration Token**
+5. 如需为用户创建链接账户，请配置 OAuth（开放授权协议）
+6. 用于设置 `NOTION_CLIENT_ID` 和 `NOTION_CLIENT_SECRET`
+
+---
+
+<div id="setup-deployment-files">
+  ## 设置部署文件
+</div>
+
+将 Supermemory 团队提供的部署包解压到你首选的目录：
+
+```bash
+# 提取部署包
+$ unzip supermemory-enterprise-deployment.zip
+$ cd supermemory-deployment
+```
+
+***
+
+
+<div id="configure-environment-variables">
+  ## 配置环境变量
+</div>
+
+部署脚本会在运行时从你的 shell 读取所有环境变量。我们提供了一个示例文件，其中列出了该 worker 支持的完整环境变量集合。
+
+```bash
+# 复制模板并开始编辑
+$ cp packages/alchemy/env.example .env
+
+# 在你选择的编辑器中打开文件并填写空白内容
+$ $EDITOR .env
+```
+
+下面是速查表。\
+“必填”项是成功部署所必需的——如果不需要相关功能，可将可选项留空。
+
+| 名称 | 必填？ | 说明 |
+|------|-----------|-------------|
+| `NODE_ENV` | ✅ | `development`、`staging` 或 `production`。 |
+| `NEXT_PUBLIC_HOST_ID` | ✅ | 由 Supermemory 团队提供的唯一 Host ID。 |
+| `BETTER_AUTH_SECRET` | ✅ | 随机 32 字节字符串——运行 `openssl rand -base64 32`。 |
+| `BETTER_AUTH_URL` | ✅ | API 的公共基础 URL（末尾不要包含 `/`）。示例：`https://api.example.com`。 |
+| `DATABASE_URL` | ✅ | Postgres 连接字符串（例如 `postgres://user:pass@host:5432/db`）。 |
+| `CLOUDFLARE_ACCOUNT_ID` | ✅ | 你的 Cloudflare 账户 ID。 |
+| `CLOUDFLARE_API_TOKEN` | ✅ | 在“准备工作”中创建的令牌。 |
+| `OPENAI_API_KEY` | ✅ | 来自 [platform.openai.com](https://platform.openai.com) 的密钥。 |
+| `RESEND_API_KEY` | ✅ | 如果计划发送电子邮件，则为邮件 provider 的密钥。 |
+| `ANTHROPIC_API_KEY` |  | 使用 Claude 模型所需。 |
+| `GEMINI_API_KEY` |  | Google Gemini 模型的密钥。 |
+| `GROQ_API_KEY` |  | Groq 模型的密钥。 |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` |  | 启用 GitHub OAuth（开放授权协议）登录。 |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` |  | 启用 Google OAuth（开放授权协议）登录。 |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` |  | 用于 Google Drive 连接器。 |
+| `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` |  | 用于 OneDrive 连接器。 |
+| `NOTION_CLIENT_ID` / `NOTION_CLIENT_SECRET` |  | 用于 Notion 连接器。 |
+| `CLOUDFLARE_AI_GATEWAY_NAME` / `CLOUDFLARE_AI_GATEWAY_TOKEN` |  | 仅在你希望通过 AI Gateway 路由请求时需要。 |
+| `SENTRY_DSN` |  | 如果使用 Sentry 进行错误上报。 |
+
+***
+
+
+<div id="deploy">
+  ## 部署
+</div>
+
+配置好你的 `.env` 后，运行部署脚本：
+
+```bash
+# 运行包中提供的部署脚本
+$ bun ./deploy.ts
+```
+
+***
+
+
+<div id="updating-your-deployment">
+  ## 更新部署
+</div>
+
+要更新你的 supermemory 部署，请按照上文 **Deploy** 部分中描述的初始部署流程进行。你可以复用现有的 `.env` 文件，并按需添加或移除新的环境变量。
+
+---

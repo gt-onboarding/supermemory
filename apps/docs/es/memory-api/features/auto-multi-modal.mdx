@@ -1,0 +1,195 @@
+---
+title: "Multimodal automático"
+description: "supermemory detecta automáticamente el tipo de contenido del documento que estás agregando."
+icon: "sparkles"
+---
+
+supermemory es multimodal de forma nativa y puede detectar automáticamente el tipo de contenido del documento que estás agregando.
+
+Usamos las mejores herramientas de su categoría para extraer contenido de URL y procesarlo para un almacenamiento de memory óptimo.
+
+<div id="automatic-content-type-detection">
+  ## Detección automática del tipo de contenido
+</div>
+
+supermemory detecta automáticamente el tipo de contenido del documento que estás agregando. Simplemente envía tu contenido a la API y supermemory se encargará del resto.
+
+<Tabs>
+  <Tab title="Cómo funciona">
+    El sistema de detección de contenido analiza:
+    - Patrones y dominios de URL
+    - Extensiones de archivo y tipos MIME
+    - Estructura del contenido y metadata
+    - Encabezados y tipos de respuesta
+  </Tab>
+  <Tab title="Mejores prácticas">
+    <Accordion title="Mejores prácticas para tipos de contenido" defaultOpen icon="sparkles">
+      1. **Selección de tipo**
+         - Usa `note` para texto simple
+         - Usa `webpage` para contenido en línea
+         - Usa tipos nativos cuando sea posible
+
+      2. **Contenido por URL**
+         - Envía URLs limpias, sin parámetros de seguimiento
+         - Usa URLs de artículos, no la página de inicio
+         - Verifica la accesibilidad de la URL antes de enviar
+    </Accordion>
+
+  </Tab>
+</Tabs>
+
+<div id="quick-implementation">
+  ### Implementación rápida
+</div>
+
+Solo tienes que pasar el contenido al endpoint `/documents`:
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/documents \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  -d '{"content": "https://example.com/article"}'
+```
+
+```typescript
+await client.add.create({
+  content: "https://example.com/article",
+});
+```
+
+```python
+client.add.create(
+    content="https://example.com/article"
+)
+```
+
+</CodeGroup>
+
+<Note>
+  supermemory usa [Markdowner](https://md.dhr.wtf) para extraer contenido de
+  URLs.
+</Note>
+
+<div id="supported-content-types">
+  ## Tipos de contenido admitidos
+</div>
+
+supermemory admite una amplia gama de formatos de contenido para garantizar versatilidad en la creación de memory:
+
+<Grid cols={2}>
+  <Card title="Contenido de texto" icon="document-text">
+    - `note`: Notas y documentos de texto sin formato
+    - Procesa directamente texto sin procesar
+    - Divide automáticamente el contenido en chunks para una recuperación óptima
+    - Conserva el formato y la estructura
+  </Card>
+
+  <Card title="Contenido web" icon="globe">
+    - `webpage`: Páginas web (solo proporciona la URL)
+    - Extrae de forma inteligente el contenido principal
+    - Conserva metadata importante (title, description, images)
+    - Extrae metadata OpenGraph cuando está disponible
+
+    - `tweet`: Contenido de Twitter
+    - Captura el texto del tweet, los medios y la metadata
+    - Conserva la estructura del hilo si corresponde
+
+  </Card>
+
+  <Card title="Tipos de documentos" icon="document">
+    - `pdf`: Archivos PDF
+    - Extrae el texto manteniendo la estructura
+    - Maneja tanto PDFs con búsqueda como documentos escaneados con OCR (Reconocimiento Óptico de Caracteres)
+    - Conserva los saltos de página y el formato
+
+    - `google_doc`: Documentos de Google
+    - Se integra perfectamente con la API de Google Docs
+    - Mantiene el formato y la estructura del documento
+    - Se actualiza automáticamente cuando cambia el documento de origen
+
+    - `notion_doc`: Páginas de Notion
+    - Extrae el contenido preservando la estructura de bloques de Notion
+    - Maneja formato de texto enriquecido y contenido incrustado
+
+  </Card>
+
+  <Card title="Tipos de medios" icon="photo">
+    - `image`: Imágenes con texto
+    - OCR avanzado para la extracción de texto
+    - Análisis y descripción del contenido visual
+
+    - `video`: Contenido de video
+    - Transcripción y extracción de contenido
+    - Análisis de fotogramas clave
+
+  </Card>
+</Grid>
+
+<div id="processing-pipeline">
+  ## Flujo de procesamiento
+</div>
+
+<Steps>
+  <Step title="Detección de contenido">
+    supermemory identifica automáticamente el tipo de contenido según la entrada proporcionada.
+  </Step>
+
+<Step title="Extracción de contenido">
+  Extractores específicos por tipo procesan el contenido con: - Análisis especializado para
+  cada formato - Manejo de errores con reintentos - Gestión del rate limit
+</Step>
+
+  <Step title="Mejora con IA">
+    ```typescript
+    interface ProcessedContent {
+      content: string;      // Texto extraído
+      summary?: string;     // Resumen generado por IA
+      tags?: string[];     // Etiquetas extraídas
+      categories?: string[]; // Categorías del contenido
+    }
+    ```
+  </Step>
+
+  <Step title="Segmentación en chunks e indexación">
+    - División a nivel de oraciones
+    - Superposición de 2 oraciones
+    - Conservación del contexto
+    - Coherencia semántica
+  </Step>
+</Steps>
+
+<div id="technical-specifications">
+  ## Especificaciones técnicas
+</div>
+
+<div id="size-limits">
+  ### Límites de tamaño
+</div>
+
+| Tipo de contenido | Tamaño máximo |
+| ----------------- | ------------- |
+| Texto/nota        | 1 MB          |
+| PDF               | 10 MB         |
+| Imagen            | 5 MB          |
+| Video             | 100 MB        |
+| Página web        | N/A           |
+| Google Doc        | N/A           |
+| Página de Notion  | N/A           |
+| Tweet             | N/A           |
+
+<div id="processing-time">
+  ### Tiempo de procesamiento
+</div>
+
+| Tipo de contenido | Tiempo de procesamiento |
+| ----------------- | ----------------------- |
+| Texto/nota        | Casi instantáneo        |
+| PDF               | 1–5 segundos            |
+| Imagen            | 2–10 segundos           |
+| Video             | 10+ segundos            |
+| Página web        | 1–3 segundos            |
+| Google Doc        | N/D                     |
+| Página de Notion  | N/D                     |
+| Tweet             | N/D                     |

@@ -1,0 +1,163 @@
+---
+title: "Speicher-Einträge auflisten"
+description: "Paginierte Speicher-Einträge mit Filter- und Sortieroptionen abrufen"
+sidebarTitle: "Übersicht"
+---
+
+Rufen Sie paginierte Speicher-Einträge mit Filter- und Sortieroptionen aus Ihrem Supermemory-Konto ab.
+
+<div id="quick-start">
+  ## Schnellstart
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const memories = await client.memories.list({ limit: 10 });
+    console.log(memories);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+    memories = client.memories.list(limit=10)
+    print(f"{len(memories.memories)} memories gefunden")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 10}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="response-schema">
+  ## Antwortschema
+</div>
+
+Der Endpoint gibt eine strukturierte Antwort zurück, die deine Speicher‑Einträge und Informationen zur Seitennummerierung enthält:
+
+```json
+{
+  "memories": [
+    {
+      "id": "abc123",
+      "connectionId": null,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:35:00.000Z",
+      "customId": "ml-basics-001",
+      "title": "Einführung in das Machine Learning",
+      "summary": "Dieses Dokument führt in das Machine Learning als Teilgebiet der Künstlichen Intelligenz ein...",
+      "status": "done",
+      "type": "text",
+      "metadata": {
+        "category": "education",
+        "priority": "high",
+        "source": "research-notes"
+      },
+      "containerTags": ["user_123", "ai-research"]
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 3,
+    "totalItems": 25,
+    "limit": 10
+  }
+}
+```
+
+<div id="memory-object-fields">
+  ### Speicherobjekt-Felder
+</div>
+
+<Accordion title="Kernfelder" defaultOpen>
+  | Feld | Typ | Beschreibung |
+  |-------|------|-------------|
+  | `id` | string | Eindeutiger Bezeichner für den Speicher |
+  | `status` | ProcessingStatus | Aktueller Verarbeitungsstatus (`queued`, `extracting`, `chunking`, `embedding`, `indexing`, `done`, `failed`) |
+  | `type` | MemoryType | Inhaltstyp (`text`, `pdf`, `webpage`, `video`, `image`, etc.) |
+  | `title` | string | null | Automatisch generierter oder benutzerdefinierter Titel |
+  | `summary` | string | null | KI-generierte Inhaltszusammenfassung |
+  | `createdAt` | string | ISO-8601-Erstellungszeitstempel |
+  | `updatedAt` | string | ISO-8601-Zeitstempel der letzten Aktualisierung |
+</Accordion>
+
+<Accordion title="Optionale Felder">
+  | Feld | Typ | Beschreibung |
+  |-------|------|-------------|
+  | `customId` | string | null | Ihr benutzerdefinierter Bezeichner für den Speicher |
+  | `connectionId` | string | null | ID des Connectors, der diesen Speicher erstellt hat |
+  | `metadata` | object | null | Benutzerdefinierte Schlüssel-Wert-Metadata, die Sie bereitgestellt haben |
+  | `containerTags` | string[] | Tags zum Organisieren und Filtern von Speicher-Einträgen |
+</Accordion>
+
+<div id="key-parameters">
+  ## Wichtige Parameter
+</div>
+
+Alle Parameter sind optional und werden im Request-Body gesendet, da dieser Endpoint `POST` verwendet:
+
+<ParamField path="limit" type="number/string" default="50">
+  **Anzahl der Elemente pro Seite.** Legt fest, wie viele Speicher-Einträge in einer einzelnen Anfrage zurückgegeben werden. Empfohlenes Maximum: 200 für optimale Leistung.
+</ParamField>
+
+<ParamField path="page" type="number/string" default="1">
+  **Seitenzahl (1-basiert).** Zusammen mit `limit` verwenden, um große Ergebnis­mengen zu paginieren.
+</ParamField>
+
+<ParamField path="containerTags" type="string[]">
+  **Nach Tags filtern.** Speicher-Einträge müssen ALLE angegebenen Tags erfüllen. Verwenden Sie dies zum Filtern nach Benutzer-ID, Projekt oder benutzerdefinierten Organisations-Tags.
+</ParamField>
+
+<ParamField path="sort" type="string" default="createdAt">
+  **Sortierfeld.** Optionen: `"createdAt"` (Zeitpunkt, zu dem der Speicher-Eintrag hinzugefügt wurde) oder `"updatedAt"` (Zeitpunkt der letzten Änderung).
+</ParamField>
+
+<ParamField path="order" type="string" default="desc">
+  **Sortierreihenfolge.** Verwenden Sie `"desc"` für neueste zuerst, `"asc"` für älteste zuerst.
+</ParamField>
+
+<ParamField path="filters" type="string">
+  **Erweiterte Filter.** Nach Metadata mit erweiterter SQL-Logik filtern.
+</ParamField>
+
+<div id="examples">
+  ## Beispiele
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Einfache Auflistung" icon="list" href="/de/list-memories/examples/basic">
+    Einfache Speicherabfrage mit Standardeinstellungen
+  </Card>
+
+  <Card title="Filtern" icon="filter" href="/de/list-memories/examples/filtering">
+    Nach Tags, status und anderen Kriterien filtern
+  </Card>
+
+  <Card title="Seitennummerierung" icon="arrow-right" href="/de/list-memories/examples/pagination">
+    Große Datensätze per Seitennummerierung handhaben
+  </Card>
+
+  <Card title="Statusüberwachung" icon="chart-line" href="/de/list-memories/examples/monitoring">
+    Verarbeitungsstatus über Speicher‑Einträge hinweg nachverfolgen
+  </Card>
+</CardGroup>
+
+<Note>
+  Der Endpoint `/v3/documents/list` verwendet die Methode **POST**, nicht GET. Dadurch sind komplexe Filterparameter im Request-Body möglich.
+</Note>

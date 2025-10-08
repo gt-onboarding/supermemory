@@ -1,0 +1,31 @@
+---
+title: 'Panoramica dei connettori'
+sidebarTitle: 'Panoramica'
+description: 'Sincronizza integrazioni esterne come Google Drive, Notion e OneDrive con supermemory'
+---
+
+supermemory può sincronizzare integrazioni esterne come Google Drive, Notion e OneDrive, con altre in arrivo a breve.
+
+<div id="the-flow">
+  ### Il flusso
+</div>
+
+1. Effettua una richiesta `POST` a `/v3/connections/{provider}`
+2. Supermemory restituirà un `authLink` a cui puoi reindirizzare l’utente
+3. L’utente verrà reindirizzato alla pagina di accesso del provider
+4. L’utente verrà reindirizzato alla `redirectUrl` della tua app
+
+![Flusso dei connettori](/images/connectors-flow.png)
+
+<div id="sync-frequency">
+  ## Frequenza di sincronizzazione
+</div>
+
+supermemory sincronizza i Documents:
+
+- **Quando un documento viene modificato o creato (webhook ricevuto)**
+    - Nota: non tutti i provider sono sincronizzati tramite webhook (sincronizzazione istantanea, per ora)
+    - I documenti di `Google-Drive` e `Notion` vengono sincronizzati istantaneamente
+- Ogni **quattro ore**
+- In caso di **sincronizzazione manuale** (chiamata API)
+    - Puoi chiamare `/v3/connections/{provider}/sync` per sincronizzare manualmente i Documents

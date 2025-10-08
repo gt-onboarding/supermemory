@@ -1,0 +1,880 @@
+---
+title: クイックスタート
+description: Supermemory への最初の API コール — メモリを追加して取得する。
+---
+
+<Tip>
+  **Vercel AI SDK をお使いですか？** `@supermemory/tools/ai-sdk` による最もシンプルな実装については、[AI SDK integration](/ja/ai-sdk/overview) をご覧ください。
+</Tip>
+
+<div id="memory-api">
+  ## Memory API
+</div>
+
+**ステップ 1.** [Supermemory の Developer Platform](http://console.supermemory.ai) にサインアップして APIキー を取得します。**API Keys -&gt; Create API Key** をクリックして生成してください。
+
+![create api key](./images/create-api.png)
+
+<Tabs>
+  <Tab title="Python">
+    **ステップ2.** Supermemoryクライアントをインストールする
+
+    ```python
+    pip install supermemory
+    ```
+
+    **ステップ3.** ターミナルで以下を実行して、APIキーの環境変数を作成します：
+
+    ```bash
+    export SUPERMEMORY_API_KEY="YOUR_API_KEY"
+    ```
+
+    **ステップ4.** Pythonファイルにモジュールをインポートする：
+
+    ```python
+    from supermemory import Supermemory
+    import os
+
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+    ```
+
+    **ステップ5.** 最初のメモリーを以下のように追加します：
+
+    ```python
+    # 量子コンピューティング応用に関するリッチなメモリを1つ作成
+    memory_content = """量子コンピューティングは計算能力のパラダイムシフトを表し、重ね合わせやもつれなどの量子力学的現象を活用して、古典コンピュータでは解決困難な問題を解決します。
+
+
+    この分野は1980年代の理論的研究から生まれ、物理学者リチャード・ファインマンが量子システムは古典コンピュータよりも効率的に他の量子システムをシミュレートできると提案しました。この洞察により、大きな数の因数分解のためのShorのアルゴリズムや非構造化検索問題のためのGroverのアルゴリズムなどの量子アルゴリズムの開発につながりました。
+
+
+    今日、量子コンピューティングの応用は複数の領域にわたります：暗号学では、量子コンピュータが現在の暗号化標準を脅かす一方で新しい量子耐性プロトコルを可能にし、創薬では前例のない精度で分子相互作用をシミュレートでき、物流や金融モデリングなどの最適化問題では、特定のクラスの問題に対して指数的な高速化を提供します。
+
+
+    IBM、Google、Microsoftを含む主要テック企業が量子コンピューティング研究に数十億ドルを投資している一方で、Rigetti ComputingやIonQなどのスタートアップは特定のハードウェアアプローチに焦点を当てています。量子優位性の競争 - 量子コンピュータがどの古典コンピュータよりも速く問題を解決することを実証する - がこの分野の重要なマイルストーンとなっています。
+
+
+    将来性にもかかわらず、重要な課題が残っています：量子デコヒーレンス、エラー訂正、そしてコヒーレンスを維持しながらキュービット数をスケールすること。研究者たちは超伝導キュービット、トラップイオン、トポロジカルキュービット、フォトニックシステムなど様々なアプローチを探求しており、それぞれがコヒーレンス時間、ゲート忠実度、スケーラビリティの間で異なるトレードオフを持っています。"""
+
+
+    # Supermemoryにメモリを追加
+    response = client.memories.add(
+        content=memory_content,
+        container_tag="quantum-computing",
+        metadata={
+            "category": "technology-overview",
+            "topic": "quantum-computing",
+            "complexity": "intermediate",
+            "word_count": len(memory_content.split())
+        }
+    )
+
+
+    print(f"メモリが正常に追加されました！")
+    print(f"メモリID: {response.id}")
+    print(f"コンテンツ長: {len(memory_content)} 文字")
+    ```
+
+    コードを実行します。出力は以下の通りです：
+
+    ```bash
+    メモリーが正常に追加されました！
+    Memory ID: uLtGU14SBDzfsvefYWbwe7
+    コンテンツ長: 1701文字
+    ```
+
+    **ステップ6.** 次のようにこのメモリーを検索します：
+
+    ```python
+    results = client.search.memories(q="量子コンピューティングの応用例は何ですか？", limit=3)
+
+
+    print(results)
+    ```
+
+    出力は以下の通りです：
+
+    ```bash
+    SearchMemoriesResponse(
+        results=[
+            Result(
+                id="Bn1uc1yQdw3Huf8oitruwF",
+                memory="量子コンピューティングの応用には、暗号化（現在の暗号化標準を脅かし、量子耐性プロトコルを可能にする）、創薬（分子相互作用のシミュレーション）、最適化問題（物流、金融モデリング、指数的な高速化を提供）が含まれます。",
+                metadata=None,
+                similarity=0.7920647723809932,
+                updated_at=datetime.datetime(
+                    2025, 8, 24, 5, 41, 55, 87000, tzinfo=datetime.timezone.utc
+                ),
+                context=ResultContext(children=[], parents=[]),
+                documents=None,
+                version=1.0,
+                updatedAt="2025-08-24T05:41:55.087Z",
+                rootMemoryId="Bn1uc1yQdw3Huf8oitruwF",
+            ),
+            Result(
+                id="4aCa4oM8praVBCWdNksjxf",
+                memory="量子コンピューティングは計算能力のパラダイムシフトであり、重ね合わせやもつれなどの量子力学的現象を活用して、古典的コンピュータでは解決困難な問題を解決します。",
+                metadata=None,
+                similarity=0.7198909950191389,
+                updated_at=datetime.datetime(
+                    2025, 8, 24, 5, 41, 55, 87000, tzinfo=datetime.timezone.utc
+                ),
+                context=ResultContext(children=[], parents=[]),
+                documents=None,
+                version=1.0,
+                updatedAt="2025-08-24T05:41:55.087Z",
+                rootMemoryId="4aCa4oM8praVBCWdNksjxf",
+            ),
+            Result(
+                id="8vzhZhBCuqyrLNXtzBDx7y",
+                memory="IBM、Google、Microsoftは量子コンピューティング研究に数十億ドルを投資しています。",
+                metadata=None,
+                similarity=0.6960905375426799,
+                updated_at=datetime.datetime(
+                    2025, 8, 24, 5, 41, 55, 87000, tzinfo=datetime.timezone.utc
+                ),
+                context=ResultContext(children=[], parents=[]),
+                documents=None,
+                version=1.0,
+                updatedAt="2025-08-24T05:41:55.087Z",
+                rootMemoryId="8vzhZhBCuqyrLNXtzBDx7y",
+            ),
+        ],
+        timing=214.0,
+        total=3.0,
+    )
+    ```
+
+    素晴らしい！初回リクエストが完了したので、Supermemoryの全機能を詳しく探索し、アプリでの活用方法を確認しましょう。
+  </Tab>
+
+  <Tab title="TypeScript">
+    **ステップ2.** Supermemoryの依存関係をインストールする：
+
+    ```bash
+    npm install supermemory
+    ```
+
+    **ステップ3.** 環境変数を設定する：
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_actual_api_key_here"
+    ```
+
+    **ステップ4.** `quickstart.ts`ファイルを作成し、パッケージをインポートします：
+
+    ```ts
+    import 'dotenv/config';
+    import Supermemory from 'supermemory';
+
+
+    const client = new Supermemory({
+    apiKey: process.env.SUPERMEMORY_API_KEY});
+    ```
+
+    **ステップ5.** メモリーを追加する：
+
+    ```ts
+    const memoryContent = `量子コンピューティングは計算能力のパラダイムシフトを表し、重ね合わせやもつれなどの量子力学的現象を活用して、古典的コンピューターでは解決困難な問題を解決します。
+
+
+    この分野は1980年代の理論的研究から生まれ、物理学者リチャード・ファインマンが量子システムは古典的コンピューターよりも効率的に他の量子システムをシミュレートできると提案しました。この洞察により、大きな数の因数分解のためのShorのアルゴリズムや非構造化検索問題のためのGroverのアルゴリズムなどの量子アルゴリズムの開発につながりました。
+
+
+    今日、量子コンピューティングの応用は複数の領域にわたります：暗号学では、量子コンピューターが現在の暗号化標準を脅かす一方で新しい量子耐性プロトコルを可能にし、創薬では前例のない精度で分子相互作用をシミュレートでき、物流や金融モデリングなどの最適化問題では、特定のクラスの問題に対して指数的な高速化を提供します。
+
+
+    IBM、Google、Microsoftを含む主要テック企業が量子コンピューティング研究に数十億ドルを投資している一方で、Rigetti ComputingやIonQなどのスタートアップは特定のハードウェアアプローチに焦点を当てています。量子優位性の競争 - 量子コンピューターがどの古典的コンピューターよりも速く問題を解決することを実証する - がこの分野の重要なマイルストーンとなっています。
+
+
+    約束にもかかわらず、重要な課題が残っています：量子デコヒーレンス、エラー訂正、そしてコヒーレンスを維持しながらキュービット数をスケールすること。研究者たちは超伝導キュービット、トラップイオン、トポロジカルキュービット、フォトニックシステムなど様々なアプローチを探求しており、それぞれがコヒーレンス時間、ゲート忠実度、スケーラビリティの間で異なるトレードオフを持っています。`;
+
+
+    async function addMemory() {
+        try {
+            const response = await client.memories.add({
+                content: memoryContent,
+                containerTag: "quantum-computing",
+                metadata: {
+                category: "technology-overview",
+                topic: "quantum-computing",
+                complexity: "intermediate",
+                wordCount: memoryContent.split(' ').length
+                }
+            });
+            console.log("メモリーが正常に追加されました！");
+            console.log(`メモリーID: ${response.id}`);
+            return response.id
+        } catch (error) {
+            console.error("メモリー追加エラー:", error);
+            throw error;
+        }
+    }
+    ```
+
+    このコードブロックを実行すると、以下の出力が得られます：
+
+    ```bash
+    メモリーが正常に追加されました！
+    Memory ID: adMxzQgSxo37jq6kjpsFMg
+    ```
+
+    **ステップ6.** 自然言語を使ってメモリーを検索する：
+
+    ```ts
+    async function searchMemories() {
+        try {
+            const results = await client.search.memories({
+                q: "量子コンピューティングの応用例は何ですか？",
+                limit: 3
+            });
+
+            console.log('検索結果:', results);
+
+            return results;
+        } catch (error) {
+            console.error('メモリ検索エラー:', error);
+        }
+    }
+    ```
+
+    出力は以下の通りです：
+
+    ```bash
+    Search results: {
+        results: [
+            {
+                id: 'Bn1uc1yQdw3Huf8oitruwF',
+                memory: '量子コンピューティングの応用には、暗号化（現在の暗号化標準を脅かし、量子耐性プロトコルを可能にする）、創薬（分子相互作用のシミュレーション）、最適化問題（物流、金融モデリング、指数的な高速化を提供）が含まれます。',
+                metadata: null,
+                updatedAt: '2025-08-24T05:41:55.087Z',
+                version: 1,
+                rootMemoryId: 'Bn1uc1yQdw3Huf8oitruwF',
+                similarity: 0.7920647723809932,
+                context: [Object]
+            },
+            {
+                id: '4aCa4oM8praVBCWdNksjxf',
+                memory: '量子コンピューティングは計算能力のパラダイムシフトであり、重ね合わせやもつれなどの量子力学的現象を活用して、古典的コンピューターでは解決困難な問題を解決します。',
+                metadata: null,
+                updatedAt: '2025-08-24T05:41:55.087Z',
+                version: 1,
+                rootMemoryId: '4aCa4oM8praVBCWdNksjxf',
+                similarity: 0.7198909950191389,
+                context: [Object]
+            },
+            {
+                id: '8vzhZhBCuqyrLNXtzBDx7y',
+                memory: 'IBM、Google、Microsoftは量子コンピューティング研究に数十億ドルを投資しています。',
+                metadata: null,
+                updatedAt: '2025-08-24T05:41:55.087Z',
+                version: 1,
+                rootMemoryId: '8vzhZhBCuqyrLNXtzBDx7y',
+                similarity: 0.6960905375426799,
+                context: [Object]
+            }
+        ],
+        timing: 216,
+        total: 3
+    }
+    ```
+
+    ご覧のとおり、Supermemoryは自動的にメインメモリーを小さな部分にチャンク化して返しました。これはコンソールのグラフで視覚的に確認できます：
+
+    ![グラフビュー](./images/graph-view.png)
+
+    最初のリクエストが完了したので、Supermemoryの全機能を詳しく確認し、アプリでの活用方法を見ていきましょう。
+  </Tab>
+
+  <Tab title="cURL">
+    **ステップ2.** リクエストのベースURLは以下の通りです：
+
+    ```bash
+    https://api.supermemory.ai/
+    ```
+
+    **ステップ3.** 環境変数を設定する：
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_api_key"
+    ```
+
+    **ステップ4.** 次のようにメモリーを追加します：
+
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "content": "量子コンピューティングは計算能力におけるパラダイムシフトを表し、重ね合わせやもつれなどの量子力学的現象を活用して、従来のコンピューターでは解決困難な問題を解決します。この分野は1980年代の理論的研究から生まれ、物理学者リチャード・ファインマンが量子システムは従来のコンピューターよりも効率的に他の量子システムをシミュレートできると提案したことに始まります。この洞察により、大きな数の因数分解のためのShorのアルゴリズムや非構造化検索問題のためのGroverのアルゴリズムなどの量子アルゴリズムの開発につながりました。現在、量子コンピューティングの応用は複数の領域にわたります：暗号学では、量子コンピューターが現在の暗号化標準を脅かす一方で、新しい量子耐性プロトコルを可能にします；創薬では、前例のない精度で分子相互作用をシミュレートできます；物流や金融モデリングなどの最適化問題では、特定のクラスの問題に対して指数的な高速化を提供します。IBM、Google、Microsoftなどの主要テクノロジー企業が量子コンピューティング研究に数十億ドルを投資している一方で、Rigetti ComputingやIonQなどのスタートアップは特定のハードウェアアプローチに焦点を当てています。量子優位性の競争 - 量子コンピューターがあらゆる従来のコンピューターよりも速く問題を解決することを実証すること - は、この分野の重要なマイルストーンとなっています。期待にもかかわらず、重要な課題が残っています：量子デコヒーレンス、エラー訂正、そしてコヒーレンスを維持しながら量子ビット数をスケールすること。研究者たちは、超伝導量子ビット、トラップイオン、トポロジカル量子ビット、フォトニックシステムなど、コヒーレンス時間、ゲート忠実度、スケーラビリティの間で異なるトレードオフを持つ様々なアプローチを探求しています。",
+        "containerTag": "quantum-computing",
+        "metadata": {
+          "category": "technology-overview",
+          "topic": "quantum-computing",
+          "complexity": "intermediate",
+          "wordCount": 156
+        }
+      }'
+    ```
+
+    レスポンスは以下の通りです：
+
+    ```json
+    {"id":"D2Ar7Vo7ub83w3PRPZcaP1","status":"保留中"}
+    ```
+
+    **ステップ5.** 自然言語を使ってこのメモリーを検索する：
+
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "量子コンピューティングの応用例は何ですか？",
+        "最大数": 3
+      }'
+    ```
+
+    結果は以下の通りです：
+
+    ```json
+    {
+      "results": [
+        {
+          "id": "Bn1uc1yQdw3Huf8oitruwF",
+          "memory": "量子コンピューティングの応用分野には、暗号化（現在の暗号化標準を脅かし、量子耐性プロトコルを実現）、創薬（分子間相互作用のシミュレーション）、最適化問題（物流、金融モデリングにおいて指数的な高速化を実現）が含まれます。",
+          "metadata": null,
+          "updatedAt": "2025-08-24T05:41:55.087Z",
+          "version": 1,
+          "rootMemoryId": "Bn1uc1yQdw3Huf8oitruwF",
+          "similarity": 0.7920647723809932,
+          "context": {
+            "parents": [],
+            "children": []
+          }
+        },
+        {
+          "id": "4aCa4oM8praVBCWdNksjxf",
+          "memory": "量子コンピューティングは計算能力におけるパラダイムシフトであり、重ね合わせやもつれなどの量子力学的現象を活用して、従来のコンピューターでは解決困難な問題を解決します。",
+          "metadata": null,
+          "updatedAt": "2025-08-24T05:41:55.087Z",
+          "version": 1,
+          "rootMemoryId": "4aCa4oM8praVBCWdNksjxf",
+          "similarity": 0.7198909950191389,
+          "context": {
+            "parents": [],
+            "children": []
+          }
+        },
+        {
+          "id": "8vzhZhBCuqyrLNXtzBDx7y",
+          "memory": "IBM、Google、Microsoftは量子コンピューティング研究に数十億ドルを投資しています。",
+          "metadata": null,
+          "updatedAt": "2025-08-24T05:41:55.087Z",
+          "version": 1,
+          "rootMemoryId": "8vzhZhBCuqyrLNXtzBDx7y",
+          "similarity": 0.6960905375426799,
+          "context": {
+            "parents": [],
+            "children": []
+          }
+        }
+      ],
+      "timing": 363,
+      "total": 3
+    }
+    ```
+
+    これで完了です！お疲れさまでした！
+  </Tab>
+</Tabs>
+
+<div id="memory-router">
+  ## Memory Router
+</div>
+
+既存のLLMリクエストにMemory Routerを組み込む方法を紹介します。
+
+Memory RouterはLLM呼び出しの上位で動作するプロキシです。会話が長くなっても、自動的に最適なパフォーマンスのためにchunk（チャンク）へ分割し、履歴から最も関連性の高い情報を取得し、トークン使用量とコストのバランスを最適化します。
+
+優れているのは、アプリケーションのロジックを変更する必要がない点です。始め方は次のとおりです。
+
+**ステップ1.** [Supermemory の Developer Platform](http://console.supermemory.ai) にサインアップしてAPIキーを取得します。**API Keys -&gt; Create API Key** をクリックして作成します。
+
+**ステップ2.** 利用するLLMプロバイダのAPIキーを取得します
+
+* [OpenAI](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
+* [Gemini](https://ai.google.dev/gemini-api/docs/api-key)
+* [Anthropic](https://docs.anthropic.com/en/api/admin-api/apikeys/get-api-key)
+* [Groq](https://console.groq.com/keys)
+
+**ステップ3.** 利用するLLMプロバイダのOpenAI互換APIのURLに、SupermemoryのURLを前置します:
+
+<CodeGroup>
+  ```bash OpenAI
+  https://api.supermemory.ai/v3/https://api.openai.com/v1/
+  ```
+
+  ```bash Anthropic
+  https://api.supermemory.ai/v3/https://api.anthropic.com/v1/
+  ```
+
+  ```bash Gemini
+  https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai/
+  ```
+
+  ```bash Groq
+  https://api.supermemory.ai/v3/https://api.groq.com/openai/v1
+  ```
+
+  ```bash Others
+  https://api.supermemory.ai/v3/[openai-api-url-here]
+  ```
+</CodeGroup>
+
+<Tabs>
+  <Tab title="TypeScript">
+    **ステップ4.** 依存関係をインストールする
+
+    ```bash
+    npm install openai
+    ```
+
+    **ステップ5.** 環境に2つの環境変数を設定します：1つはSupermemory用、もう1つはモデルプロバイダ用です。
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_api_key_here"
+
+    # export OPENAI_API_KEY/ANTHROPIC_API_KEY/GEMINI_API_KEY/GROQ_API_KEY="api_key_here" (使用するモデルに応じて)
+    ```
+
+    **ステップ6.** 更新されたエンドポイントにリクエストを送信する：
+
+    <CodeGroup>
+      ```ts OpenAI
+      import OpenAI from 'openai';
+
+      const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123' // ユーザー識別子
+      }
+      });
+
+      async function chatWithOpenAI() {
+      try {
+          const response = await client.chat.completions.create({
+          model: 'gpt-5',
+          messages: [
+              { role: 'user', content: 'こんにちは、私の名前はNamanです。元気ですか？' }
+          ],
+          max_tokens: 1000,
+          temperature: 0.7
+          });
+
+          console.log('OpenAI Response:', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Error with OpenAI:', error);
+      }
+      }
+
+      ```
+
+      ```ts Anthropic
+      import OpenAI from 'openai';
+
+      const anthropicClient = new OpenAI({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123'
+      }
+      });
+
+      async function chatWithClaude() {
+      try {
+          const response = await anthropicClient.chat.completions.create({
+          model: 'claude-3-sonnet-20240229',
+          messages: [
+              { role: 'user', content: 'こんにちは、私の名前はNamanです。元気ですか？' }
+          ],
+          max_tokens: 1000
+          });
+
+          console.log('Claudeの応答:', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Claudeでエラー:', error);
+      }
+      }
+      ```
+
+      ```ts Gemini
+
+      import OpenAI from 'openai';
+
+      const geminiClient = new OpenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123'
+      }
+      });
+
+      async function chatWithGemini() {
+      try {
+          const response = await geminiClient.chat.completions.create({
+          model: 'gemini-pro',
+          messages: [
+              { role: 'user', content: 'こんにちは、私の名前はNamanです。調子はどうですか？' }
+          ],
+          max_tokens: 1000
+          });
+
+          console.log('Gemini Response:', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Error with Gemini:', error);
+      }
+      }
+
+      ```
+
+      ```ts Groq
+
+      import OpenAI from 'openai';
+
+      const groqClient = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.groq.com/openai/v1',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123'
+      }
+      });
+
+      async function chatWithGroq() {
+      try {
+          const response = await groqClient.chat.completions.create({
+          model: 'mixtral-8x7b-32768',
+          messages: [
+              { role: 'user', content: 'こんにちは、私の名前はNamanです。元気ですか？' }
+          ],
+          max_tokens: 1000
+          });
+
+          console.log('Groq Response:', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Error with Groq:', error);
+      }
+      }
+
+
+      ```
+    </CodeGroup>
+
+    これらのコードスニペットは、モデルプロバイダが提供するOpenAI互換API URLに基づいてBase URLを変更します。注目すべき主要なパラメータは以下の通りです：
+
+    * `apiKey`: 使用するモデルのプロバイダのAPIキー
+    * `x-supermemory-api-key`: Supermemory の APIキー
+    * `x-sm-user-id`: ユーザー ID でユーザーごとに会話のスコープを設定します。これにより会話横断のメモリーが有効になり、ユーザーは他のチャットを参照して情報を取り出せるようになります。
+
+    また、このクイックスタートでは示していませんが、`x-sm-conversation-id`ヘッダーを渡すことも可能です。
+
+    その後、会話履歴としてメッセージの配列全体をLLM（大規模言語モデル）に送信する必要がなくなります。Supermemoryが処理してくれます。
+
+    上記のコードブロックを実行すると、LLM（大規模言語モデル）から以下のような出力が得られます：
+
+    ```
+    "こんにちは、Namanさん！私はコンピュータープログラムですので感情はございませんが、いつでもお手伝いする準備ができております。本日はいかがサポートさせていただけますでしょうか？"
+    ```
+
+    その後、リクエストを「私の名前は何ですか？」に変更すると、次のレスポンスが得られます：
+
+    ```
+    あなたの名前はNamanです。
+    ```
+
+    これで、Memory Routerが動作しています！
+  </Tab>
+
+  <Tab title="Python">
+    **ステップ4.** Pythonの依存関係をインストールします：
+
+    ```
+    pip install openai
+    ```
+
+    **ステップ5.** 環境に2つの環境変数を設定します：1つはSupermemory用、もう1つはモデルプロバイダ用です。
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_api_key_here"
+
+    # export OPENAI_API_KEY/ANTHROPIC_API_KEY/GEMINI_API_KEY/GROQ_API_KEY="api_key_here" (使用するモデルに応じて)
+    ```
+
+    **ステップ6.** 更新されたベースURLとパラメータでLLM（大規模言語モデル）にリクエストを送信する：
+
+    <CodeGroup>
+      ```python OpenAI
+      import os
+      from openai import OpenAI
+
+      client = OpenAI(
+          api_key=os.getenv("OPENAI_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_openai():
+          try:
+              response = client.chat.completions.create(
+                  model="gpt-5",
+                  messages=[
+                      {"role": "user", "content": "こんにちは、私の名前はNamanです。元気ですか？"}
+                  ],
+                  max_tokens=1000,
+                  temperature=0.7
+              )
+
+              print("OpenAI Response:", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Error with OpenAI: {error}")
+
+      ```
+
+      ```python Anthropic
+      from openai import OpenAI
+
+      anthropic_client = OpenAI(
+          api_key=os.getenv("ANTHROPIC_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://api.anthropic.com/v1",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_claude():
+          try:
+              response = anthropic_client.chat.completions.create(
+                  model="claude-3-sonnet-20240229",
+                  messages=[
+                      {"role": "user", "content": "こんにちは、私の名前はNamanです。元気ですか？"}
+                  ],
+                  max_tokens=1000
+              )
+
+              print("Claudeの応答:", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Claudeでエラーが発生しました: {error}")
+
+      ```
+
+      ```python Gemini
+      from openai import OpenAI
+
+      gemini_client = OpenAI(
+          api_key=os.getenv("GEMINI_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_gemini():
+          try:
+              response = gemini_client.chat.completions.create(
+                  model="gemini-pro",
+                  messages=[
+                      {"role": "user", "content": "こんにちは、私の名前はNamanです。調子はどうですか？"}
+                  ],
+                  max_tokens=1000
+              )
+
+              print("Geminiレスポンス:", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Geminiエラー: {error}")
+      ```
+
+      ```python Groq
+      from openai import OpenAI
+
+      groq_client = OpenAI(
+          api_key=os.getenv("GROQ_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://api.groq.com/openai/v1",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_groq():
+          try:
+              response = groq_client.chat.completions.create(
+                  model="mixtral-8x7b-32768",
+                  messages=[
+                      {"role": "user", "content": "こんにちは、私の名前はNamanです。調子はどうですか？"}
+                  ],
+                  max_tokens=1000
+              )
+
+              print("Groq Response:", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Groqでエラーが発生しました: {error}")
+      ```
+    </CodeGroup>
+
+    これらのコードスニペットは、モデルプロバイダが提供するOpenAI互換API URLに基づいてBase URLを変更します。注目すべき主要なパラメータは以下の通りです：
+
+    * `api_key`: モデルプロバイダのAPIキー
+    * `x-supermemory-api-key`: Supermemory の APIキー
+    * `x-sm-user-id`: ユーザーIDで会話の対象ユーザーを指定します。これにより会話横断のメモリーが有効になり、ユーザーは他のチャットを参照して情報を取り出せるようになります。
+
+    また、このクイックスタートでは示していませんが、`x-sm-conversation-id`ヘッダーを渡すことも可能です。
+
+    その後、会話履歴としてメッセージの配列全体をLLM（大規模言語モデル）に送信する必要がなくなります。Supermemoryが処理してくれます。
+
+    上記のコードブロックを実行すると、LLM（大規模言語モデル）から以下のような出力が得られます：
+
+    ```
+    "こんにちは、Namanさん！私はコンピュータープログラムですので感情はございませんが、いつでもお手伝いする準備ができております。本日はいかがサポートさせていただけますでしょうか？"
+    ```
+
+    その後、リクエストを「私の名前は何ですか？」に変更すると、次のレスポンスが得られます：
+
+    ```
+    あなたの名前はNamanです。
+    ```
+
+    これで、Memory Routerが動作しています！
+  </Tab>
+
+  <Tab title="cURL">
+    **ステップ 4** 環境変数を設定する：
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_supermemory_api_key"
+    export OPENAI_API_KEY="your_openai_api_key"
+    export ANTHROPIC_API_KEY="your_anthropic_api_key"
+    export GEMINI_API_KEY="your_gemini_api_key"
+    export GROQ_API_KEY="your_groq_api_key"
+    ```
+
+    **ステップ5.** 更新したベースURLとパラメータでLLMにリクエストを送信します:
+
+    <CodeGroup>
+      ```bash OpenAI
+      curl https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $OPENAI_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "model": "gpt-5",
+          "messages": [
+          {"role": "user", "content": "Hello my name is Naman. How are you?"}
+          ],
+          "max_tokens": 1000,
+          "temperature": 0.7
+      }'
+      ```
+
+      ```bash Claude
+      curl https://api.supermemory.ai/v3/https://api.anthropic.com/v1/messages \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "model": "claude-3-sonnet-20240229",
+          "messages": [
+          {"role": "user", "content": "Hello my name is Naman. How are you?"}
+          ],
+          "max_tokens": 1000
+      }'
+      ```
+
+      ```bash Gemini
+      curl https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $GEMINI_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "contents": [
+          {
+              "parts": [
+              {"text": "Hello my name is Naman. How are you?"}
+              ]
+          }
+          ],
+          "generationConfig": {
+          "maxOutputTokens": 1000
+          }
+      }'
+      ```
+
+      ```bash Groq
+      curl https://api.supermemory.ai/v3/https://api.groq.com/openai/v1/chat/completions \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $GROQ_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "model": "mixtral-8x7b-32768",
+          "messages": [
+          {"role": "user", "content": "Hello my name is Naman. How are you?"}
+          ],
+          "max_tokens": 1000
+      }'
+      ```
+    </CodeGroup>
+
+    これらの各コードスニペットは、モデルプロバイダが提供するOpenAI互換のAPI URLに合わせてベースURLを切り替えています。特に注意すべき主なパラメータは次のとおりです:
+
+    * Authorizationヘッダー: 利用中のモデルプロバイダのAPIキー
+    * `x-supermemory-api-key`: SupermemoryのAPIキー
+    * `x-sm-user-id`: ユーザーIDで会話をスコープします。これにより会話横断のメモリーが有効になり、ユーザーは他のチャットを参照して情報を取得できます。
+
+    さらに、このクイックスタートでは示していませんが、`x-sm-conversation-id` ヘッダーも渡せます。
+
+    その場合、会話履歴としてメッセージ配列全体をLLMに送る必要はありません。Supermemoryが処理します。
+
+    上記のコードブロックを実行すると、LLMから次のような出力が得られます:
+
+    ```
+    "こんにちは、Namanさん！私はコンピュータープログラムですので感情はございませんが、いつでもお手伝いする準備ができております。本日はいかがお手伝いいたしましょうか？"
+    ```
+
+    その後、リクエストを「私の名前は何ですか？」ではなく「私の名前は？」と尋ねる内容に変更すると、次のようなレスポンスが返ってきます。
+
+    ```
+    あなたの名前はNamanです。
+    ```
+
+    つまり、Memory Router は正常に動作しています！
+  </Tab>
+</Tabs>
+
+参考として、各モデルプロバイダのドキュメントへのリンクは以下のとおりです：
+
+* [OpenAI API Reference](https://platform.openai.com/docs/api-reference)
+* [Anthropic Claude API](https://docs.anthropic.com/claude/reference)
+* [Google Gemini API](https://ai.google.dev/docs)
+* [Groq API Documentation](https://console.groq.com/docs)

@@ -1,0 +1,907 @@
+---
+title: "Sistema di Q&A sui Documenti"
+description: "Crea un chatbot che risponde alle domande sui tuoi Documents con citazioni e riferimenti alle fonti"
+---
+
+Crea un potente sistema di Q&A sui documenti in grado di acquisire PDF, file di testo e pagine web, quindi rispondere alle domande con citazioni accurate. Perfetto per siti di documentazione, database di ricerca o basi di conoscenza interne.
+
+<div id="what-youll-build">
+  ## Cosa realizzerai
+</div>
+
+Un sistema di Q&A sui documenti che:
+
+- **Acquisisce più formati di file** (PDF, DOCX, testo, URL)
+- **Risponde con precisione alle domande** con citazioni delle fonti
+- **Fornisce riferimenti alle fonti** con numeri di pagina e titoli dei documenti
+- **Gestisce le domande di follow‑up** mantenendo il contesto della conversazione
+- **Supporta più raccolte di documenti** per argomenti diversi
+
+<div id="prerequisites">
+  ## Prerequisiti
+</div>
+
+- Node.js 18+ o Python 3.8+
+- Chiave API di Supermemory
+- Chiave API di OpenAI
+- Conoscenza di base della gestione dei file
+
+<div id="implementation">
+  ## Implementazione
+</div>
+
+<div id="step-1-document-processing-system">
+  ### Fase 1: Sistema di elaborazione dei documenti
+</div>
+
+<Tabs>
+  <Tab title="Next.js">
+    ```typescript lib/document-processor.ts
+    import { Supermemory } from 'supermemory'
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    })
+
+    interface DocumentUpload {
+      file: File
+      collection: string
+      metadata?: Record<string, any>
+    }
+
+    export class DocumentProcessor {
+      async uploadDocument({ file, collection, metadata = {} }: DocumentUpload) {
+        try {
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('containerTags', JSON.stringify([collection]))
+          formData.append('metadata', JSON.stringify({
+            originalName: file.name,
+            fileType: file.type,
+            uploadedAt: new Date().toISOString(),
+            ...metadata
+          }))
+
+          const response = await fetch('/api/upload-document', {
+            method: 'POST',
+            body: formData
+          })
+
+          if (!response.ok) {
+            throw new Error(`Caricamento non riuscito: ${response.statusText}`)
+          }
+
+          return await response.json()
+        } catch (error) {
+          console.error('Errore nel caricamento del documento:', error)
+          throw error
+        }
+      }
+
+      async uploadURL({ url, collection, metadata = {} }: { url: string, collection: string, metadata?: Record<string, any> }) {
+        try {
+          const result = await client.memories.add({
+            content: url,
+            containerTag: collection,
+            metadata: {
+              type: 'url',
+              originalUrl: url,
+              uploadedAt: new Date().toISOString(),
+              ...metadata
+            }
+          })
+
+          return result
+        } catch (error) {
+          console.error('Errore nel caricamento URL:', error)
+          throw error
+        }
+      }
+
+      async getDocumentStatus(documentId: string) {
+        try {
+          const memory = await client.memories.get(documentId)
+          return {
+            id: memory.id,
+            status: memory.status,
+            title: memory.title,
+            progress: memory.metadata?.progress || 0
+          }
+        } catch (error) {
+          console.error('Errore nella verifica dello stato:', error)
+          throw error
+        }
+      }
+
+      async listDocuments(collection: string) {
+        try {
+          const memories = await client.memories.list({
+            containerTags: [collection],
+            limit: 50,
+            sort: 'updatedAt',
+            order: 'desc'
+          })
+
+          return memories.memories.map(memory => ({
+            id: memory.id,
+            title: memory.title || memory.metadata?.originalName || 'Senza titolo',
+            type: memory.metadata?.fileType || memory.metadata?.type || 'sconosciuto',
+            uploadedAt: memory.metadata?.uploadedAt,
+            status: memory.status,
+            url: memory.metadata?.originalUrl
+          }))
+        } catch (error) {
+          console.error('Errore nel recupero elenco documenti:', error)
+          throw error
+        }
+      }
+    }
+    ```
+
+    ```typescript app/api/upload-document/route.ts
+    import { NextRequest, NextResponse } from 'next/server'
+    import { Supermemory } from 'supermemory'
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    })
+
+    export async function POST(request: NextRequest) {
+      try {
+        const formData = await request.formData()
+        const file = formData.get('file') as File
+        const containerTags = JSON.parse(formData.get('containerTags') as string)
+        const metadata = JSON.parse(formData.get('metadata') as string || '{}')
+
+        if (!file) {
+          return NextResponse.json({ error: 'Nessun file fornito' }, { status: 400 })
+        }
+
+        // Converti File in Buffer per Supermemory
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+
+        const result = await client.memories.uploadFile({
+          file: buffer,
+          filename: file.name,
+          containerTags,
+          metadata
+        })
+
+        return NextResponse.json({
+          success: true,
+          documentId: result.id,
+          message: 'Documento caricato con successo'
+        })
+
+      } catch (error) {
+        console.error('Errore di caricamento:', error)
+        return NextResponse.json(
+          { error: 'Caricamento non riuscito', details: error.message },
+          { status: 500 }
+        )
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python document_processor.py
+    from supermemory import Supermemory
+    import os
+    from typing import Dict, List, Any, Optional
+    import requests
+    from datetime import datetime
+
+    class DocumentProcessor:
+        def __init__(self):
+            self.client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+        def upload_file(self, file_path: str, collection: str, metadata: Dict[str, Any] = None) -> Dict:
+            """Carica un file locale su Supermemory"""
+            if metadata is None:
+                metadata = {}
+
+            try:
+                with open(file_path, 'rb') as file:
+                    result = self.client.memories.upload_file(
+                        file=file,
+                        container_tags=[collection],
+                        metadata={
+                            'originalName': os.path.basename(file_path),
+                            'fileType': os.path.splitext(file_path)[1],
+                            'uploadedAt': datetime.now().isoformat(),
+                            **metadata
+                        }
+                    )
+                return result
+            except Exception as e:
+                print(f"Errore nel caricamento del file: {e}")
+                raise
+
+        def upload_url(self, url: str, collection: str, metadata: Dict[str, Any] = None) -> Dict:
+            """Carica il contenuto di un URL su Supermemory"""
+            if metadata is None:
+                metadata = {}
+
+            try:
+                result = self.client.memories.add(
+                    content=url,
+                    container_tag=collection,
+                    metadata={
+                        'type': 'url',
+                        'originalUrl': url,
+                        'uploadedAt': datetime.now().isoformat(),
+                        **metadata
+                    }
+                )
+                return result
+            except Exception as e:
+                print(f"Errore nel caricamento dell'URL: {e}")
+                raise
+
+        def get_document_status(self, document_id: str) -> Dict:
+            """Verifica lo stato di elaborazione del documento"""
+            try:
+                memory = self.client.memories.get(document_id)
+                return {
+                    'id': memory.id,
+                    'status': memory.status,
+                    'title': memory.title,
+                    'progress': memory.metadata.get('progress', 0) if memory.metadata else 0
+                }
+            except Exception as e:
+                print(f"Errore nella verifica dello stato: {e}")
+                raise
+
+        def list_documents(self, collection: str) -> List[Dict]:
+            """Elenca tutti i documenti di una collezione"""
+            try:
+                memories = self.client.memories.list(
+                    container_tags=[collection],
+                    limit=50,
+                    sort='updatedAt',
+                    order='desc'
+                )
+
+                return [
+                    {
+                        'id': memory.id,
+                        'title': (memory.title or
+                                memory.metadata.get('originalName') or
+                                'Senza titolo' if memory.metadata else 'Senza titolo'),
+                        'type': (memory.metadata.get('fileType') or
+                               memory.metadata.get('type') or
+                               'sconosciuto' if memory.metadata else 'sconosciuto'),
+                        'uploadedAt': memory.metadata.get('uploadedAt') if memory.metadata else None,
+                        'status': memory.status,
+                        'url': memory.metadata.get('originalUrl') if memory.metadata else None
+                    }
+                    for memory in memories.memories
+                ]
+            except Exception as e:
+                print(f"Errore nell'elencare i documenti: {e}")
+                raise
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-2-qa-api-with-citations">
+  ### Passaggio 2: API di Q&A con citazioni
+</div>
+
+<Tabs>
+  <Tab title="Route API di Next.js">
+    ```typescript app/api/qa/route.ts
+    import { streamText } from 'ai'
+    import { createOpenAI } from '@ai-sdk/openai'
+    import { Supermemory } from 'supermemory'
+
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY!
+    })
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    })
+
+    export async function POST(request: Request) {
+      const { question, collection, conversationHistory = [] } = await request.json()
+
+      try {
+        // Cerca documenti rilevanti
+        const searchResults = await client.search.documents({
+          q: question,
+          containerTags: [collection],
+          limit: 8,
+          rerank: true,
+          includeFullDocs: false,
+          includeSummary: true,
+          onlyMatchingChunks: false,
+          documentThreshold: 0.6,
+          chunkThreshold: 0.7
+        })
+
+        if (searchResults.results.length === 0) {
+          return Response.json({
+            answer: "Non sono riuscito a trovare informazioni rilevanti nei documenti caricati per rispondere alla tua domanda.",
+            sources: [],
+            confidence: 0
+          })
+        }
+
+        // Prepara il contesto dai risultati di ricerca
+        const context = searchResults.results.map((result, index) => {
+          const chunks = result.chunks
+            .filter(chunk => chunk.isRelevant)
+            .slice(0, 3)
+            .map(chunk => chunk.content)
+            .join('\n\n')
+
+          return `[Documento ${index + 1}: "${result.title}"]\n${chunks}`
+        }).join('\n\n---\n\n')
+
+        // Prepara le fonti per la citazione
+        const sources = searchResults.results.map((result, index) => ({
+          id: result.documentId,
+          title: result.title,
+          type: result.type,
+          relevantChunks: result.chunks.filter(chunk => chunk.isRelevant).length,
+          score: result.score,
+          citationNumber: index + 1
+        }))
+
+        const messages = [
+          ...conversationHistory,
+          {
+            role: 'user' as const,
+            content: question
+          }
+        ]
+
+        const result = await streamText({
+          model: openai('gpt-5'),
+          messages,
+          system: `Sei un assistente utile per domande e risposte sui documenti. Rispondi alle domande basandoti ESCLUSIVAMENTE sul contesto dei documenti forniti.
+
+    CONTESTO DAI DOCUMENTI:
+    ${context}
+
+    ISTRUZIONI:
+    1. Rispondi alla domanda utilizzando ESCLUSIVAMENTE le informazioni dai documenti forniti
+    2. Includi citazioni specifiche nella tua risposta utilizzando il formato [Documento X]
+    3. Se i documenti non contengono informazioni sufficienti, dichiaralo chiaramente
+    4. Sii preciso e cita direttamente quando possibile
+    5. Se più documenti supportano un punto, cita tutti quelli rilevanti
+    6. Mantieni un tono utile e professionale
+
+    FORMATO CITAZIONE:
+    - Utilizza [Documento 1], [Documento 2], ecc. per citare le fonti
+    - Posiziona le citazioni dopo le informazioni rilevanti
+    - Esempio: "Il processo prevede tre passaggi [Documento 1]. Tuttavia, alcuni esperti raccomandano un approccio a quattro passaggi [Documento 3]."
+
+    Se non è possibile rispondere alla domanda dai documenti forniti, rispondi con: "Non dispongo di informazioni sufficienti nei documenti forniti per rispondere accuratamente a questa domanda."`,
+          temperature: 0.1,
+          maxTokens: 1000
+        })
+
+        return result.toAIStreamResponse({
+          data: {
+            sources,
+            searchResultsCount: searchResults.results.length,
+            totalResults: searchResults.total
+          }
+        })
+
+      } catch (error) {
+        console.error('Errore Q&A:', error)
+        return Response.json(
+          { error: 'Impossibile elaborare la domanda', details: error.message },
+          { status: 500 }
+        )
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python (FastAPI)">
+    ```python qa_api.py
+    from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    from pydantic import BaseModel
+    from typing import List, Dict, Any, Optional
+    import openai
+    from supermemory import Supermemory
+    import json
+    import os
+
+    app = FastAPI()
+
+    openai_client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    supermemory_client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+    class QARequest(BaseModel):
+        question: str
+        collection: str
+        conversationHistory: List[Dict[str, str]] = []
+
+    class QAResponse(BaseModel):
+        answer: str
+        sources: List[Dict[str, Any]]
+        confidence: float
+        searchResultsCount: int
+
+    @app.post("/qa")
+    async def answer_question(request: QARequest):
+        try:
+            # Cerca documenti rilevanti
+            search_results = supermemory_client.search.documents(
+                q=request.question,
+                container_tags=[request.collection],
+                limit=8,
+                rerank=True,
+                include_full_docs=False,
+                include_summary=True,
+                only_matching_chunks=False,
+                document_threshold=0.6,
+                chunk_threshold=0.7
+            )
+
+            if not search_results.results:
+                return QAResponse(
+                    answer="Non sono riuscito a trovare informazioni rilevanti nei documenti caricati per rispondere alla tua domanda.",
+                    sources=[],
+                    confidence=0,
+                    searchResultsCount=0
+                )
+
+            # Prepara il contesto dai risultati di ricerca
+            context_parts = []
+            sources = []
+
+            for index, result in enumerate(search_results.results):
+                relevant_chunks = [
+                    chunk.content for chunk in result.chunks
+                    if chunk.is_relevant
+                ][:3]
+
+                chunk_text = '\n\n'.join(relevant_chunks)
+                context_parts.append(f'[Document {index + 1}: "{result.title}"]\n{chunk_text}')
+
+                sources.append({
+                    'id': result.document_id,
+                    'title': result.title,
+                    'type': result.type,
+                    'relevantChunks': len([c for c in result.chunks if c.is_relevant]),
+                    'score': result.score,
+                    'citationNumber': index + 1
+                })
+
+            context = '\n\n---\n\n'.join(context_parts)
+
+            # Prepare messages
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"""Sei un assistente utile per il Q&A sui documenti. Rispondi alle domande basandoti SOLO sul contesto dei documenti forniti.
+
+    CONTESTO DAI DOCUMENTI:
+    {context}
+
+    ISTRUZIONI:
+    1. Rispondi alla domanda utilizzando SOLO le informazioni tratte dai documenti forniti
+    2. Includi citazioni specifiche nella tua risposta usando il formato [Documento X]
+    3. Se i documenti non contengono informazioni sufficienti, dillo chiaramente
+    4. Sii accurato e cita testualmente quando possibile
+    5. Se più documenti supportano un punto, cita tutti quelli pertinenti
+    6. Mantieni un tono professionale e di supporto
+
+    FORMATO DELLE CITAZIONI:
+    - Usa [Documento 1], [Documento 2], ecc. per citare le fonti
+    - Inserisci le citazioni dopo l’informazione pertinente
+    - Esempio: "Il processo prevede tre passaggi [Documento 1]. Tuttavia, alcuni esperti raccomandano un approccio in quattro passaggi [Documento 3]."
+
+    Se la domanda non può essere risposta sulla base dei documenti forniti, rispondi con: "Non ho informazioni sufficienti nei documenti forniti per rispondere accuratamente a questa domanda." """
+                }
+            ]
+
+            # Add conversation history
+            messages.extend(request.conversationHistory)
+            messages.append({"role": "user", "content": request.question})
+
+            # Get AI response
+            response = await openai_client.chat.completions.create(
+                model="gpt-5",
+                messages=messages,
+                temperature=0.1,
+                max_tokens=1000
+            )
+
+            answer = response.choices[0].message.content
+
+            return QAResponse(
+                answer=answer,
+                sources=sources,
+                confidence=min(search_results.results[0].score if search_results.results else 0, 1.0),
+                searchResultsCount=len(search_results.results)
+            )
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Impossibile elaborare la domanda: {str(e)}")
+
+    if __name__ == "__main__":
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-3-frontend-interface">
+  ### Passaggio 3: Interfaccia frontend
+</div>
+
+```tsx app/qa/page.tsx
+'use client'
+
+import { useState, useRef } from 'react'
+import { useChat } from 'ai/react'
+import { DocumentProcessor } from '@/lib/document-processor'
+
+interface Document {
+  id: string
+  title: string
+  type: string
+  status: string
+  uploadedAt: string
+}
+
+interface Source {
+  id: string
+  title: string
+  citationNumber: number
+  score: number
+  relevantChunks: number
+}
+
+export default function DocumentQA() {
+  const [collection, setCollection] = useState('default-docs')
+  const [documents, setDocuments] = useState<Document[]>([])
+  const [sources, setSources] = useState<Source[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const processor = new DocumentProcessor()
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: '/api/qa',
+    body: {
+      collection
+    },
+    onFinish: (message, { data }) => {
+      if (data?.sources) {
+        setSources(data.sources)
+      }
+    }
+  })
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    setIsUploading(true)
+    const newProgress: Record<string, number> = {}
+
+    try {
+      for (const file of Array.from(files)) {
+        newProgress[file.name] = 0
+        setUploadProgress({ ...newProgress })
+
+        await processor.uploadDocument({
+          file,
+          collection,
+          metadata: {
+            uploadedBy: 'user',
+            category: 'qa-document'
+          }
+        })
+
+        newProgress[file.name] = 100
+        setUploadProgress({ ...newProgress })
+      }
+
+      // Refresh document list
+      await loadDocuments()
+
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+
+    } catch (error) {
+      console.error('Upload failed:', error)
+      alert('Upload failed: ' + error.message)
+    } finally {
+      setIsUploading(false)
+      setUploadProgress({})
+    }
+  }
+
+  const loadDocuments = async () => {
+    try {
+      const docs = await processor.listDocuments(collection)
+      setDocuments(docs)
+    } catch (error) {
+      console.error('Failed to load documents:', error)
+    }
+  }
+
+  const formatSources = (sources: Source[]) => {
+    if (!sources || sources.length === 0) return null
+
+    return (
+      <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <h3 className="text-sm font-semibold text-gray-700 mb-2">Fonti:</h3>
+        <div className="space-y-2">
+          {sources.map((source) => (
+            <div key={source.id} className="flex items-center space-x-2 text-sm">
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-mono">
+                Documento {source.citationNumber}
+              </span>
+              <span className="text-gray-700">{source.title}</span>
+              <span className="text-gray-500">
+                ({source.relevantChunks} chunk rilevanti, {(source.score * 100).toFixed(1)}% corrispondenza)
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Pannello di Gestione Documenti */}
+        <div className="lg:col-span-1">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">Collezione Documenti</h2>
+
+            {/* Selettore Collezione */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nome Collezione
+              </label>
+              <input
+                type="text"
+                value={collection}
+                onChange={(e) => setCollection(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="es., company-docs"
+              />
+            </div>
+
+            {/* Caricamento File */}
+            <div className="mb-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.docx,.txt,.md"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {isUploading ? 'Caricamento...' : 'Carica Documenti'}
+              </button>
+            </div>
+
+            {/* Progresso Caricamento */}
+            {Object.keys(uploadProgress).length > 0 && (
+              <div className="mb-4 space-y-2">
+                {Object.entries(uploadProgress).map(([filename, progress]) => (
+                  <div key={filename} className="text-sm">
+                    <div className="flex justify-between">
+                      <span className="truncate">{filename}</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Lista Documenti */}
+            <div className="max-h-64 overflow-y-auto">
+              {documents.map((doc) => (
+                <div key={doc.id} className="mb-2 p-2 bg-gray-50 rounded text-sm">
+                  <div className="font-medium truncate">{doc.title}</div>
+                  <div className="text-gray-500 text-xs">
+                    {doc.type} • {doc.status}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={loadDocuments}
+              className="w-full mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Aggiorna Documenti
+            </button>
+          </div>
+        </div>
+
+        {/* Interfaccia Q&A */}
+        <div className="lg:col-span-2">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">Fai Domande</h2>
+
+            {/* Messaggi */}
+            <div className="h-96 overflow-y-auto mb-4 space-y-4">
+              {messages.length === 0 && (
+                <div className="text-gray-500 text-center py-8">
+                  Carica documenti e fai domande per iniziare!
+
+                  <div className="mt-4 text-sm">
+                    <p className="font-medium">Prova a chiedere:</p>
+                    <ul className="mt-2 space-y-1">
+                      <li>"Quali sono i risultati principali?"</li>
+                      <li>"Riassumi i punti chiave"</li>
+                      <li>"Cosa dice la sezione 3 riguardo a...?"</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`p-4 rounded-lg ${
+                    message.role === 'user'
+                      ? 'bg-blue-500 text-white ml-8'
+                      : 'bg-gray-100 mr-8'
+                  }`}
+                >
+                  <div className="whitespace-pre-wrap">{message.content}</div>
+
+                  {message.role === 'assistant' && sources.length > 0 && (
+                    formatSources(sources)
+                  )}
+                </div>
+              ))}
+
+              {isLoading && (
+                <div className="bg-gray-100 p-4 rounded-lg mr-8">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span>Ricerca nei documenti e generazione della risposta...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                value={input}
+                onChange={handleInputChange}
+                placeholder="Fai una domanda sui tuoi documenti..."
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={isLoading || documents.length === 0}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim() || documents.length === 0}
+                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Chiedi
+              </button>
+            </form>
+
+            {documents.length === 0 && (
+              <p className="text-sm text-gray-500 mt-2">
+                Carica prima i documenti per abilitare le domande
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+<div id="testing-your-qa-system">
+  ## Test del tuo sistema di Q&A
+</div>
+
+<div id="step-4-test-document-processing">
+  ### Passo 4: Testare l’elaborazione dei Documents
+</div>
+
+1. **Carica documenti di test**:
+   - Carica un manuale in PDF o un articolo di ricerca
+   - Aggiungi alcuni articoli web tramite url
+   - Carica alcuni file di testo su argomenti diversi
+
+2. **Metti alla prova diversi tipi di domande**:
+   ```
+   Factual: "Qual è la definizione di X menzionata nei documents?"
+   Analytical: "Quali sono i pro e i contro dell’approccio Y?"
+   Comparative: "In che modo il metodo A si confronta con il metodo B?"
+   Summarization: "Riassumi i risultati principali"
+   ```
+
+3. **Verifica le citazioni**:
+   - Controlla che le citazioni compaiano nelle risposte
+   - Verifica che i numeri delle citazioni corrispondano all’elenco delle fonti
+   - Assicurati che le fonti mostrino metadata pertinenti
+
+<div id="production-considerations">
+  ## Considerazioni per la produzione
+</div>
+
+<div id="performance-optimization">
+  ### Ottimizzazione delle performance
+</div>
+
+```typescript
+// Implementa la cache per le domande più frequenti
+const cacheKey = `qa:${collection}:${hashQuery(question)}`
+const cachedResponse = await redis.get(cacheKey)
+
+if (cachedResponse) {
+  return JSON.parse(cachedResponse)
+}
+
+// Metti in cache la risposta per 1 ora
+await redis.setex(cacheKey, 3600, JSON.stringify(response))
+```
+
+
+<div id="advanced-features">
+  ### Funzionalità avanzate
+</div>
+
+1. **Domande di follow-up**:
+   ```typescript
+   // Tieni traccia del contesto della conversazione
+   const conversationHistory = messages.slice(-6) // Ultimi 3 scambi
+   ```
+
+2. **Punteggio di confidenza della risposta**:
+   ```typescript
+   const confidence = calculateConfidence({
+     searchScore: searchResults.results[0]?.score || 0,
+     resultCount: searchResults.results.length,
+     chunkRelevance: avgChunkRelevance
+   })
+   ```
+
+3. **Supporto multilingue**:
+   ```typescript
+   // Rileva la lingua del documento e adatta la ricerca
+   const detectedLanguage = await detectLanguage(question)
+   const searchResults = await client.search.documents({
+     q: question,
+     filters: {
+       AND: [{ key: 'language', value: detectedLanguage }]
+     }
+   })
+   ```
+
+Questa ricetta offre una base completa per creare sistemi di Q&A sui documenti con citazioni accurate e tracciamento delle fonti.
+
+---
+
+*Personalizza questa ricetta in base ai tuoi specifici tipi di documenti e casi d'uso.*

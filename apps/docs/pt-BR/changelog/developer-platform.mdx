@@ -1,0 +1,99 @@
+---
+title: "Plataforma para Desenvolvedores"
+description: "Atualizações da API, novos endpoints e lançamentos de SDKs"
+---
+
+Atualizações da API, novos endpoints, lançamentos de SDKs e recursos voltados para desenvolvedores.
+
+<div id="september-17-2025">
+  ## 17 de setembro de 2025
+</div>
+
+- **Busca por memórias esquecidas:** O novo parâmetro `include.forgottenMemories` na API de busca v4 permite pesquisar por memórias que foram explicitamente esquecidas ou expiradas. Defina como `true` para incluir memórias esquecidas nos resultados de busca, ajudando a recuperar informações arquivadas anteriormente.
+
+<div id="september-14-2025">
+  ## 14 de setembro de 2025
+</div>
+
+- **API de exclusão aprimorada:** O endpoint `DELETE /v3/documents/:id` agora aceita tanto o ID interno do documento quanto o customId para uma exclusão mais flexível. Agora os desenvolvedores podem excluir documentos usando o mesmo customId informado na criação, melhorando a consistência da API com outros endpoints.
+- **Esclarecimento de terminologia da API:** Terminologia da API ajustada de "memories" para "documents" para maior clareza para desenvolvedores. Novos endpoints `/v3/documents/*` oferecem uma nomenclatura mais intuitiva, mantendo total compatibilidade retroativa por meio de redirecionamentos automáticos de `/v3/memories/*`. Nenhuma ação é necessária nas integrações existentes.
+
+<div id="september-13-2025">
+  ## 13 de setembro de 2025
+</div>
+
+- **Documentação v2.0:** Reescrita completa, com referências de API abrangentes, receitas de cookbook e exemplos prontos para produção em TypeScript, Python e cURL
+- **Integração com AI SDK:** Novo pacote `@supermemory/tools/ai-sdk` para integração nativa com o Vercel AI SDK, com Memory Tools e recursos de Infinite Chat
+- **Endpoint de exclusão em lote:** Novo endpoint `DELETE /v3/documents/bulk` para gerenciamento eficiente de memory
+
+<div id="september-5-2025">
+  ## 5 de setembro de 2025
+</div>
+
+- **Endpoint de busca de memory:** Novo endpoint `/v4/search` otimizado para IA conversacional e recuperação de memory (vs. busca em documentos)
+- **Gerenciamento avançado de memory:** Operações de atualização/remoção aprimoradas, com melhor filtragem e recursos de processamento em lote
+
+<div id="august-30-2025">
+  ## 30 de agosto de 2025
+</div>
+
+- **Servidor MCP (Model Context Protocol):** Lançamento do servidor MCP do supermemory para integrações com modelos de IA, com suporte completo ao projeto e detecção automática
+- **API de filtragem aprimorada:** Filtro baseado em SQL aprimorado com array_contains, operadores numéricos e lógica complexa AND/OR
+
+<div id="august-15-2025">
+  ## 15 de agosto de 2025
+</div>
+
+- **Memory Router Proxy:** Funcionalidade de proxy aprimorada para requisições de LLM com gerenciamento automático de contexto e otimização de tokens
+- **Atualizações do algoritmo de busca:** Limiares de similaridade configuráveis, Reranking e Reescrita de Consulta para melhorar a qualidade dos resultados
+
+<div id="april-30-2025">
+  ## 30 de abril de 2025
+</div>
+
+- **Documentação de API abrangente:** Novas referências de API interativas com explicações detalhadas de parâmetros e esquemas de resposta
+- **Sistema de Tags de Contêiner:** Agrupamento organizacional aprimorado para melhor isolamento de memories e conteúdo com escopo de usuário
+- **Detecção Automática de Tipo de Conteúdo:** Processamento automático de PDFs, imagens, vídeos e conteúdo da web independentemente das extensões de url
+
+<div id="april-28-2025">
+  ## 28 de abril de 2025
+</div>
+
+- **API do conector do Google Drive:** Novos endpoints para integração programática com o Google Drive e sincronização de arquivos
+
+<div id="april-25-2025">
+  ## 25 de abril de 2025
+</div>
+
+- **Controles de limite de busca:** Novos parâmetros `documentThreshold` e `chunkThreshold` para ajustar a sensibilidade da busca
+- **Busca específica por documento:** Novo parâmetro `docId` para buscar em documentos grandes específicos
+- **Controle aprimorado de chunk:** Parâmetro `onlyMatchingChunks` para filtrar resultados com precisão
+
+<div id="april-24-2025">
+  ## 24 de abril de 2025
+</div>
+
+- **API de Reescrita de Consulta:** Expansão automática de consultas e correspondência de intenção para melhorar os resultados de pesquisa
+- **Opções de Contexto de Pesquisa:** Novos parâmetros `includeFullDocs` e `includeSummary` para recuperação abrangente de documentos
+
+<div id="april-18-2025">
+  ## 18 de abril de 2025
+</div>
+
+- **Processamento de conteúdo aprimorado:** Pipeline de ingestão aprimorado com suporte a processamento direto de URLs para imagens, vídeos e PDFs
+- **Ingestão web mais estável:** Processamento de URLs de sites mais confiável, com melhor extração de conteúdo
+
+<div id="april-14-2025">
+  ## 14 de abril de 2025
+</div>
+
+- **Endpoints da API de equipes:** Novos endpoints para gerenciamento de equipes e controle de permissões
+- **API de Analytics aprimorada:** Melhor observabilidade com métricas detalhadas de uso e dados de desempenho
+
+<div id="february-1-2025">
+  ## 1º de fevereiro de 2025
+</div>
+
+- **Busca em vários Spaces:** Pesquise simultaneamente em múltiplas tags de contêiner com suporte a parâmetros em array
+- **Versionamento da API:** Migração para os endpoints `/v1` com uma estratégia de versionamento aprimorada
+- **Playground interativo da API:** Nova interface de testes para todos os endpoints com exemplos ao vivo

@@ -1,0 +1,235 @@
+---
+title: "Présentation de l’ajout de mémoires"
+description: "Ajoutez du contenu à Supermemory via du texte, des fichiers ou des URL"
+sidebarTitle: "Présentation"
+---
+
+Ajoutez tout type de contenu à Supermemory — texte, fichiers, URL, images, vidéos, et plus encore. Tout est automatiquement converti en mémoires stockées, interrogeables, qui s’intègrent à votre graphe de connaissances intelligent.
+
+<div id="quick-start">
+  ## Démarrage rapide
+</div>
+
+<CodeGroup>
+  ```typescript TypeScript
+  // Ajouter du contenu texte
+  const result = await client.memories.add({
+    content: "L'apprentissage automatique permet aux ordinateurs d'apprendre à partir des données",
+    containerTag: "ai-research",
+    metadata: { priority: "high" }
+  });
+
+  console.log(result);
+  // Sortie : { id: "abc123", status: "queued" }
+  ```
+
+  ```python Python
+  # Ajouter du contenu texte
+  result = client.memories.add(
+      content="L'apprentissage automatique permet aux ordinateurs d'apprendre à partir des données",
+      container_tags=["ai-research"],
+      metadata={"priority": "high"}
+  )
+
+  print(result)
+  # Sortie : {"id": "abc123", "status": "queued"}
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "content": "L'\''apprentissage automatique permet aux ordinateurs d'\''apprendre à partir des données",
+      "containerTag": "ai-research",
+      "metadata": {"priority": "high"}
+    }'
+
+  # Réponse : {"id": "abc123", "status": "queued"}
+  ```
+</CodeGroup>
+
+<div id="key-concepts">
+  ## Concepts clés
+</div>
+
+<Note>
+  **Nouveau sur Supermemory ?** Lisez [Comment fonctionne Supermemory](/fr/how-it-works) pour comprendre l’architecture du graphe de connaissances et la différence entre les documents et les mémoires stockées.
+</Note>
+
+<div id="quick-overview">
+  ### Aperçu rapide
+</div>
+
+* **Documents**: Contenu brut que vous importez (PDF, url, texte)
+* **Mémoires stockées**: Segments (« chunks ») interrogeables, créés automatiquement avec leurs relations
+* **Balises de conteneur**: Regroupez le contenu associé pour un meilleur contexte
+* **Metadata**: Informations supplémentaires pour le filtrage
+
+<div id="content-sources">
+  ### Sources de contenu
+</div>
+
+Ajoutez du contenu de trois façons :
+
+1. **Texte direct** : envoyez du contenu textuel directement via l’API
+2. **Téléversement de fichiers** : téléversez des PDF, des images et des vidéos pour extraction
+3. **Traitement d’URL** : extraction automatique à partir de pages web et de plateformes
+
+<div id="endpoints">
+  ## Endpoints
+</div>
+
+<Warning>
+  Rappel : ces endpoints ajoutent des documents. Les mémoires stockées sont inférées par Supermemory.
+</Warning>
+
+<div id="add-content">
+  ### Ajouter du contenu
+</div>
+
+`POST /v3/documents`
+
+Ajoutez du texte, des URL ou tout autre format pris en charge.
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.add({
+    content: "Your content here",
+    containerTag: "project"
+  });
+  ```
+
+  ```python Python
+  client.memories.add(
+    content="Your content here",
+    container_tags=["project"]
+  )
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"content": "Your content here", "containerTag": "project"}'
+  ```
+</CodeGroup>
+
+<div id="upload-file">
+  ### Importer un fichier
+</div>
+
+`POST /v3/documents/file`
+
+Importez des fichiers directement pour traitement.
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.uploadFile({
+    file: fileStream,
+    containerTag: "project"
+  });
+  ```
+
+  ```python Python
+  client.memories.upload_file(
+    file=open('file.pdf', 'rb'),
+    container_tags='project'
+  )
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -F "file=@document.pdf" \
+    -F "containerTags=project"
+  ```
+</CodeGroup>
+
+<div id="update-memory">
+  ### Mettre à jour une memory
+</div>
+
+`PATCH /v3/documents/{id}`
+
+Met à jour le contenu d’un document existant.
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.update("doc_id", {
+    content: "Updated content"
+  });
+  ```
+
+  ```python Python
+  client.memories.update("doc_id", {
+    "content": "Updated content"
+  })
+  ```
+
+  ```bash cURL
+  curl -X PATCH "https://api.supermemory.ai/v3/documents/doc_id" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"content": "Updated content"}'
+  ```
+</CodeGroup>
+
+<div id="supported-content-types">
+  ## Types de contenu pris en charge
+</div>
+
+<div id="documents">
+  ### Documents
+</div>
+
+* PDF avec prise en charge de l’OCR
+* Google Docs, Sheets et Slides
+* Pages Notion
+* Fichiers Microsoft Office
+
+<div id="media">
+  ### Médias
+</div>
+
+* Images (JPG, PNG, GIF, WebP) avec OCR
+
+<div id="web-content">
+  ### Contenu web
+</div>
+
+* Publications sur Twitter/X
+* Vidéos YouTube avec sous-titres
+
+<div id="text-formats">
+  ### Formats de texte
+</div>
+
+* Texte brut
+* Markdown
+* Fichiers CSV
+
+<Note> Consultez le [guide des connecteurs](/fr/connectors/overview) pour apprendre à connecter Google Drive, Notion et OneDrive et à synchroniser des fichiers en temps réel. </Note>
+
+<div id="response-format">
+  ## Format de la réponse
+</div>
+
+```json
+{
+  "id": "D2Ar7Vo7ub83w3PRPZcaP1",
+  "status": "en file d'attente"
+}
+```
+
+* **`id`**: Identifiant unique du document
+* **`status`**: État de traitement (`en file d’attente`, `en cours`, `terminé`)
+
+<div id="next-steps">
+  ## Prochaines étapes
+</div>
+
+* [Track Processing Status](/fr/api/track-progress) - Suivre le status de traitement des documents
+* [Search Memories](/fr/search/overview) - Rechercher dans votre contenu
+* [List Memories](/fr/list-memories/overview) - Parcourir les mémoires stockées
+* [Update &amp; Delete](/fr/update-delete-memories/overview) - Gérer les mémoires stockées

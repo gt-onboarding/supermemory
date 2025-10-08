@@ -1,0 +1,170 @@
+---
+title: "Parâmetros"
+description: "Referência completa dos parâmetros para adicionar memory"
+---
+
+Documentação detalhada dos parâmetros para adicionar memories ao Supermemory.
+
+<div id="request-parameters">
+  ## Parâmetros da solicitação
+</div>
+
+<div id="required-parameters">
+  ### Parâmetros obrigatórios
+</div>
+
+<ParamField body="content" type="string" required>
+  O conteúdo a ser processado em Memories. Pode ser:
+  - Texto simples
+  - url para processar
+  - Conteúdo HTML
+  - Texto Markdown
+
+  ```json
+  {
+    "content": "Machine learning is a subset of AI..."
+  }
+  ```
+
+  **Exemplos de url:**
+  ```json
+  {
+    "content": "https://youtube.com/watch?v=dQw4w9WgXcQ"
+  }
+  ```
+</ParamField>
+
+<div id="optional-parameters">
+  ### Parâmetros opcionais
+</div>
+
+<ParamField body="containerTag" type="string">
+  **Recomendado.** Tag única para agrupar Memories relacionadas. Melhora o desempenho de busca.
+
+  Padrão: `"sm_project_default"`
+
+  ```json
+  {
+    "containerTag": "project_alpha"
+  }
+  ```
+
+  <Note>
+  Use `containerTag` (singular) para melhor desempenho do que `containerTags` (array).
+  </Note>
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  metadata adicional como pares chave-valor. Os valores devem ser strings, números ou booleanos.
+
+  ```json
+  {
+    "metadata": {
+      "source": "research-paper",
+      "author": "John Doe",
+      "priority": 1,
+      "reviewed": true
+    }
+  }
+  ```
+
+  **Restrições:**
+  - Sem objetos aninhados
+  - Sem arrays como valores
+  - As chaves devem ser strings
+  - Valores: apenas string, número ou booleano
+</ParamField>
+
+<ParamField body="customId" type="string">
+  Seu próprio identificador para o documento. Permite deduplicação e atualizações.
+
+  **Comprimento máximo:** 255 caracteres
+
+  ```json
+  {
+    "customId": "doc_2024_01_research_ml"
+  }
+  ```
+
+  **Casos de uso:**
+  - Evitar uploads duplicados
+  - Atualizar Documents existentes
+  - Sincronizar com sistemas externos
+</ParamField>
+
+<ParamField body="raw" type="string">
+  Conteúdo bruto para armazenar juntamente com o conteúdo processado. Útil para preservar a formatação original.
+
+  ```json
+  {
+    "content": "# Machine Learning\n\nML is a subset of AI...",
+    "raw": "# Machine Learning\n\nML is a subset of AI..."
+  }
+  ```
+</ParamField>
+
+<div id="file-upload-parameters">
+  ## Parâmetros de envio de arquivo
+</div>
+
+Para o endpoint `POST /v3/documents/file`:
+
+<ParamField body="file" type="file" required>
+  O arquivo a ser enviado. Formatos compatíveis:
+  - **Documentos:** PDF, DOC, DOCX, TXT, MD
+  - **Imagens:** JPG, PNG, GIF, WebP
+  - **Vídeos:** MP4, WebM, AVI
+
+  **Tamanho máximo:** 50 MB
+</ParamField>
+
+<ParamField body="containerTags" type="string">
+  Container tag do arquivo enviado (enviado como campo de formulário).
+
+  ```bash
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -F "file=@document.pdf" \
+    -F "containerTags=research"
+  ```
+</ParamField>
+
+<div id="container-tag-patterns">
+  ## Padrões de tags de contêiner
+</div>
+
+<div id="recommended-patterns">
+  ### Padrões recomendados
+</div>
+
+```typescript
+// Por usuário
+"user_123"
+
+// Por projeto
+"project_alpha"
+
+// Por organização e tipo
+"org_456_research"
+
+// Por período de tempo
+"2024_q1_reports"
+
+// Por fonte de dados
+"slack_channel_general"
+```
+
+
+<div id="performance-considerations">
+  ### Considerações de desempenho
+</div>
+
+```typescript
+// ✅ RÁPIDO: Tag única
+{ "containerTag": "project_alpha" }
+
+// ⚠️ MAIS LENTO: Múltiplas tags
+{ "containerTags": ["project_alpha", "backend", "auth"] }
+
+// ❌ EVITE: Muitas tags
+{ "containerTags": ["tag1", "tag2", "tag3", "tag4", "tag5"] }
+```

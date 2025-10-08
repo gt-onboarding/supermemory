@@ -1,0 +1,464 @@
+---
+title: "Notion 连接器"
+description: "通过实时 webhook 与工作区集成，同步 Notion 页面、数据库和块"
+icon: "notion"
+---
+
+将 Notion 工作区连接到你的 Supermemory 知识库，自动同步页面、数据库和内容块。支持实时更新、丰富格式与数据库属性。
+
+<div id="quick-setup">
+  ## 快速开始
+</div>
+
+<div id="1-create-notion-connection">
+  ### 1. 创建 Notion 链接账户
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const connection = await client.connections.create('notion', {
+      redirectUrl: 'https://yourapp.com/auth/notion/callback',
+      containerTags: ['user-123', 'notion-workspace'],
+      documentLimit: 2000,
+      metadata: {
+        source: 'notion',
+        workspaceType: 'team',
+        department: 'product'
+      }
+    });
+
+    // 将用户重定向到 Notion 的 OAuth（开放授权协议）
+    window.location.href = connection.authLink;
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    connection = client.connections.create(
+        'notion',
+        redirect_url='https://yourapp.com/auth/notion/callback',
+        container_tags=['user-123', 'notion-workspace'],
+        document_limit=2000,
+        metadata={
+            'source': 'notion',
+            'workspaceType': 'team',
+            'department': 'product'
+        }
+    )
+
+    # 将用户重定向到 Notion 的 OAuth（开放授权协议）
+    print(f'Redirect to: {connection.auth_link}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "redirectUrl": "https://yourapp.com/auth/notion/callback",
+        "containerTags": ["user-123", "notion-workspace"],
+        "documentLimit": 2000,
+        "metadata": {
+          "source": "notion",
+          "workspaceType": "team",
+          "department": "product"
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="2-handle-oauth-flow">
+  ### 2. 处理 OAuth（开放授权协议）流程
+</div>
+
+用户授予工作区访问权限后，Notion 会重定向到你的回调 url。链接账户会自动建立。
+
+<div id="3-monitor-sync-progress">
+  ### 3. 监控同步进度
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 检查链接账户详情
+    const connection = await client.connections.getByTags('notion', {
+      containerTags: ['user-123', 'notion-workspace']
+    });
+
+    console.log('已连接的工作区：', connection.email);
+    console.log('链接账户创建时间：', connection.createdAt);
+
+    // 列出已同步的页面与数据库
+    const documents = await client.connections.listDocuments('notion', {
+      containerTags: ['user-123', 'notion-workspace']
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 检查链接账户详情
+    connection = client.connections.get_by_tags(
+        'notion',
+        container_tags=['user-123', 'notion-workspace']
+    )
+
+    print(f'已连接的工作区：{connection.email}')
+    print(f'链接账户创建时间：{connection.created_at}')
+
+    # 列出已同步的页面与数据库
+    documents = client.connections.list_documents(
+        'notion',
+        container_tags=['user-123', 'notion-workspace']
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 按 provider 与标签获取链接账户详情
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion/connection" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123", "notion-workspace"]}'
+
+    # 响应包含链接账户详情：
+    # {
+    #   "id": "conn_abc123",
+    #   "provider": "notion",
+    #   "email": "workspace@example.com",
+    #   "createdAt": "2024-01-15T10:00:00Z",
+    #   "documentLimit": 2000,
+    #   "metadata": {...}
+    # }
+
+    # 列出已同步的 Documents
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion/documents" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: "application/json" \
+      -d '{"containerTags": ["user-123", "notion-workspace"]}'
+
+    # 响应：包含同步状态的文档对象数组
+    # [
+    #   {"title": "Product Roadmap", "type": "notion_database", "status": "done"},
+    #   {"title": "Meeting Notes", "type": "notion_page", "status": "done"}
+    # ]
+    ```
+  </Tab>
+</Tabs>
+
+<div id="supported-content-types">
+  ## 支持的内容类型
+</div>
+
+<div id="notion-pages">
+  ### Notion 页面
+</div>
+
+- **富文本块**，保留格式
+- **嵌套页面**与层级结构
+- **嵌入内容**（图片、视频、文件）
+- **代码块**，支持语法高亮
+- **标注与引用**转换为 Markdown
+
+<div id="notion-databases">
+  ### Notion 数据库
+</div>
+
+- 将**数据库条目**同步为独立的 Documents
+- **属性**包含在 Metadata 中
+- **数据库条目之间的关联关系**
+- **公式与汇总**的计算结果
+- **多选与单选**类型的属性
+
+<div id="block-types">
+  ### 区块类型
+</div>
+
+| 区块类型 | 处理方式 | Markdown 输出 |
+|------------|------------|-----------------|
+| **文本** | 保留格式 | `**bold**`, `*italic*`, `~~strikethrough~~` |
+| **标题** | 保持层级 | `# H1`, `## H2`, `### H3` |
+| **代码** | 语言识别 | ````python\ncode here\n```` |
+| **引用** | 引用块格式 | `> quoted text` |
+| **提示框** | 自定义格式 | `> 💡 **Note:** callout text` |
+| **列表** | 保留结构 | `- item 1\n  - nested item` |
+| **表格** | Markdown 表格 | `| Col 1 | Col 2 |\n|-------|-------|` |
+| **图片** | 通过 Metadata 引用 | `![alt text](url)` |
+| **嵌入** | 带上下文的链接 | `[Embedded Content](url)` |
+
+<div id="delete-connection">
+  ## 删除链接账户
+</div>
+
+在不再需要时移除 Notion 链接账户：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 通过连接 ID 删除
+    const result = await client.connections.delete('connection_id_123');
+    console.log('Deleted connection:', result.id);
+
+    // 通过 provider 与 container tags 删除
+    const providerResult = await client.connections.deleteByProvider('notion', {
+      containerTags: ['user-123']
+    });
+    console.log('Deleted Notion connection for user');
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 通过连接 ID 删除
+    result = client.connections.delete('connection_id_123')
+    print(f'Deleted connection: {result.id}')
+
+    # 通过 provider 与 container tags 删除
+    provider_result = client.connections.delete_by_provider(
+        'notion',
+        container_tags=['user-123']
+    )
+    print('Deleted Notion connection for user')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 通过连接 ID 删除
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+    # 通过 provider 与 container tags 删除
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/notion" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123"]}'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+删除链接账户将：
+- 停止来自 Notion 的所有后续同步
+- 移除 OAuth（开放授权协议）授权
+- 在 Supermemory 中保留已同步的 Documents（不会被删除）
+</Note>
+
+<div id="advanced-configuration">
+  ## 高级配置
+</div>
+
+<div id="custom-notion-integration">
+  ### 自定义 Notion 集成
+</div>
+
+在生产环境部署中，请创建你自己的 Notion 集成：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 首先，使用你的 Notion 应用凭据更新组织设置
+    await client.settings.update({
+      notionCustomKeyEnabled: true,
+      notionClientId: 'your-notion-client-id',
+      notionClientSecret: 'your-notion-client-secret'
+    });
+
+    // 然后使用你的自定义集成创建链接账户
+    const connection = await client.connections.create('notion', {
+      redirectUrl: 'https://yourapp.com/callback',
+      containerTags: ['org-456', 'user-789'],
+      metadata: { customIntegration: true }
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 首先，使用你的 Notion 应用凭据更新组织设置
+    client.settings.update(
+        notion_custom_key_enabled=True,
+        notion_client_id='your-notion-client-id',
+        notion_client_secret='your-notion-client-secret'
+    )
+
+    # 然后使用你的自定义集成创建链接账户
+    connection = client.connections.create(
+        'notion',
+        redirect_url='https://yourapp.com/callback',
+        container_tags=['org-456', 'user-789'],
+        metadata={'customIntegration': True}
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 更新组织设置
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "notionCustomKeyEnabled": true,
+        "notionClientId": "your-notion-client-id",
+        "notionClientSecret": "your-notion-client-secret"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="content-filtering">
+  ### 内容过滤
+</div>
+
+控制要同步的 Notion 内容：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 为 Notion 内容配置智能过滤
+    await client.settings.update({
+      shouldLLMFilter: true,
+      includeItems: {
+        pageTypes: ['page', 'database'],
+        titlePatterns: ['*Spec*', '*Documentation*', '*Meeting Notes*'],
+        databases: ['Project Tracker', 'Knowledge Base', 'Team Wiki']
+      },
+      excludeItems: {
+        titlePatterns: ['*Draft*', '*Personal*', '*Archive*'],
+        databases: ['Personal Tasks', 'Scratchpad']
+      },
+      filterPrompt: "Sync professional documentation, project specs, meeting notes, and team knowledge. Skip personal notes, drafts, and archived content."
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 为 Notion 内容配置智能过滤
+    client.settings.update(
+        should_llm_filter=True,
+        include_items={
+            'pageTypes': ['page', 'database'],
+            'titlePatterns': ['*Spec*', '*Documentation*', '*Meeting Notes*'],
+            'databases': ['Project Tracker', 'Knowledge Base', 'Team Wiki']
+        },
+        exclude_items={
+            'titlePatterns': ['*Draft*', '*Personal*', '*Archive*'],
+            'databases': ['Personal Tasks', 'Scratchpad']
+        },
+        filter_prompt="Sync professional documentation, project specs, meeting notes, and team knowledge. Skip personal notes, drafts, and archived content."
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 为 Notion 内容配置智能过滤
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "includeItems": {
+          "pageTypes": ["page", "database"],
+          "titlePatterns": ["*Spec*", "*Documentation*", "*Meeting Notes*"],
+          "databases": ["Project Tracker", "Knowledge Base", "Team Wiki"]
+        },
+        "excludeItems": {
+          "titlePatterns": ["*Draft*", "*Personal*", "*Archive*"],
+          "databases": ["Personal Tasks", "Scratchpad"]
+        },
+        "filterPrompt": "Sync professional documentation, project specs, meeting notes, and team knowledge. Skip personal notes, drafts, and archived content."
+      }'
+
+    # 响应：
+    # {
+    #   "success": true,
+    #   "message": "Settings updated successfully"
+    # }
+    ```
+  </Tab>
+</Tabs>
+
+<div id="workspace-permissions">
+  ## 工作区权限
+</div>
+
+Notion 连接器遵循工作区权限：
+
+| 权限级别 | 同步行为 |
+|-----------------|---------------|
+| **Admin** | 访问整个工作区 |
+| **Member** | 同步具备读取权限的页面 |
+| **Guest** | 仅同步共享页面 |
+| **No Access** | 从索引中移除 |
+
+<div id="database-integration">
+  ## 数据库集成
+</div>
+
+<div id="database-properties">
+  ### 数据库属性
+</div>
+
+Notion 数据库的属性会映射为 Metadata：
+
+```typescript
+// 示例：带有属性的项目数据库
+const documents = await client.connections.listDocuments('notion', {
+  containerTags: ['user-123']
+});
+
+// 查找数据库条目
+const projectEntries = documents.filter(doc =>
+  doc.metadata?.database === 'Projects'
+);
+
+// 数据库属性变为可搜索的 metadata
+const projectWithStatus = await client.search.documents({
+  q: "机器学习项目",
+  containerTags: ['user-123'],
+  filters: JSON.stringify({
+    AND: [
+      { key: "status", value: "In Progress", negate: false },
+      { key: "priority", value: "High", negate: false }
+    ]
+  })
+});
+```
+
+
+<div id="optimization-strategies">
+  ### 优化策略
+</div>
+
+1. **根据工作区规模设置合适的文档上限**
+2. **使用有针对性的容器标签**以提升组织效率
+3. **监控数据库同步性能**，应对大规模数据集
+4. **实施内容过滤**，仅同步相关页面
+5. **在应用中优雅处理 webhook 延迟**
+
+<Callout type="info">
+**Notion 专属优势：**
+- 通过 webhook 实现实时同步与即时更新
+- 保留丰富的格式与块（block）结构
+- 数据库属性将成为可搜索的 Metadata
+- 保持层级页面结构
+- 支持协作式工作区
+</Callout>
+
+<Warning>
+**重要限制：**
+- 复杂的块格式在转换为 Markdown 时可能被简化
+- 大型数据库的初始同步可能耗时较长
+- 工作区权限会影响可访问内容的范围
+- Notion API 的速率限制可能影响大型工作区的同步速度
+- 内嵌文件和图片以引用方式保留，不直接存储
+</Warning>

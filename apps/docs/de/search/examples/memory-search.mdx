@@ -1,0 +1,495 @@
+---
+title: "Suche in Speicher‑Einträgen (/v4/search)"
+description: "Suche mit minimaler Latenz, optimiert für Chatbots und konversationelle KI"
+---
+
+Die Suche in Speicher‑Einträgen (`POST /v4/search`) bietet minimale Latenz und ist für Echtzeit‑Interaktionen optimiert. Dieser Endpunkt setzt auf Geschwindigkeit statt umfangreicher Steuerungsmöglichkeiten und ist ideal für Chatbots, Q&A‑Systeme und alle Anwendungen, in denen Nutzende sofortige Antworten erwarten.
+
+<div id="basic-search">
+  ## Einfache Suche
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const results = await client.search.memories({
+      q: "machine learning applications",
+      limit: 5
+    });
+
+    console.log(results)
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    results = client.search.memories(
+        q="machine learning applications",
+        limit=5
+    )
+
+    console.log(results)
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning applications",
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Beispielausgabe:**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_ml_apps_2024",
+      "memory": "Machine-Learning-Anwendungen erstrecken sich über zahlreiche Branchen, darunter Gesundheitswesen (diagnostische Bildgebung, Arzneimittelforschung), Finanzwesen (Betrugserkennung, algorithmischer Handel), autonome Fahrzeuge (Computer Vision, Pfadplanung) und natürliche Sprachverarbeitung (Chatbots, Übersetzungsdienste).",
+      "similarity": 0.92,
+      "title": "Machine Learning Industrieanwendungen",
+      "type": "text",
+      "metadata": {
+        "topic": "machine-learning",
+        "industry": "technology",
+        "created": "2024-01-10"
+      }
+    },
+    {
+      "id": "mem_ml_healthcare",
+      "memory": "Im Gesundheitswesen ermöglicht Machine Learning die Früherkennung von Krankheiten durch medizinische Bildanalyse, personalisierte Behandlungsempfehlungen und die Beschleunigung der Arzneimittelforschung durch die Vorhersage molekularen Verhaltens.",
+      "similarity": 0.89,
+      "title": "ML im Gesundheitswesen",
+      "type": "text"
+    }
+  ],
+  "total": 8,
+  "timing": 87
+}
+```
+
+
+<div id="container-tag-filtering">
+  ## Filtern nach Container-Tag
+</div>
+
+Nach Benutzer, Projekt oder Organisation filtern:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "project updates",
+      containerTag: "user_123",  // Hinweis: singular, nicht plural
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="project updates",
+        container_tag="user_123",  # Hinweis: singular, nicht plural
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "project updates",
+        "containerTag": "user_123",
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="threshold-control">
+  ## Threshold-Steuerung
+</div>
+
+Steuern Sie die Ergebnisqualität mit dem Ähnlichkeitsthreshold:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "artificial intelligence research",
+      threshold: 0.7,  // Höher = weniger, aber ähnlichere Ergebnisse
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="artificial intelligence research",
+        threshold=0.7,  # Höher = weniger, aber ähnlichere Ergebnisse
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "artificial intelligence research",
+        "threshold": 0.7,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="reranking">
+  ## Reranking
+</div>
+
+Verbessern Sie die Ergebnisqualität durch nachgelagertes Ranking:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "quantum computing breakthrough",
+      rerank: true,  // Bessere Relevanz, leicht erhöhte Latenz
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="quantum computing breakthrough",
+        rerank=True,  # Bessere Relevanz, leicht erhöhte Latenz
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "quantum computing breakthrough",
+        "rerank": true,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="query-rewriting">
+  ## Query Rewriting
+</div>
+
+Verbessern Sie die Suchgenauigkeit mit automatischer Erweiterung der Suchanfrage:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "How do neural networks learn?",
+      rewriteQuery: true,  // +400 ms Latenz, aber bessere Ergebnisse
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="How do neural networks learn?",
+        rewrite_query=True,  # +400 ms Latenz, aber bessere Ergebnisse
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "How do neural networks learn?",
+        "rewriteQuery": true,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="include-related-content">
+  ## Verwandte Inhalte einbeziehen
+</div>
+
+documents, zugehörige Speicher-Einträge und Zusammenfassungen einbeziehen:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "machine learning trends",
+      include: {
+        documents: true,        // Quelldokumente einbeziehen
+        relatedMemories: true,  // Zugehörige Speicher-Einträge einbeziehen
+        summaries: true         // Speicherzusammenfassungen einbeziehen
+      },
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="machine learning trends",
+        include={
+            "documents": True,        # Quelldokumente einbeziehen
+            "relatedMemories": True,  # Zugehörige Speicher-Einträge einbeziehen
+            "summaries": True         # Speicherzusammenfassungen einbeziehen
+        },
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning trends",
+        "include": {
+          "documents": true,
+          "relatedMemories": true,
+          "summaries": true
+        },
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="metadata-filtering">
+  ## Metadaten-Filterung
+</div>
+
+Einfache Metadaten-Filterung für die Suche nach Speicher‑Einträgen:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "research findings",
+      filters: {
+        AND: [
+          { key: "category", value: "science", negate: false },
+          { key: "status", value: "published", negate: false }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="research findings",
+        filters={
+            "AND": [
+                {"key": "category", "value": "science", "negate": False},
+                {"key": "status", "value": "published", "negate": False}
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "research findings",
+        "filters": {
+          "AND": [
+            {"key": "category", "value": "science", "negate": false},
+            {"key": "status", "value": "published", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="chatbot-example">
+  ## Chatbot-Beispiel
+</div>
+
+Optimale Konfiguration für dialogorientierte KI:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Für Chatbot-Antworten optimiert
+    const results = await client.search.memories({
+      q: userMessage,
+      containerTag: userId,
+      threshold: 0.6,     // Ausgewogene Relevanz
+      rerank: false,      // Für höhere Geschwindigkeit überspringen
+      rewriteQuery: false, // Für höhere Geschwindigkeit überspringen
+      limit: 3            // Wenige, aber relevante Ergebnisse
+    });
+
+    // Schnelle Antwort im Chat
+    const context = results.results
+      .map(r => r.memory)
+      .join('\n\n');
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Für Chatbot-Antworten optimiert
+    results = client.search.memories(
+        q=user_message,
+        container_tag=user_id,
+        threshold=0.6,     # Ausgewogene Relevanz
+        rerank=False,      # Für höhere Geschwindigkeit überspringen
+        rewrite_query=False, # Für höhere Geschwindigkeit überspringen
+        limit=3            # Wenige, aber relevante Ergebnisse
+    )
+
+    # Schnelle Antwort im Chat
+    context = '\n\n'.join([r.memory for r in results.results])
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Für Chatbot-Antworten optimiert
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "user question here",
+        "containerTag": "user_123",
+        "threshold": 0.6,
+        "rerank": false,
+        "rewriteQuery": false,
+        "limit": 3
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="complete-memories-search-example">
+  ## Vollständiges Beispiel für die Suche in Speicher‑Einträgen
+</div>
+
+Funktionen kombinieren für umfassende Ergebnisse:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "machine learning model performance",
+      containerTag: "research_team",
+      filters: {
+        AND: [
+          { key: "topic", value: "ai", negate: false }
+        ]
+      },
+      threshold: 0.7,
+      rerank: true,
+      rewriteQuery: false, // für mehr Geschwindigkeit überspringen
+      include: {
+        documents: true,
+        relatedMemories: false,
+        summaries: true
+      },
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="machine learning model performance",
+        container_tag="research_team",
+        filters={
+            "AND": [
+                {"key": "topic", "value": "ai", "negate": False}
+            ]
+        },
+        threshold=0.7,
+        rerank=True,
+        rewrite_query=False,  # für mehr Geschwindigkeit überspringen
+        include={
+            "documents": True,
+            "relatedMemories": False,
+            "summaries": True
+        },
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning model performance",
+        "containerTag": "research_team",
+        "filters": {
+          "AND": [
+            {"key": "topic", "value": "ai", "negate": false}
+          ]
+        },
+        "threshold": 0.7,
+        "rerank": true,
+        "rewriteQuery": false,
+        "include": {
+          "documents": true,
+          "relatedMemories": false,
+          "summaries": true
+        },
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="comon-use-cases">
+  ## Häufige Anwendungsfälle
+</div>
+
+- **Chatbots**: Einfache Suche mit Container-Tag und niedrigem threshold
+- **Q&A-Systeme**: Reranking für bessere Relevanz aktivieren
+- **Knowledge Retrieval**: documents und Zusammenfassungen einbeziehen
+- **Echtzeitsuche**: Rewriting und Reranking für maximale Geschwindigkeit überspringen

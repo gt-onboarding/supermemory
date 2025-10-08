@@ -1,0 +1,250 @@
+---
+title: "Parâmetros de busca"
+description: "Referência completa de todos os parâmetros de busca e seus efeitos"
+---
+
+Referência completa dos parâmetros para os três endpoints de busca: busca de documentos, busca de memories e busca de execução.
+
+<div id="common-parameters">
+  ## Parâmetros Comuns
+</div>
+
+Esses parâmetros funcionam em todos os endpoints de busca:
+
+<ParamField query="q" type="string" required>
+  **String de consulta de busca**
+
+  O texto que você deseja pesquisar. Pode ser linguagem natural, palavras‑chave ou perguntas.
+
+  ```typescript
+  q: "machine learning neural networks"
+  q: "What are the applications of quantum computing?"
+  q: "python tutorial beginner"
+  ```
+</ParamField>
+
+<ParamField query="limit" type="number" default="10">
+  **Número máximo de resultados a retornar**
+
+  Controla quantos resultados você recebe. Valores de limit mais altos aumentam o tempo e o tamanho da resposta.
+
+  ```typescript
+  limit: 5    // Resultados rápidos e focados
+  limit: 20   // Resultados abrangentes
+  limit: 100  // Máximo recomendado
+  ```
+</ParamField>
+
+<ParamField query="containerTags" type="Array<string>">
+  **Filtrar por container tags**
+
+  Tags organizacionais para filtrar resultados. Usa **correspondência exata do array** — deve corresponder a todas as tags na mesma ordem.
+
+  ```typescript
+  containerTags: ["user_123"]                    // Tag única
+  containerTags: ["user_123", "project_ai"]      // Múltiplas tags (correspondência exata)
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **Filtragem de metadata com estrutura semelhante a SQL**
+
+  String JSON contendo lógica AND/OR para filtrar por campos de metadata. Usa a mesma estrutura dos filtros de listagem de memory.
+
+  ```typescript
+  filters: JSON.stringify({
+    AND: [
+      { key: "category", value: "tutorial", negate: false },
+      { key: "difficulty", value: "beginner", negate: false }
+    ]
+  })
+  ```
+
+  <Note>
+    Veja o [Guia de Filtragem por Metadata](/pt-BR/search/filtering) para sintaxe completa e exemplos.
+  </Note>
+</ParamField>
+
+<ParamField query="rerank" type="boolean" default="false">
+  **Repontuar resultados para melhorar a relevância**
+
+  Aplica um algoritmo de ranqueamento secundário para aprimorar a qualidade dos resultados. Adiciona ~100–200 ms de latência, mas aumenta a precisão.
+
+  ```typescript
+  rerank: true   // Melhor precisão, mais lento
+  rerank: false  // Mais rápido, precisão padrão
+  ```
+</ParamField>
+
+<ParamField query="rewriteQuery" type="boolean" default="false">
+  **Expandir e melhorar a consulta**
+
+  Reescreve sua consulta para encontrar resultados mais relevantes. Especialmente útil para abreviações e termos específicos de domínio. **Adiciona ~400 ms de latência**.
+
+  ```typescript
+  // Exemplos de reescrita de consulta:
+  "ML" → "machine learning artificial intelligence"
+  "JS" → "JavaScript programming language"
+  "API" → "application programming interface REST"
+  ```
+
+  <Warning>
+    A Reescrita de Consulta aumenta significativamente a latência. Use apenas quando a qualidade da busca for mais importante do que a velocidade.
+  </Warning>
+</ParamField>
+
+<div id="document-search-parameters-post-v3search">
+  ## Parâmetros de busca de documentos (POST `/v3/search`)
+</div>
+
+Estes parâmetros são específicos de `client.search.documents()`:
+
+<ParamField query="chunkThreshold" type="number" range="0-1" default="0.5">
+  **Sensibilidade para seleção de chunks**
+
+  Controla quais chunks de texto são incluídos nos resultados:
+
+  * **0.0** = Menor sensibilidade (mais chunks, mais resultados)
+  * **1.0** = Maior sensibilidade (menos chunks, maior qualidade)
+
+  ```typescript
+  chunkThreshold: 0.2   // Busca ampla, muitos chunks
+  chunkThreshold: 0.8   // Busca precisa, apenas chunks relevantes
+  ```
+</ParamField>
+
+<ParamField query="documentThreshold" type="number" range="0-1" default="0.5">
+  **Sensibilidade para seleção de documentos**
+
+  Controla quais documentos são considerados na busca:
+
+  * **0.0** = Buscar mais documentos (abrangente)
+  * **1.0** = Buscar apenas documentos altamente relevantes (focado)
+
+  ```typescript
+  documentThreshold: 0.1   // Ampliar o escopo
+  documentThreshold: 0.9   // Apenas documentos muito relevantes
+  ```
+</ParamField>
+
+<ParamField query="docId" type="string">
+  **Buscar dentro de um documento específico**
+
+  Limita a busca aos chunks de um único documento. Útil para encontrar conteúdo em documentos grandes.
+
+  ```typescript
+  docId: "doc_abc123"  // Buscar somente neste documento
+  ```
+</ParamField>
+
+<ParamField query="onlyMatchingChunks" type="boolean" default="false">
+  **Retornar apenas os chunks que correspondem exatamente**
+
+  Por padrão, o Supermemory inclui chunks adjacentes para contexto. Defina como `true` para obter apenas o texto exatamente correspondente.
+
+  ```typescript
+  onlyMatchingChunks: false  // Incluir chunks de contexto (padrão)
+  onlyMatchingChunks: true   // Apenas chunks correspondentes
+  ```
+
+  <Note>
+    Chunks de contexto ajudam LLMs a entender o significado completo. Desative apenas se você precisar de extração de texto precisa.
+  </Note>
+</ParamField>
+
+<ParamField query="includeFullDocs" type="boolean" default="false">
+  **Incluir conteúdo completo do documento**
+
+  Adiciona o texto completo do documento a cada resultado. Útil para chatbots que precisam de contexto completo.
+
+  ```typescript
+  includeFullDocs: true   // Documento completo na resposta
+  includeFullDocs: false  // Apenas chunks e metadata
+  ```
+
+  <Warning>
+    Incluir documentos completos pode tornar as respostas muito grandes. Use com moderação e com limites apropriados.
+  </Warning>
+</ParamField>
+
+<ParamField query="includeSummary" type="boolean" default="false">
+  **Incluir resumos de documentos**
+
+  Adiciona resumos de documentos gerados por IA aos resultados. Bom meio-termo entre chunks e documentos completos.
+
+  ```typescript
+  includeSummary: true   // Incluir resumos de documentos
+  includeSummary: false  // Sem resumos
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **Filtrar por metadata usando consultas SQL**
+
+  ```typescript
+
+  // Use isto em vez de:
+  filters: JSON.stringify({
+    OR: [
+      { key: "category", value: "technology", negate: false },
+      { key: "category", value: "science", negate: false }
+    ]
+  })
+  ```
+</ParamField>
+
+<div id="memory-search-parameters-post-v4search">
+  ## Parâmetros de busca de memory (POST `/v4/search`)
+</div>
+
+Estes parâmetros são específicos de `client.search.memories()`:
+
+<ParamField query="threshold" type="number" range="0-1" default="0.5">
+  **Sensibilidade para seleção de memory**
+
+  Controla quais memórias são retornadas com base na similaridade:
+
+  * **0.0** = Retorna mais memórias (busca ampla)
+  * **1.0** = Retorna apenas memórias altamente similares (busca precisa)
+
+  ```typescript
+  threshold: 0.3   // Busca de memory mais ampla
+  threshold: 0.8   // Apenas memórias muito similares
+  ```
+</ParamField>
+
+<ParamField query="containerTag" type="string">
+  **Filtrar por uma única container tag**
+
+  Observação: a busca de memory usa `containerTag` (singular), enquanto a busca de documents usa `containerTags` (array no plural).
+
+  ```typescript
+  containerTag: "user_123"  // Tag única para busca de memory
+  ```
+</ParamField>
+
+<ParamField query="include" type="object">
+  **Controlar quais dados adicionais incluir**
+
+  Objeto que especifica quais informações contextuais incluir junto aos resultados de memory.
+
+  <ParamField query="include.documents" type="boolean" default="false">
+    Incluir documents associados a cada memory
+  </ParamField>
+
+  <ParamField query="include.relatedMemories" type="boolean" default="false">
+    Incluir memórias pai e filho (relacionamentos contextuais)
+  </ParamField>
+
+  <ParamField query="include.summaries" type="boolean" default="false">
+    Incluir resumos de memory
+  </ParamField>
+
+  ```typescript
+  include: {
+    documents: true,        // Mostrar documents relacionados
+    relatedMemories: true,  // Mostrar memórias pai/filho
+    summaries: true         // Incluir resumos
+  }
+  ```
+</ParamField>

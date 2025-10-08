@@ -1,0 +1,163 @@
+---
+title: "Listar memórias"
+description: "Obtenha memórias paginadas com opções de filtro e ordenação"
+sidebarTitle: "Visão geral"
+---
+
+Obtenha memórias paginadas com opções de filtro e ordenação da sua conta Supermemory.
+
+<div id="quick-start">
+  ## Guia Rápido
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const memories = await client.memories.list({ limit: 10 });
+    console.log(memories);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+    memories = client.memories.list(limit=10)
+    print(f"Found {len(memories.memories)} memories")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 10}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="response-schema">
+  ## Esquema de resposta
+</div>
+
+O endpoint retorna uma resposta estruturada com suas memórias e informações de paginação:
+
+```json
+{
+  "memories": [
+    {
+      "id": "abc123",
+      "connectionId": null,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:35:00.000Z",
+      "customId": "ml-basics-001",
+      "title": "Introdução ao Machine Learning",
+      "summary": "Este documento apresenta o machine learning como um subconjunto da inteligência artificial...",
+      "status": "done",
+      "type": "text",
+      "metadata": {
+        "category": "educação",
+        "priority": "alta",
+        "source": "notas-de-pesquisa"
+      },
+      "containerTags": ["user_123", "ai-research"]
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 3,
+    "totalItems": 25,
+    "limit": 10
+  }
+}
+```
+
+<div id="memory-object-fields">
+  ### Campos do Objeto memory
+</div>
+
+<Accordion title="Campos principais" defaultOpen>
+  | Campo | Tipo | Descrição |
+  |-------|------|-------------|
+  | `id` | string | Identificador único da memory |
+  | `status` | ProcessingStatus | status de processamento atual (`queued`, `extracting`, `chunking`, `embedding`, `indexing`, `done`, `failed`) |
+  | `type` | MemoryType | Tipo de conteúdo (`text`, `pdf`, `webpage`, `video`, `image`, etc.) |
+  | `title` | string | null | Título gerado automaticamente ou personalizado |
+  | `summary` | string | null | Resumo do conteúdo gerado por IA |
+  | `createdAt` | string | Timestamp de criação em formato ISO 8601 |
+  | `updatedAt` | string | Timestamp da última atualização em formato ISO 8601 |
+</Accordion>
+
+<Accordion title="Campos opcionais">
+  | Campo | Tipo | Descrição |
+  |-------|------|-------------|
+  | `customId` | string | null | Seu identificador personalizado para a memory |
+  | `connectionId` | string | null | ID do conector que criou esta memory |
+  | `metadata` | object | null | Objeto de metadata em pares chave–valor personalizado que você forneceu |
+  | `containerTags` | string[] | Tags para organizar e filtrar memórias |
+</Accordion>
+
+<div id="key-parameters">
+  ## Parâmetros principais
+</div>
+
+Todos os parâmetros são opcionais e enviados no corpo da requisição, pois este endpoint usa `POST`:
+
+<ParamField path="limit" type="number/string" default="50">
+  **Número de itens por página.** Controla quantas memories são retornadas em uma única requisição. Máximo recomendado: 200 para desempenho ideal.
+</ParamField>
+
+<ParamField path="page" type="number/string" default="1">
+  **Número da página a obter (indexado em 1).** Use com `limit` para paginar por conjuntos de resultados grandes.
+</ParamField>
+
+<ParamField path="containerTags" type="string[]">
+  **Filtrar por tags.** As memories devem corresponder a TODAS as tags fornecidas. Use para filtrar por ID de usuário, projeto ou tags personalizadas da organização.
+</ParamField>
+
+<ParamField path="sort" type="string" default="createdAt">
+  **Campo de ordenação.** Opções: `"createdAt"` (quando a memory foi adicionada) ou `"updatedAt"` (quando a memory foi modificada pela última vez).
+</ParamField>
+
+<ParamField path="order" type="string" default="desc">
+  **Direção da ordenação.** Use `"desc"` para mais recentes primeiro, `"asc"` para mais antigas primeiro.
+</ParamField>
+
+<ParamField path="filters" type="string">
+  **Filtragem avançada.** Filtre com base em metadata usando lógica SQL avançada.
+</ParamField>
+
+<div id="examples">
+  ## Exemplos
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Listagem básica" icon="list" href="/pt-BR/list-memories/examples/basic">
+    Recuperação simples de memory com configurações padrão
+  </Card>
+
+  <Card title="Filtragem" icon="filter" href="/pt-BR/list-memories/examples/filtering">
+    Filtre por tags, status e outros critérios
+  </Card>
+
+  <Card title="Paginação" icon="arrow-right" href="/pt-BR/list-memories/examples/pagination">
+    Trate conjuntos de dados grandes com paginação
+  </Card>
+
+  <Card title="Monitoramento de status" icon="chart-line" href="/pt-BR/list-memories/examples/monitoring">
+    Acompanhe o status de processamento em memórias
+  </Card>
+</CardGroup>
+
+<Note>
+  O endpoint `/v3/documents/list` usa o método **POST**, não GET. Isso permite parâmetros de filtragem complexos no corpo da requisição.
+</Note>

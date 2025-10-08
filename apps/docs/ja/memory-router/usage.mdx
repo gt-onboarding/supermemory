@@ -1,0 +1,232 @@
+---
+title: "使い方"
+description: "アプリケーションに Memory Router を実装する方法"
+sidebarTitle: "使い方"
+---
+
+URL を変更するだけで、LLM（大規模言語モデル）アプリに無制限のメモリーを追加できます。
+
+<div id="prerequisites">
+  ## 前提条件
+</div>
+
+必要なもの:
+
+1. [Supermemory の APIキー](https://console.supermemory.ai)
+2. 利用する LLM プロバイダの APIキー
+
+<div id="basic-setup">
+  ## 基本セットアップ
+</div>
+
+<Steps>
+  <Step title="APIキーを取得する">
+    **Supermemory APIキー:**
+    1. [console.supermemory.ai](https://console.supermemory.ai) にサインアップ
+    2. **API Keys** → **Create API Key** に移動
+    3. キーをコピー
+
+    **プロバイダのAPIキー:**
+    - [OpenAI](https://platform.openai.com/api-keys)
+    - [Anthropic](https://console.anthropic.com/settings/keys)
+    - [Google Gemini](https://aistudio.google.com/app/apikey)
+    - [Groq](https://console.groq.com/keys)
+  </Step>
+
+  <Step title="Base URLを更新する">
+    プロバイダのURLの先頭に `https://api.supermemory.ai/v3/` を付けます:
+
+    ```
+    https://api.supermemory.ai/v3/[PROVIDER_URL]
+    ```
+  </Step>
+
+  <Step title="認証を追加する">
+    2つのAPIキーをリクエストに含めます（下記の例を参照）
+  </Step>
+</Steps>
+
+<div id="provider-urls">
+  ## プロバイダのURL
+</div>
+
+<CodeGroup>
+
+```text OpenAI
+https://api.supermemory.ai/v3/https://api.openai.com/v1/
+```
+
+```text Anthropic
+https://api.supermemory.ai/v3/https://api.anthropic.com/v1/
+```
+
+```text Google Gemini
+https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai/
+```
+
+```text Groq
+https://api.supermemory.ai/v3/https://api.groq.com/openai/v1/
+```
+
+</CodeGroup>
+
+<div id="implementation-examples">
+  ## 実装例
+</div>
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_OPENAI_API_KEY",
+        base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+        default_headers={
+            "x-supermemory-api-key": "YOUR_SUPERMEMORY_API_KEY",
+            "x-sm-user-id": "user123"  # ユーザーの一意な識別子
+        }
+    )
+
+    # 通常どおりに使用
+    response = client.chat.completions.create(
+        model="gpt-5",
+        messages=[
+            {"role": "user", "content": "Hello!"}
+        ]
+    )
+
+    print(response.choices[0].message.content)
+    ```
+  </Tab>
+
+  <Tab title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/',
+      defaultHeaders: {
+        'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY,
+        'x-sm-user-id': 'user123'  // ユーザーの一意な識別子
+      }
+    });
+
+    // 通常どおりに使用
+    const response = await client.chat.completions.create({
+      model: 'gpt-5',
+      messages: [
+        { role: 'user', content: 'Hello!' }
+      ]
+    });
+
+    console.log(response.choices[0].message.content);
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions" \
+      -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+      -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user123" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "gpt-5",
+        "messages": [{"role": "user", "content": "Hello!"}]
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="alternative-url-parameters">
+  ## 代替案: URL パラメータ
+</div>
+
+ヘッダーを変更できない場合は、URL パラメータで認証を渡します:
+
+<CodeGroup>
+
+```python Python
+client = OpenAI(
+    api_key="YOUR_OPENAI_API_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123"
+)
+
+# 次に、Supermemory の APIキー を環境変数として設定します:
+# export SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```typescript TypeScript
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123'
+});
+
+// Supermemory の APIキー を環境変数として設定:
+// SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123" \
+  -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+  -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-5", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+</CodeGroup>
+
+<div id="conversation-management">
+  ## 会話の管理
+</div>
+
+<div id="managing-conversations">
+  ### 会話の管理
+</div>
+
+リクエスト間で会話のコンテキストを維持するには、`x-sm-conversation-id` を使用します。
+
+```python
+# 新しい会話を開始
+response1 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "私の名前はAliceです"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+
+# 後で同じ会話を続行
+response2 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "私の名前は何ですか？"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+# 応答は「Alice」を記憶しています
+```
+
+
+<div id="user-identification">
+  ### ユーザー識別
+</div>
+
+ユーザー間で保存メモリを分離するため、常に一意のユーザーIDを指定してください。
+
+```python
+# ユーザーごとにメモリースペースは分離されます
+client_alice = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "alice_123"}
+)
+
+client_bob = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "bob_456"}
+)
+```

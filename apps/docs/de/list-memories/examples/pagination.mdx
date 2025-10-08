@@ -1,0 +1,114 @@
+---
+title: "Paginierung"
+description: "Große Speicher-Sammlungen mit Paginierung handhaben"
+---
+
+Verarbeite große Speicher-Sammlungen effizient, indem du Paginierung nutzt, um Daten in handhabbare Chunks zu verarbeiten.
+
+<div id="basic-pagination">
+  ## Grundlegende Seitennummerierung
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Erste Seite abrufen
+    const page1 = await client.memories.list({
+      limit: 20,
+      page: 1
+    });
+
+    // Nächste Seite abrufen
+    const page2 = await client.memories.list({
+      limit: 20,
+      page: 2
+    });
+
+    console.log(`Seite 1: ${page1.memories.length} Speicher-Einträge`);
+    console.log(`Seite 2: ${page2.memories.length} Speicher-Einträge`);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Erste Seite abrufen
+    page1 = client.memories.list(limit=20, page=1)
+
+    # Nächste Seite abrufen
+    page2 = client.memories.list(limit=20, page=2)
+
+    print(f"Seite 1: {len(page1.memories)} Speicher-Einträge")
+    print(f"Seite 2: {len(page2.memories)} Speicher-Einträge")
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Erste Seite abrufen
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 20, "page": 1}'
+
+    # Nächste Seite abrufen
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 20, "page": 2}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="loop-through-pages">
+  ## Seitenweise iterieren
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    let currentPage = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await client.memories.list({
+        page: currentPage,
+        limit: 50
+      });
+
+      console.log(`Seite ${currentPage}: ${response.memories.length} Speicher-Einträge`);
+
+      hasMore = currentPage < response.pagination.totalPages;
+      currentPage++;
+    }
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    current_page = 1
+    has_more = True
+
+    while has_more:
+        response = client.memories.list(page=current_page, limit=50)
+
+        print(f"Seite {current_page}: {len(response.memories)} Speicher-Einträge")
+
+        has_more = current_page < response.pagination.total_pages
+        current_page += 1
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Manuelle Paginierung mit Bash-Schleife
+    for page in {1..5}; do
+      echo "=== Seite $page ==="
+      curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+        -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{\"page\": $page, \"limit\": 20}" | \
+        jq '.memories | length'
+    done
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  Verwenden Sie größere `limit`-Werte (50–100) für die Paginierung, um die Anzahl der benötigten API-Aufrufe zu verringern.
+</Info>

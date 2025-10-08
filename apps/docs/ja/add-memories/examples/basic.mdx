@@ -1,0 +1,290 @@
+---
+title: "基本的な使い方"
+description: "Supermemory にテキストコンテンツを追加する簡単な例"
+---
+
+シンプルで実用的な例を通して、基本的なテキストコンテンツを Supermemory に追加する方法を学びます。
+
+<div id="add-simple-text">
+  ## シンプルなテキストを追加
+</div>
+
+最も基本的な操作 — プレーンテキストを追加します。
+
+<CodeGroup>
+
+```typescript TypeScript
+const response = await client.memories.add({
+  content: "Artificial intelligence is transforming how we work and live"
+});
+
+console.log(response);
+// Output: { id: "abc123", status: "queued" }
+```
+
+```python Python
+response = client.memories.add(
+    content="Artificial intelligence is transforming how we work and live"
+)
+
+print(response)
+# Output: {"id": "abc123", "status": "queued"}
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Artificial intelligence is transforming how we work and live"
+  }'
+```
+
+</CodeGroup>
+
+<div id="add-with-container-tags">
+  ## コンテナタグで追加する
+</div>
+
+コンテナタグを使って関連するコンテンツをグループ化します。
+
+<CodeGroup>
+
+```typescript TypeScript
+const response = await client.memories.add({
+  content: "Q4 2024 revenue exceeded projections by 15%",
+  containerTag: "financial_reports"
+});
+
+console.log(response.id);
+// Output: xyz789
+```
+
+```python Python
+response = client.memories.add(
+    content="Q4 2024 revenue exceeded projections by 15%",
+    container_tag="financial_reports"
+)
+
+print(response['id'])
+# Output: xyz789
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Q4 2024 revenue exceeded projections by 15%",
+    "containerTag": "financial_reports"
+  }'
+
+# Response: {"id": "xyz789", "status": "queued"}
+```
+
+</CodeGroup>
+
+<div id="add-with-metadata">
+  ## メタデータを付与して追加
+</div>
+
+検索やフィルタリングの精度を高めるためにメタデータを付与します。
+
+<CodeGroup>
+
+```typescript TypeScript
+await client.memories.add({
+  content: "New onboarding flow reduces drop-off by 30%",
+  containerTag: "product_updates",
+  metadata: {
+    impact: "high",
+    team: "product"
+  }
+});
+```
+
+```python Python
+client.memories.add(
+    content="New onboarding flow reduces drop-off by 30%",
+    container_tag="product_updates",
+    metadata={
+        "impact": "high",
+        "team": "product"
+    }
+)
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "New onboarding flow reduces drop-off by 30%",
+    "containerTag": "product_updates",
+    "metadata": {"impact": "high", "team": "product"}
+  }'
+```
+
+</CodeGroup>
+
+<div id="add-multiple-documents">
+  ## 複数のdocumentsを追加する
+</div>
+
+関連する複数のdocumentsをまとめて処理します。
+
+<CodeGroup>
+
+```typescript TypeScript
+const notes = [
+  "API redesign discussion",
+  "Security audit next month",
+  "New hire starting Monday"
+];
+
+const results = await Promise.all(
+  notes.map(note =>
+    client.memories.add({
+      content: note,
+      containerTag: "meeting_2024_01_15"
+    })
+  )
+);
+```
+
+```python Python
+notes = [
+    "API redesign discussion",
+    "Security audit next month",
+    "New hire starting Monday"
+]
+
+for note in notes:
+    client.memories.add(
+        content=note,
+        container_tag="meeting_2024_01_15"
+    )
+```
+
+```bash cURL
+# 各メモを個別リクエストで追加
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "API redesign discussion", "containerTag": "meeting_2024_01_15"}'
+```
+
+</CodeGroup>
+
+<div id="add-urls">
+  ## URL を追加
+</div>
+
+Webページ、YouTube動画、その他のURLを自動で処理します。
+
+<CodeGroup>
+
+```typescript TypeScript
+// Webページ
+await client.memories.add({
+  content: "https://example.com/article",
+  containerTag: "articles"
+});
+
+// YouTube動画（自動文字起こし）
+await client.memories.add({
+  content: "https://youtube.com/watch?v=dQw4w9WgXcQ",
+  containerTag: "videos"
+});
+
+// Google ドキュメント
+await client.memories.add({
+  content: "https://docs.google.com/document/d/abc123/edit",
+  containerTag: "docs"
+});
+```
+
+```python Python
+# Webページ
+client.memories.add(
+    content="https://example.com/article",
+    container_tag="articles"
+)
+
+# YouTube動画（自動文字起こし）
+client.memories.add(
+    content="https://youtube.com/watch?v=dQw4w9WgXcQ",
+    container_tag="videos"
+)
+
+# Google ドキュメント
+client.memories.add(
+    content="https://docs.google.com/document/d/abc123/edit",
+    container_tag="docs"
+)
+```
+
+```bash cURL
+# Webページ
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "https://example.com/article", "containerTag": "articles"}'
+
+# YouTube動画
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "https://youtube.com/watch?v=dQw4w9WgXcQ", "containerTag": "videos"}'
+```
+
+</CodeGroup>
+
+<div id="add-markdown-content">
+  ## Markdown コンテンツを追加
+</div>
+
+Supermemory は Markdown の書式を保持します。
+
+<CodeGroup>
+
+```typescript TypeScript
+const markdown = `
+# Project Documentation
+
+## Features
+- **Real-time sync**
+- **AI search**
+- **Enterprise security**
+`;
+
+await client.memories.add({
+  content: markdown,
+  containerTag: "docs"
+});
+```
+
+```python Python
+markdown = """
+# Project Documentation
+
+## Features
+- **Real-time sync**
+- **AI search**
+- **Enterprise security**
+"""
+
+client.memories.add(
+    content=markdown,
+    container_tag="docs"
+)
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "# Project Documentation\n\n## Features\n- **Real-time sync**\n- **AI search**", "containerTag": "docs"}'
+```
+
+</CodeGroup>

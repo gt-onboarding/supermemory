@@ -1,0 +1,171 @@
+---
+title: "Supermemory の仕組み"
+description: "知的なメモリーを支えるナレッジグラフ・アーキテクチャを理解する"
+icon: "brain"
+---
+
+Supermemory は単なるドキュメント保存システムではありません。人間の記憶の働きを模した設計で、関係を結び、時間とともに進化し、蓄積された知識から洞察を生み出します。
+
+![](/images/graph-view.png)
+
+<div id="the-mental-model">
+  ## メンタルモデル
+</div>
+
+従来のシステムはファイルを保存します。Supermemory は生きたナレッジグラフを構築します。
+
+<CardGroup cols={2}>
+  <Card title="Traditional Systems" icon="folder">
+    * フォルダ内の静的なファイル
+    * コンテンツ間のつながりがない
+    * 検索はキーワード一致のみ
+    * 情報は凍結されたまま
+  </Card>
+
+  <Card title="Supermemory" icon="network">
+    * 動的なナレッジグラフ
+    * 保存メモリ間の豊かな関連性
+    * セマンティックな理解
+    * 情報が進化し、結び付く
+  </Card>
+</CardGroup>
+
+<div id="documents-vs-memories">
+  ## documents と 保存メモリの違い
+</div>
+
+この違いを理解することは、Supermemory を効果的に活用するうえで非常に重要です。
+
+<div id="documents-your-raw-input">
+  ### Documents: 生のインプット
+</div>
+
+documents は、あなたが提供するもの—いわば原材料です:
+
+* アップロードする PDF ファイル
+* 保存した Web ページ
+* 貼り付けたテキスト
+* 文字が含まれる画像
+* 文字起こしする動画
+
+documents は、Supermemory に手渡す本のようなものだと考えてください。
+
+<div id="memories-intelligent-knowledge-units">
+  ### 保存メモリ: 知的な知識ユニット
+</div>
+
+保存メモリはSupermemoryが生成する、すなわち「理解」です:
+
+* 意味を持つセマンティックな chunks
+* 類似度検索のために埋め込み済み
+* 関係によって相互に連携
+* 時間の経過とともに動的に更新
+
+保存メモリは、本を読んだ後に脳が生み出す洞察やつながりのようなものだと考えてください。
+
+<Note>
+  **重要なポイント**: 50ページのPDFをアップロードしても、Supermemoryは単に保存するだけではありません。内容を数百の相互接続された保存メモリに分割し、各メモリが自らの文脈と他の知識との関係を理解します。
+</Note>
+
+<div id="memory-relationships">
+  ## メモリー間の関係
+</div>
+
+![](/images/memories-inferred.png)
+
+このグラフは、3種類の関係によって保存メモリ同士を結び付けています。
+
+<div id="updates-information-changes">
+  ### 更新: 情報の変更
+</div>
+
+新しい情報が既存の知識と矛盾したり、既存の知識を更新する場合、Supermemory は「更新」リレーションシップを作成します。
+
+<CodeGroup>
+  ```text Original Memory
+  "You work at Supermemory as a content engineer"
+  ```
+
+  ```text New Memory (Updates Original)
+  "You now work at Supermemory as the CMO"
+  ```
+</CodeGroup>
+
+システムは `isLatest` フィールドでどのメモリーが最新かを追跡し、検索で最新の情報が返るようにします。
+
+<div id="extends-information-enriches">
+  ### 拡張: 情報の充実
+</div>
+
+新しい情報が既存の知識を置き換えずに付け加わる場合、Supermemory は「拡張」関係を作成します。
+
+「working at supermemory」というたとえを続けると、あなたがどんな業務に取り組んでいるかに関するメモリーは、上記のあなたの役割に関するメモリーを拡張することになります。
+
+<CodeGroup>
+  ```text Original Memory
+  "You work at Supermemory as the CMO"
+  ```
+
+  ```text New Memory (Extension) - Separate From Previous
+  "Your work consists of ensuring the docs are up to date, making marketing campaigns, SEO, etc."
+  ```
+</CodeGroup>
+
+両方のメモリーは引き続き有効で検索可能であり、より豊かなコンテキストを提供します。
+
+<div id="derives-information-infers">
+  ### 導出: 情報からの推論
+</div>
+
+最も高度な関係 — Supermemory があなたの知識にあるパターンから新たな関係を推論する場合。
+
+<CodeGroup>
+  ```text Memory 1
+  "Dhravya is the founder of Supermemory"
+  ```
+
+  ```text Memory 2
+  "Dhravya frequently discusses AI and machine learning innovations"
+  ```
+
+  ```text Derived Memory
+  "Supermemory is likely an AI-focused company"
+  ```
+</CodeGroup>
+
+これらの推論によって、明示していない洞察も浮き彫りになります。
+
+<div id="processing-pipeline">
+  ## 処理パイプライン
+</div>
+
+パイプラインを理解すると、利用を最適化できます:
+
+| ステージ | 処理内容 |
+|-------|-------------|
+| **Queued** | 処理待ちの documents |
+| **Extracting** | コンテンツを抽出中 |
+| **Chunking** | メモリーの chunks を作成 |
+| **Embedding** | ベクトルを生成 |
+| **Indexing** | 関連付けを構築 |
+| **Done** | 完全に検索可能 |
+
+<Note>
+  **ヒント**: 大きな documents や動画は時間がかかります。100ページのPDFは1〜2分、1時間の動画は5〜10分かかる場合があります。
+</Note>
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+Supermemory の仕組みがわかったら:
+
+<CardGroup cols={2}>
+  <Card title="Add Memories" icon="plus" href="/ja/add-memories/overview">
+    ナレッジグラフにコンテンツを追加しましょう
+  </Card>
+
+  <Card title="Search Memories" icon="search" href="/ja/search/overview">
+    ナレッジを効果的に検索する方法を学びましょう
+  </Card>
+</CardGroup>

@@ -1,0 +1,305 @@
+---
+title: "Organization Settings"
+description: "为 Supermemory 配置组织级别的设置与内容过滤"
+icon: "settings"
+---
+
+组织设置用于控制 Supermemory 在整个组织范围内如何处理内容。这些设置适用于所有 memory 和连接器，可帮助你：
+
+* 在索引之前过滤内容
+* 为连接器配置自定义 OAuth（开放授权协议）应用
+* 设置组织级处理规则
+* 控制哪些内容被索引、哪些被排除
+
+<Note>
+  这些设置为组织级生效，适用于你组织内的所有用户和 memory。
+</Note>
+
+<div id="why-settings-matter">
+  ## 为什么设置很重要
+</div>
+
+settings 端点对于让 Supermemory 理解你的特定用例至关重要。它帮助 Supermemory 了解：
+
+* **你是谁**：你组织的具体用例与目标
+* **应预期什么**：在你的系统中流转的内容与信息类型
+* **如何解释**：用于理解你特定用例中查询的上下文
+* **应优先什么**：哪些内容对你的用户最为重要
+
+<div id="example-brand-guidelines-use-case">
+  ### 示例：品牌规范用例
+</div>
+
+如果没有正确配置，当用户搜索 “what are our values?” 时，Supermemory 可能会返回一些仅随机提到 “values” 的 Documents。但在正确配置后：
+
+```typescript
+await client.settings.update({
+  shouldLLMFilter: true,
+  filterPrompt: `您正在管理 Brand.ai 的品牌指南。
+    您将接收我们组织的所有对外内容。
+    
+    当用户搜索时，他们要查找的是：
+    - "我们的价值观是什么？" → 返回官方品牌价值观文档
+    - "我们的语调风格是什么？" → 返回品牌语音指南
+    - "我们如何描述我们的使命？" → 返回已批准的使命声明
+    
+    重点关注最新批准的品牌材料，而非草稿或过时版本。`
+});
+```
+
+现在，Supermemory 了解：
+
+* 关于“values”的搜索指的是品牌价值观，而非财务数值
+* “Tone”指品牌语调，而非音频设置
+* 应优先采用官方、已批准的内容
+
+这一上下文能显著提升搜索相关性，确保用户在其具体用例中获取准确的信息。
+
+<div id="api-endpoints">
+  ## API 接口端点
+</div>
+
+<div id="get-current-settings">
+  ### 获取当前设置
+</div>
+
+获取你的组织当前的设置配置。
+
+<CodeGroup>
+  ```typescript TypeScript
+  const settings = await client.settings.get();
+  console.log('Current settings:', settings);
+  ```
+
+  ```python Python
+  settings = client.settings.get()
+  print(f'Current settings: {settings}')
+  ```
+
+  ```bash cURL
+  curl -X GET "https://api.supermemory.ai/v3/settings" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+  ```
+</CodeGroup>
+
+<div id="update-settings">
+  ### 更新设置
+</div>
+
+更新你组织的设置。只需包含你要更改的字段即可。
+
+<CodeGroup>
+  ```typescript TypeScript
+  const updatedSettings = await client.settings.update({
+    shouldLLMFilter: true,
+    filterPrompt: "Only index technical documentation and code",
+    includeItems: ["*.md", "*.ts", "*.py"],
+    excludeItems: ["node_modules", ".git", "*.test.*"]
+  });
+
+  console.log('Updated fields:', updatedSettings.updated);
+  ```
+
+  ```python Python
+  updated_settings = client.settings.update(
+      should_llm_filter=True,
+      filter_prompt="Only index technical documentation and code",
+      include_items=["*.md", "*.ts", "*.py"],
+      exclude_items=["node_modules", ".git", "*.test.*"]
+  )
+
+  print(f'Updated fields: {updated_settings.updated}')
+  ```
+
+  ```bash cURL
+  curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "shouldLLMFilter": true,
+      "filterPrompt": "Only index technical documentation and code",
+      "includeItems": ["*.md", "*.ts", "*.py"],
+      "excludeItems": ["node_modules", ".git", "*.test.*"]
+    }'
+  ```
+</CodeGroup>
+
+<div id="content-filtering-settings">
+  ## 内容过滤设置
+</div>
+
+控制哪些内容会被索引到 Supermemory 中。
+
+<div id="basic-filtering">
+  ### 基本筛选
+</div>
+
+使用 include/exclude 模式过滤内容：
+
+```typescript
+await client.settings.update({
+  includeItems: [
+    "*.md",           // 所有 Markdown 文件
+    "*.mdx",          // MDX 文档
+    "docs/**",        // docs 文件夹中的所有内容
+    "src/**/*.ts"     // src 中的 TypeScript 文件
+  ],
+  excludeItems: [
+    "node_modules",   // 依赖项
+    ".git",           // 版本控制
+    "*.test.*",       // 测试文件
+    "build/**",       // 构建输出
+    "*.tmp"           // 临时文件
+  ]
+});
+```
+
+<div id="intelligent-llm-filtering">
+  ### 智能 LLM 筛选
+</div>
+
+启用 AI 驱动的内容筛选，实现语义级理解：
+
+```typescript
+await client.settings.update({
+  shouldLLMFilter: true,
+  filterPrompt: `您正在为技术文档系统过滤内容。
+    
+    包含：
+    - API 文档
+    - 代码示例和教程
+    - 技术指南和参考资料
+    - 架构文档
+    
+    排除：
+    - 营销材料
+    - 内部会议记录
+    - 个人信息
+    - 过时或已弃用的内容
+    
+    专注于帮助开发者理解和使用我们 API 的内容。`
+});
+```
+
+<div id="connector-oauth-settings">
+  ## 连接器 OAuth 设置
+</div>
+
+为连接器集成配置自定义 OAuth（开放授权协议）应用。
+
+<div id="google-drive-custom-oauth">
+  ### Google Drive 自定义 OAuth（开放授权协议）
+</div>
+
+```typescript
+await client.settings.update({
+  googleDriveCustomKeyEnabled: true,
+  googleDriveClientId: "your-client-id.apps.googleusercontent.com",
+  googleDriveClientSecret: "your-client-secret"
+});
+```
+
+<div id="notion-custom-oauth">
+  ### Notion 自定义 OAuth（开放授权协议）
+</div>
+
+```typescript
+await client.settings.update({
+  notionCustomKeyEnabled: true,
+  notionClientId: "your-notion-oauth-client-id",
+  notionClientSecret: "your-notion-oauth-client-secret"
+});
+```
+
+<div id="onedrive-custom-oauth">
+  ### OneDrive 自定义 OAuth（开放授权协议）
+</div>
+
+```typescript
+await client.settings.update({
+  onedriveCustomKeyEnabled: true,
+  onedriveClientId: "你的-azure-应用-id",
+  onedriveClientSecret: "你的-azure-应用-密钥"
+});
+```
+
+<div id="best-practices">
+  ## 最佳实践
+</div>
+
+<div id="1-set-before-bulk-import">
+  ### 1. 批量导入前进行设置
+</div>
+
+在导入大量内容之前先进行配置。更改不会追溯影响现有的记忆存储。
+
+<div id="2-be-specific-in-filter-prompts">
+  ### 2. 在筛选提示中尽量具体
+</div>
+
+提供与你的组织和预期搜索模式相关的清晰上下文：
+
+```typescript
+// 好的示例 - 具体且有上下文
+filterPrompt: `面向开发者的技术文档。
+  包含：API 参考、代码示例、错误解决方案。
+  排除：营销内容、个人数据、测试文件。
+  用户搜索：实现细节、故障排除、最佳实践。`
+
+// 不好的示例 - 过于模糊
+filterPrompt: "仅重要内容"
+```
+
+<div id="3-test-oauth-credentials">
+  ### 3. 测试 OAuth 凭据
+</div>
+
+在上线到生产环境前，务必先在开发环境中测试自定义 OAuth 凭据：
+
+```typescript
+// 更新 OAuth（开放授权协议）设置后测试链接账户
+const testConnection = await client.connections.create('google-drive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['test-connection']
+});
+```
+
+<div id="4-monitor-filter-effectiveness">
+  ### 4. 监控过滤器效果
+</div>
+
+检查已被索引的内容，确认 filters 按预期运行：
+
+```typescript
+const memories = await client.memories.list({
+  containerTags: ['your-tags'],
+  limit: 10
+});
+
+// 查看实际被索引的内容
+memories.memories.forEach(memory => {
+  console.log(`已索引：${memory.title} - ${memory.type}`);
+});
+```
+
+<div id="important-notes">
+  ## 重要说明
+</div>
+
+<Warning>
+  **设置限制：**
+
+  * 更改在组织层面生效，而非按用户生效
+  * 设置不会对现有记忆存储进行追溯处理
+  * 必须在各自平台中正确配置 OAuth（开放授权协议）凭据
+  * 过滤规则仅在内容摄取时生效
+</Warning>
+
+<div id="related-documentation">
+  ## 相关文档
+</div>
+
+* [Connectors Overview](/zh/connectors/overview) - 设置外部集成
+* [Google Drive Setup](/zh/connectors/google-drive) - 配置 Google Drive 的 OAuth（开放授权协议）
+* [Notion Setup](/zh/connectors/notion) - 配置 Notion 的 OAuth（开放授权协议）
+* [OneDrive Setup](/zh/connectors/onedrive) - 配置 OneDrive 的 OAuth（开放授权协议）

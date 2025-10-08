@@ -1,0 +1,214 @@
+---
+title: "Dateiupload"
+description: "PDFs, Bilder und andere Dateien zu Supermemory hochladen"
+---
+
+Laden Sie Dateien direkt bei Supermemory hoch, um Inhalte automatisch zu extrahieren und zu verarbeiten.
+
+<div id="upload-a-pdf">
+  ## Eine PDF hochladen
+</div>
+
+Text aus PDFs mit OCR (Optische Zeichenerkennung) extrahieren.
+
+<CodeGroup>
+
+```typescript TypeScript
+const file = fs.createReadStream('document.pdf');
+
+const response = await client.memories.uploadFile({
+  file: file,
+  containerTags: 'documents'
+});
+
+console.log(response.id);
+// Ausgabe: pdf_123
+```
+
+```python Python
+with open('document.pdf', 'rb') as file:
+    response = client.memories.upload_file(
+        file=file,
+        container_tags='documents'
+    )
+
+print(response['id'])
+# Ausgabe: pdf_123
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "containerTags=documents"
+
+# Antwort: {"id": "pdf_123", "status": "processing"}
+```
+
+</CodeGroup>
+
+<div id="upload-images-with-ocr">
+  ## Bilder mit OCR hochladen
+</div>
+
+Text aus Bildern extrahieren.
+
+<CodeGroup>
+
+```typescript TypeScript
+const image = fs.createReadStream('screenshot.png');
+
+await client.memories.uploadFile({
+  file: image,
+  containerTags: 'images'
+});
+```
+
+```python Python
+with open('screenshot.png', 'rb') as file:
+    client.memories.upload_file(
+        file=file,
+        container_tags='images'
+    )
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@screenshot.png" \
+  -F "containerTags=images"
+```
+
+</CodeGroup>
+
+<div id="browser-file-upload">
+  ## Datei-Upload im Browser
+</div>
+
+Datei-Uploads im Browser verarbeiten.
+
+<CodeGroup>
+
+```javascript JavaScript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('containerTags', 'uploads');
+
+const response = await fetch('https://api.supermemory.ai/v3/documents/file', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`
+  },
+  body: formData
+});
+
+const result = await response.json();
+console.log(result.id);
+```
+
+```typescript React
+function handleUpload(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('containerTags', 'uploads');
+
+  return fetch('https://api.supermemory.ai/v3/documents/file', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}` },
+    body: formData
+  });
+}
+```
+
+```bash cURL
+# Browser-Uploads nutzen FormData, genauso wie Datei-Uploads
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "containerTags=uploads"
+```
+
+</CodeGroup>
+
+<div id="upload-multiple-files">
+  ## Mehrere Dateien hochladen
+</div>
+
+Stapel-Upload mit Rate-Limit.
+
+<CodeGroup>
+
+```typescript TypeScript
+for (const file of files) {
+  const stream = fs.createReadStream(file);
+
+  await client.memories.uploadFile({
+    file: stream,
+    containerTags: 'batch'
+  });
+
+  // Rate-Limit
+  await new Promise(r => setTimeout(r, 1000));
+}
+```
+
+```python Python
+import time
+
+for file_path in files:
+    with open(file_path, 'rb') as file:
+        client.memories.upload_file(
+            file=file,
+            container_tags='batch'
+        )
+
+    time.sleep(1)  # Rate-Limit
+```
+
+```bash cURL
+# Jede Datei einzeln mit Pausen hochladen
+for file in *.pdf; do
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -F "file=@$file" \
+    -F "containerTags=batch"
+
+  sleep 1  # Rate-Limit
+done
+```
+
+</CodeGroup>
+
+<div id="supported-file-types">
+  ## Unterstützte Dateiformate
+</div>
+
+<div id="documents">
+  ### documents
+</div>
+
+| Format | Erweiterungen | Verarbeitung |
+|--------|----------------|--------------|
+| PDF | .pdf | Textextraktion, OCR (Optische Zeichenerkennung) für gescannte Seiten |
+| Microsoft Word | .doc, .docx | Extraktion von Volltext und Formatierung |
+| Nurtext | .txt, .md | Direkte Textverarbeitung |
+| CSV | .csv | Extraktion strukturierter Daten |
+
+<div id="images">
+  ### Bilder
+</div>
+
+| Format | Erweiterungen | Verarbeitung |
+|--------|----------------|--------------|
+| JPEG | .jpg, .jpeg | OCR (Optische Zeichenerkennung)‑Textextraktion |
+| PNG | .png | OCR (Optische Zeichenerkennung)‑Textextraktion |
+| GIF | .gif | OCR (Optische Zeichenerkennung) für statische Bilder |
+| WebP | .webp | OCR (Optische Zeichenerkennung)‑Textextraktion |
+
+<div id="size-limits">
+  ### Größenbeschränkungen
+</div>
+
+- **Maximale Dateigröße**: 50 MB
+- **Empfohlene Größe**: < 10 MB für optimale Verarbeitung
+- **Große Dateien**: Die Verarbeitung kann länger dauern

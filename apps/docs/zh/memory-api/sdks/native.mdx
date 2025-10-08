@@ -1,0 +1,81 @@
+---
+title: 'Supermemory SDK（软件开发工具包）'
+sidebarTitle: "Python 和 JavaScript SDK（软件开发工具包）"
+description: '了解如何在 Python 和 JavaScript 中使用 supermemory'
+---
+
+如需更多信息，请查看最新完整参考文档：
+
+<Columns cols={2}>
+  <Card title="Python SDK（软件开发工具包）" icon="python" href="https://pypi.org/project/supermemory/">
+  </Card>
+
+  <Card title="JavaScript SDK（软件开发工具包）" icon="js" href="https://www.npmjs.com/package/supermemory">
+  </Card>
+</Columns>
+
+<div id="python-sdk">
+  ## Python SDK
+</div>
+
+<div id="installation">
+  ## 安装
+</div>
+
+```sh
+# 从 PyPI 安装
+pip install --pre supermemory
+```
+
+
+<div id="usage">
+  ## 使用方法
+</div>
+
+```python
+import os
+from supermemory import Supermemory
+
+client = supermemory(
+    api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # 这是默认值，可以省略
+)
+
+response = client.search.documents(
+    q="与 python 相关的文档",
+)
+print(response.results)
+```
+
+
+<div id="javascript-sdk">
+  ## JavaScript SDK
+</div>
+
+<div id="installation">
+  ## 安装
+</div>
+
+```sh
+npm install supermemory
+```
+
+
+<div id="usage">
+  ## 使用方法
+</div>
+
+```js
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // 这是默认值，可以省略
+});
+
+async function main() {
+  const response = await client.search.documents({ q: 'documents related to python' });
+
+  console.debug(response.results);
+}
+
+main();
+```

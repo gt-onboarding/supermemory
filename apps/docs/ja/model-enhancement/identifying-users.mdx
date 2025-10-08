@@ -1,0 +1,140 @@
+---
+title: "ユーザーの識別"
+description: "supermemory におけるユーザー識別"
+---
+
+`x-sm-user-id` を supermemory に送信すると、組み込みの会話横断メモリーを有効にできます。
+
+<div id="how-supermemory-identifies-users-and-conversations">
+  ## supermemory がユーザーと会話を識別する方法
+</div>
+
+supermemory は、以下の場所からユーザーIDを特定します（優先度順）:
+
+<div id="x-sm-user-id-header">
+  ### `x-sm-user-id` header
+</div>
+
+任意のクライアントやモデルで、デフォルトのヘッダーとして x-sm-user-id を追加できます
+
+<div id="user-in-body">
+  ### 本文内の `user`
+</div>
+
+OpenAI など、本文内で `user` パラメータをサポートするモデルでは、`user` を本文に含めることもできます。
+
+<div id="userid-in-search-params">
+  ### 検索パラメータ内の `userId`
+</div>
+
+モデルがサポートしていない場合に備え、URL の検索パラメータに `?userId=xyz` を追加することもできます。
+
+<div id="conversation-id">
+  ## 会話ID
+</div>
+
+会話識別子が指定されている場合は、メッセージ配列全体をsupermemoryに送る必要はありません。
+
+```typescript
+// 会話IDを提供する場合、毎回すべてのメッセージを送信する必要はありません。supermemoryが自動的にバックフィルします。
+const client = new OpenAI({
+    baseURL:
+"https://api.supermemory.ai/v3/https://api.openai.com/v1",
+    defaultHeaders: {
+        "x-supermemory-api-key":
+            "SUPERMEMORY_API_KEY",
+        "x-sm-user-id": `dhravya`,
+        "x-sm-conversation-id": "conversation-id"
+    },
+})
+
+const messages = [
+{"role" : "user", "text": "SOme long thing"},
+// .... 他の50のメッセージ
+{"role" : "user", "text": "new message"},
+]
+
+const client.generateText(messages)
+
+// 次回は、追加で送信する必要はありません。
+const messages2 = [{"role" : "user", "text": "この会話と昨年行った会話について何を話しましたか？"}]
+
+const client.generateText(messages2)
+```
+
+
+<div id="implementation-examples">
+  ## 実装例
+</div>
+
+<div id="google-gemini">
+  ### Google Gemini
+</div>
+
+```typescript
+const ai = new GoogleGenAI({ apiKey: "YOUR_API_KEY" });
+
+async function main() {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: "AIの仕組みを簡潔に説明してください",
+    config: {
+      httpOptions: {
+        headers: {
+          'x-sm-user-id': "user_123"
+        }
+      }
+    },
+  });
+  console.debug(response.text);
+}
+```
+
+
+<div id="anthropic">
+  ### Anthropic
+</div>
+
+```typescript
+const anthropic = new Anthropic({
+  apiKey: 'YOUR_API_KEY', // デフォルトは process.env["ANTHROPIC_API_KEY"]
+});
+
+async function main() {
+  const msg = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: "Hello, Claude" }],
+  }, {
+    // ヘッダーの使用
+    headers: {
+      'x-sm-user-id': "user_123"
+    }
+  });
+
+  console.debug(msg);
+}
+```
+
+
+<div id="openai">
+  ### OpenAI
+</div>
+
+```typescript
+const openai = new OpenAI({
+  apiKey: "YOUR_API_KEY"
+});
+
+async function main() {
+  const completion = await openai.chat.completions.create({
+    messages: [
+      { role: "user", content: "こんにちは、アシスタント" }
+    ],
+    model: "gpt-5",
+    user: "user_123"
+  });
+
+  console.debug(completion.choices[0].message);
+}
+```

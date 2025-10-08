@@ -1,0 +1,186 @@
+---
+title: "メモリーの検索"
+description: "supermemory からコンテンツを検索して取得する方法を学ぶ"
+---
+
+<Accordion title="ベストプラクティス" defaultOpen icon="sparkles">
+  1. **クエリ設計**:
+     * 自然言語でクエリを書く
+     * 関連するキーワードを含める
+     * 具体的に、ただし冗長になりすぎないようにする
+
+  2. **フィルタリング**:
+     * 精度向上のためにメタデータ filters を使用する
+     * 必要に応じて複数の filters を組み合わせる
+     * 適切な threshold を設定する
+
+  3. **パフォーマンス**:
+     * 適切な結果の limit を設定する
+     * 特定のドキュメント/チャンクに対する filters を使用する
+     * レスポンスの timing を考慮する
+</Accordion>
+
+<div id="basic-search">
+  ## 基本検索
+</div>
+
+保存メモリを検索するには、`/search` にリクエストを送信します:
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/search?q=machine+learning+concepts&limit=10 \
+    --request GET \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+  ```
+
+  ```typescript Typescript
+  await client.search.execute({
+    q: "machine learning concepts",
+    limit: 10,
+  });
+  ```
+
+  ```python Python
+  client.search.execute(
+      q="machine learning concepts",
+      limit=10
+  )
+  ```
+</CodeGroup>
+
+API は、関連する結果を類似度のscoreとともに返します。
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_xyz789",
+      "chunks": [
+        {
+          "content": "機械学習は人工知能の一分野である...",
+          "isRelevant": true,
+          "score": 0.85
+        }
+      ],
+      "score": 0.95,
+      "metadata": {
+        "source": "web",
+        "category": "technology"
+      },
+      "title": "機械学習入門"
+    }
+  ],
+  "total": 1,
+  "timing": 123.45
+}
+```
+
+<div id="search-parameters">
+  ## 検索パラメーター
+</div>
+
+```json
+{
+  "q": "search query", // 必須: 検索クエリ文字列
+  "limit": 10, // オプション: 最大結果数 (デフォルト: 10)
+  "threshold": 0.6, // オプション: 最小類似度スコア (0-1, デフォルト: 0.6)
+  "containerTag": "user_123", // オプション: containerTagでフィルタ
+  "rerank": false, // オプション: より良い関連性のために結果をリエランキング
+  "rewriteQuery": false, // オプション: より良いマッチングのためにクエリを書き換え
+  "include": {
+    "documents": false, // オプション: documentsメタデータを含める
+    "summaries": false, // オプション: documentsサマリーを含める
+    "relatedMemories": false, // オプション: 関連メモリーコンテキストを含める
+    "forgottenMemories": false // オプション: 忘れられたメモリーを結果に含める
+  },
+  "filters": {
+    // オプション: メタデータfilters
+    "AND": [
+      {
+        "key": "category",
+        "value": "technology"
+      }
+    ]
+  }
+}
+```
+
+<div id="search-response">
+  ## 検索レスポンス
+</div>
+
+検索レスポンスには次の内容が含まれます：
+
+```json
+{
+  "results": [
+    {
+      "documentId": "string", // ドキュメントID
+      "chunks": [
+        {
+          // マッチしたchunks
+          "content": "string", // チャンクの内容
+          "isRelevant": true, // 直接関連している
+          "score": 0.95 // 類似度スコア
+        }
+      ],
+      "score": 0.95, // ドキュメントのスコア
+      "metadata": {}, // ドキュメントのメタデータ
+      "title": "string", // ドキュメントのタイトル
+      "createdAt": "string", // 作成日
+      "updatedAt": "string" // 最終更新日
+    }
+  ],
+  "total": 1, // 結果の総数
+  "timing": 123.45 // 検索時間（ms）
+}
+```
+
+<div id="including-forgotten-memories">
+  ## 忘却されたメモリーを含める
+</div>
+
+既定では、検索APIは「忘却」マークが付いたメモリーや、有効期限を過ぎたメモリーを除外します。これらを検索結果に含めるには、`include.forgottenMemories` を `true` に設定します:
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v4/search \
+    --request POST \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --header 'Content-Type: application/json' \
+    --data '{
+      "q": "old project notes",
+      "include": {
+        "forgottenMemories": true
+      }
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.search.memories({
+    q: "old project notes",
+    include: {
+      forgottenMemories: true
+    }
+  });
+  ```
+
+  ```python Python
+  await client.search.memories(
+      q="old project notes",
+      include={
+          "forgottenMemories": True
+      }
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  忘却されたメモリーとは、forget API を使って明示的に忘却されたもの、または自動の有効期限（`forgetAfter`）を過ぎたものを指します。検索結果に含めることで、依然として有用な情報を取り戻せる場合があります。
+</Note>
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+[APIリファレンス](/ja/api-reference/search-memories/search-memories)で、より高度な機能をご覧ください。

@@ -1,0 +1,71 @@
+---
+title: "概要 — Supermemory とは？"
+sidebarTitle: "概要"
+description: "3 つの統合パス（AI SDK、Memory API、または Memory Router）で、LLM に長期メモリーを追加します。"
+---
+
+Supermemory は、LLM に長期メモリーを与えます。ステートレスなテキスト生成に代わり、ファイル、チャット、ツールから適切な事実を想起して、応答を一貫性があり、文脈に沿い、パーソナライズされたものに保ちます。
+
+<div id="how-does-it-work-at-a-glance">
+  ## 仕組み（ざっくり）
+</div>
+
+![](/images/overview-image.png)
+
+* Supermemory にテキスト、ファイル、チャットを送ります。
+* Supermemory は[それらを賢くインデックス化](/ja/how-it-works)し、エンティティ（例：ユーザー、ドキュメント、プロジェクト、組織）ごとにセマンティックな理解グラフを構築します。
+* クエリ時には、最も関連性の高いコンテキストだけを取得して、あなたのモデルに渡します。
+
+LLM（Large Language Model／大規模言語モデル）にメモリーを追加する方法を3つ提供しています：
+
+<div id="memory-api-full-control">
+  ### Memory API — 完全なコントロール
+</div>
+
+* テキスト、ファイル、チャットを取り込み（マルチモーダル対応）、検索・フィルタリング、結果の再ランク付けに対応。
+* 人間の脳の働きをモデル化し、賢い忘却、減衰、新近性バイアス、コンテキストの書き換えなどを実装。
+* API + SDK（ソフトウェア開発キット）（Node と Python 向け）。本番環境でスケールする設計。
+
+<Info>
+  Memory API の完全な API ドキュメントは[こちら](/ja/api-reference/manage-memories/add-memory)をご参照ください。
+</Info>
+
+<div id="ai-sdk">
+  ### AI SDK
+</div>
+
+* `@supermemory/tools/ai-sdk` による Vercel AI SDK（VercelのAI向けSoftware Development Kit）とのネイティブ統合
+* エージェント向けの Memory Tools や、自動コンテキスト付与のための Infinite Chat（インフィニット チャット）
+* streamText、generateText をはじめ、AI SDK の全機能に対応
+
+```typescript
+import { streamText } from "ai"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const result = await streamText({
+  model: anthropic("claude-3"),
+  tools: supermemoryTools("YOUR_KEY")
+})
+```
+
+<Info>
+  新規プロジェクトには Vercel AI SDK を利用する場合、AI SDK の使用を推奨します。Router は既存の**チャットアプリケーション**に最適で、一方 Memory API はきめ細かな制御が可能な**完全なメモリーデータベース**として機能します。
+</Info>
+
+<div id="memory-router-drop-in-proxy-with-minimal-code">
+  ### Memory Router — 最小限のコードで導入できるドロップイン型プロキシ
+</div>
+
+* 既存の LLM クライアントはそのまま、ベース URL に `api.supermemory.ai/v3/` を追記するだけ。
+* コンテキストウィンドウに合わせた自動チャンク分割とトークン管理。
+* 既存の LLM リクエストに対して追加のレイテンシーは最小限。
+
+<Note>
+  同じユーザー ID を使用する場合、3 つのアプローチはいずれも**同じメモリープール**を共有します。ニーズに応じて組み合わせて利用できます。
+</Note>
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+[**Router vs API**](/ja/routervsapi) ガイドに進み、両者の技術的な違いを理解したうえで、4つの簡単な質問フローで最適な選択をしましょう。

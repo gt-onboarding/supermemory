@@ -1,0 +1,536 @@
+---
+title: "Filtragem de memórias"
+description: "Filtre memórias por tags de contêiner e metadata usando filtragem baseada em SQL"
+---
+
+Filtre memórias usando tags de contêiner e metadata. O sistema de filtragem utiliza construção de consultas SQL, portanto você precisa estruturar seus filters como consultas de banco de dados.
+
+<div id="filter-by-container-tags">
+  ## Filtrar por tags de container
+</div>
+
+As tags de container usam correspondência exata de array — as memórias devem ter exatamente as mesmas tags na mesma ordem.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Tag única - corresponde a memórias exatamente com ["user_123"]
+    const userMemories = await client.memories.list({
+      containerTags: ["user_123"]
+    });
+
+    // Múltiplas tags - corresponde a memórias exatamente com ["user_123", "project_ai"]
+    const projectMemories = await client.memories.list({
+      containerTags: ["user_123", "project_ai"]
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Tag única
+    user_memories = client.memories.list(container_tags=["user_123"])
+
+    # Múltiplas tags (correspondência exata)
+    project_memories = client.memories.list(
+        container_tags=["user_123", "project_ai"]
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Tag única
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user_123"]}'
+
+    # Múltiplas tags
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user_123", "project_ai"]}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="metadata-filtering-with-sql-logic">
+  ## Filtragem de metadata com lógica SQL
+</div>
+
+O parâmetro `filters` permite filtrar por campos de metadata usando estruturas de consulta semelhantes a SQL. Como usamos construção de consultas SQL no backend, você precisa estruturar seus `filters` como consultas de banco de dados com lógica explícita de AND/OR.
+
+<div id="why-this-structure">
+  ### Por que esta estrutura?
+</div>
+
+Em bancos de dados SQL, `AND` tem precedência maior que `OR`. Sem um agrupamento explícito, uma consulta como:
+
+```
+category = 'programming' OR framework = 'react' AND difficulty = 'advanced'
+```
+
+É interpretado como:
+
+```
+categoria = 'programação' OR (framework = 'react' AND dificuldade = 'avançado')
+```
+
+A estrutura JSON exige agrupamento explícito para evitar resultados inesperados.
+
+<Info>
+  **Regras da Estrutura de Filtro:**
+
+  * Sempre coloque as condições em arrays `AND` ou `OR` (mesmo quando houver apenas uma condição)
+  * Use `JSON.stringify()` para converter o objeto de filtro em string
+  * Cada condição precisa das propriedades `key`, `value` e `negate`
+  * `negate: false` para correspondência normal, `negate: true` para exclusão
+</Info>
+
+
+<div id="simple-metadata-filter">
+  ### Filtro simples de metadata
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Filtrar por um único campo de metadata
+    const programmingMemories = await client.memories.list({
+      filters: JSON.stringify({
+        AND: [
+          { key: "category", value: "programming", negate: false }
+        ]
+      })
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    import json
+
+    # Filtrar por um único campo de metadata
+    programming_memories = client.memories.list(
+        filters=json.dumps({
+            "AND": [
+                {"key": "category", "value": "programming", "negate": False}
+            ]
+        })
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "filters": "{\"AND\":[{\"key\":\"category\",\"value\":\"programming\",\"negate\":false}]}"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="multiple-conditions-and-logic">
+  ### Múltiplas condições (lógica AND)
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Todas as condições devem ser atendidas
+    const reactTutorials = await client.memories.list({
+      filters: JSON.stringify({
+        AND: [
+          { key: "category", value: "tutorial", negate: false },
+          { key: "framework", value: "react", negate: false },
+          { key: "difficulty", value: "beginner", negate: false }
+        ]
+      })
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Todas as condições devem ser atendidas
+    react_tutorials = client.memories.list(
+        filters=json.dumps({
+            "AND": [
+                {"key": "category", "value": "tutorial", "negate": False},
+                {"key": "framework", "value": "react", "negate": False},
+                {"key": "difficulty", "value": "beginner", "negate": False}
+            ]
+        })
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "filters": "{\"AND\":[{\"key\":\"category\",\"value\":\"tutorial\",\"negate\":false},{\"key\":\"framework\",\"value\":\"react\",\"negate\":false}]}"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="alternative-conditions-or-logic">
+  ### Condições alternativas (lógica OR)
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Qualquer condição pode ser atendida
+    const frontendMemories = await client.memories.list({
+      filters: JSON.stringify({
+        OR: [
+          { key: "framework", value: "react", negate: false },
+          { key: "framework", value: "vue", negate: false },
+          { key: "framework", value: "angular", negate: false }
+        ]
+      })
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Qualquer condição pode ser atendida
+    frontend_memories = client.memories.list(
+        filters=json.dumps({
+            "OR": [
+                {"key": "framework", "value": "react", "negate": False},
+                {"key": "framework", "value": "vue", "negate": False},
+                {"key": "framework", "value": "angular", "negate": False}
+            ]
+        })
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "filters": "{\"OR\":[{\"key\":\"framework\",\"value\":\"react\",\"negate\":false},{\"key\":\"framework\",\"value\":\"vue\",\"negate\":false}]}"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="complex-nested-logic">
+  ### Lógica complexa com aninhamento
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Lógica complexa: programming AND (react OR advanced difficulty)
+    const advancedContent = await client.memories.list({
+      filters: JSON.stringify({
+        AND: [
+          { key: "category", value: "programming", negate: false },
+          {
+            OR: [
+              { key: "framework", value: "react", negate: false },
+              { key: "difficulty", value: "advanced", negate: false }
+            ]
+          }
+        ]
+      })
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Lógica complexa: programming AND (react OR advanced difficulty)
+    advanced_content = client.memories.list(
+        filters=json.dumps({
+            "AND": [
+                {"key": "category", "value": "programming", "negate": False},
+                {
+                    "OR": [
+                        {"key": "framework", "value": "react", "negate": False},
+                        {"key": "difficulty", "value": "advanced", "negate": False}
+                    ]
+                }
+            ]
+        })
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "filters": "{\"AND\":[{\"key\":\"category\",\"value\":\"programming\",\"negate\":false},{\"OR\":[{\"key\":\"framework\",\"value\":\"react\",\"negate\":false},{\"key\":\"difficulty\",\"value\":\"advanced\",\"negate\":false}]}]}"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="array-contains-filtering">
+  ## Filtragem por “array contains”
+</div>
+
+Filtre memórias que contenham valores específicos em campos de array, como participantes, tags ou membros da equipe.
+
+<div id="basic-array-contains">
+  ### array_contains básico
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Encontre memórias em que john.doe participou
+    const meetingMemories = await client.memories.list({
+      filters: JSON.stringify({
+        AND: [
+          {
+            key: "participants",
+            value: "john.doe",
+            filterType: "array_contains",
+            negate: false
+          }
+        ]
+      })
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Encontre memórias em que john.doe participou
+    meeting_memories = client.memories.list(
+        filters=json.dumps({
+            "AND": [
+                {
+                    "key": "participants",
+                    "value": "john.doe",
+                    "filterType": "array_contains",
+                    "negate": False
+                }
+            ]
+        })
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "filters": "{\"AND\":[{\"key\":\"participants\",\"value\":\"john.doe\",\"filterType\":\"array_contains\",\"negate\":false}]}"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="array-contains-with-exclusion">
+  ### array_contains com exclusão
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Encontrar memories que não incluem um membro específico da equipe
+    const filteredMemories = await client.memories.list({
+      filters: JSON.stringify({
+        AND: [
+          {
+            key: "reviewers",
+            value: "external.consultant",
+            filterType: "array_contains",
+            negate: true  // Excluir memories com consultores externos
+          },
+          {
+            key: "project_tags",
+            value: "internal-only",
+            filterType: "array_contains",
+            negate: false
+          }
+        ]
+      })
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Encontrar memories que não incluem um membro específico da equipe
+    filtered_memories = client.memories.list(
+        filters=json.dumps({
+            "AND": [
+                {
+                    "key": "reviewers",
+                    "value": "external.consultant",
+                    "filterType": "array_contains",
+                    "negate": True  # Excluir memories com consultores externos
+                },
+                {
+                    "key": "project_tags",
+                    "value": "internal-only",
+                    "filterType": "array_contains",
+                    "negate": False
+                }
+            ]
+        })
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "filters": "{\"AND\":[{\"key\":\"reviewers\",\"value\":\"external.consultant\",\"filterType\":\"array_contains\",\"negate\":true},{\"key\":\"project_tags\",\"value\":\"internal-only\",\"filterType\":\"array_contains\",\"negate\":false}]}"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="multiple-array-contains-or-logic">
+  ### Vários array_contains (lógica OR)
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Encontre memórias que envolvam qualquer um de vários líderes de equipe
+    const leadershipMemories = await client.memories.list({
+      filters: JSON.stringify({
+        OR: [
+          {
+            key: "attendees",
+            value: "engineering.lead",
+            filterType: "array_contains"
+          },
+          {
+            key: "attendees",
+            value: "product.lead",
+            filterType: "array_contains"
+          },
+          {
+            key: "attendees",
+            value: "design.lead",
+            filterType: "array_contains"
+          }
+        ]
+      }),
+      sort: "updatedAt",
+      order: "desc"
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Encontre memórias que envolvam qualquer um de vários líderes de equipe
+    leadership_memories = client.memories.list(
+        filters=json.dumps({
+            "OR": [
+                {
+                    "key": "attendees",
+                    "value": "engineering.lead",
+                    "filterType": "array_contains"
+                },
+                {
+                    "key": "attendees",
+                    "value": "product.lead",
+                    "filterType": "array_contains"
+                },
+                {
+                    "key": "attendees",
+                    "value": "design.lead",
+                    "filterType": "array_contains"
+                }
+            ]
+        }),
+        sort="updatedAt",
+        order="desc"
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "filters": "{\"OR\":[{\"key\":\"attendees\",\"value\":\"engineering.lead\",\"filterType\":\"array_contains\"},{\"key\":\"attendees\",\"value\":\"product.lead\",\"filterType\":\"array_contains\"},{\"key\":\"attendees\",\"value\":\"design.lead\",\"filterType\":\"array_contains\"}]}",
+        "sort": "updatedAt",
+        "order": "desc"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="combined-container-tags-metadata-filtering">
+  ## Combinação de container tags + filtragem por metadata
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const filteredMemories = await client.memories.list({
+      containerTags: ["user_123"],
+      filters: JSON.stringify({
+        AND: [
+          { key: "category", value: "tutorial", negate: false },
+          { key: "framework", value: "react", negate: false }
+        ]
+      }),
+      sort: "updatedAt",
+      order: "desc",
+      limit: 50
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    filtered_memories = client.memories.list(
+        container_tags=["user_123"],
+        filters=json.dumps({
+            "AND": [
+                {"key": "category", "value": "tutorial", "negate": False},
+                {"key": "framework", "value": "react", "negate": False}
+            ]
+        }),
+        sort="updatedAt",
+        order="desc",
+        limit=50
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user_123"],
+        "filters": "{\"AND\":[{\"key\":\"category\",\"value\":\"tutorial\",\"negate\":false},{\"key\":\"framework\",\"value\":\"react\",\"negate\":false}]}",
+        "sort": "updatedAt",
+        "order": "desc",
+        "limit": 50
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+**Erros comuns:**
+- Usar objetos de condição isolados: `{"key": "category", "value": "programming"}`
+- Esquecer de usar JSON.stringify: passar objetos em vez de strings
+- Omitir a propriedade negate: sempre inclua `"negate": false` ou `"negate": true`
+</Warning>
+
+<Note>
+**Container tags vs filtragem por metadata:**
+- Container tags: correspondência exata do array para agrupamento organizacional
+- Filtros de metadata: consultas em estilo SQL sobre campos de metadata personalizados com lógica complexa
+- Ambos podem ser combinados para oferecer capacidades poderosas de filtragem
+</Note>

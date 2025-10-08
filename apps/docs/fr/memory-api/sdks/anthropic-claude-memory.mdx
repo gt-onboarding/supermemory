@@ -1,0 +1,436 @@
+---
+title: "Outil de mémoire Claude"
+description: "Activez les capacités de mémoire persistante de Claude avec Supermemory comme backend"
+---
+
+Activez l’outil de mémoire natif de Claude avec Supermemory comme stockage persistant en backend. Claude peut automatiquement enregistrer et récupérer des informations d’une conversation à l’autre en utilisant des opérations de système de fichiers familières.
+
+<Card title="Supermemory tools on npm" icon="npm" href="https://www.npmjs.com/package/@supermemory/tools">
+  Consultez la page npm pour plus de détails
+</Card>
+
+<div id="installation">
+  ## Installation
+</div>
+
+```bash
+npm install @supermemory/tools @anthropic-ai/sdk
+```
+
+<div id="quick-start">
+  ## Prise en main
+</div>
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk"
+import { createClaudeMemoryTool } from "@supermemory/tools/claude-memory"
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+})
+
+const memoryTool = createClaudeMemoryTool(process.env.SUPERMEMORY_API_KEY!, {
+  projectId: 'my-app',
+})
+
+async function chatWithMemory(userMessage: string) {
+  const response = await anthropic.beta.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 8096,
+    tools: [{ type: 'memory_20250818', name: 'memory' }],
+    betas: ['context-management-2025-06-27'],
+    messages: [{ role: 'user', content: userMessage }],
+  })
+
+  // Gérer les appels d'outils de mémoire
+  for (const block of response.content) {
+    if (block.type === 'tool_use' && block.name === 'memory') {
+      const result = await memoryTool.handleCommandForToolResult(
+        block.input as MemoryCommand,
+        block.id
+      )
+      console.log('Résultat de l\'opération de mémoire :', result)
+    }
+  }
+
+  return response
+}
+```
+
+<div id="how-it-works">
+  ## Fonctionnement
+</div>
+
+L’outil de memory de Claude utilise une métaphore de système de fichiers pour gérer des informations persistantes :
+
+* **Fichiers** : Éléments de memory individuels stockés comme documents Supermemory
+* **Répertoires** : Organisés à l&#39;aide d&#39;une structure de chemin (par exemple `/memories/user-preferences`)
+* **Opérations** : Afficher, créer, modifier, supprimer et renommer des fichiers
+* **Normalisation des chemins** : Les chemins comme `/memories/preferences` sont stockés sous la forme `--memories--preferences`
+
+<div id="configuration">
+  ## Configuration
+</div>
+
+<div id="basic-configuration">
+  ### Configuration de base
+</div>
+
+```typescript
+import { createClaudeMemoryTool } from "@supermemory/tools/claude-memory"
+
+const memoryTool = createClaudeMemoryTool(
+  process.env.SUPERMEMORY_API_KEY!,
+  {
+    projectId: 'my-app',           // Identifiant de projet
+    baseUrl: 'https://api.supermemory.ai', // Optionnel : endpoint API personnalisé
+  }
+)
+```
+
+<div id="using-container-tags">
+  ### Utilisation des balises de conteneur
+</div>
+
+```typescript
+const memoryTool = createClaudeMemoryTool(
+  process.env.SUPERMEMORY_API_KEY!,
+  {
+    containerTags: ['user:alice', 'app:chat'],
+  }
+)
+```
+
+<div id="memory-operations">
+  ## Opérations sur les memory
+</div>
+
+Claude exécute automatiquement les opérations suivantes lors de la gestion des memory :
+
+<div id="view-files">
+  ### Afficher les fichiers
+</div>
+
+Lister le contenu d’un répertoire ou lire le contenu d’un fichier :
+
+```typescript
+// Claude vérifiera automatiquement le répertoire /memories/
+// Cela correspond à la recherche de documents Supermemory avec préfixe de chemin
+```
+
+<div id="create-files">
+  ### Créer des fichiers
+</div>
+
+Enregistrer de nouvelles informations :
+
+```typescript
+// Claude crée : /memories/user-preferences.txt
+// Stocké en tant que document avec customId : "--memories--user-preferences.txt"
+```
+
+<div id="edit-files">
+  ### Modifier des fichiers
+</div>
+
+Mettez à jour des memories existantes par remplacement de chaîne :
+
+```typescript
+// Claude effectue str_replace sur le contenu du fichier
+// Met à jour le document Supermemory correspondant
+```
+
+<div id="delete-files">
+  ### Supprimer des fichiers
+</div>
+
+Supprimer des informations :
+
+```typescript
+// Claude supprime : /memories/old-data.txt
+// Supprime le document de Supermemory
+```
+
+<div id="rename-files">
+  ### Renommer des fichiers
+</div>
+
+Réorganiser la structure des memory :
+
+```typescript
+// Claude renomme : /memories/temp.txt -> /memories/final.txt
+// Met à jour le customId du document dans Supermemory
+```
+
+<div id="complete-chat-example">
+  ## Exemple complet de chat
+</div>
+
+Voici un exemple complet avec gestion de conversation :
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk"
+import { createClaudeMemoryTool, type MemoryCommand } from "@supermemory/tools/claude-memory"
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+})
+
+const memoryTool = createClaudeMemoryTool(process.env.SUPERMEMORY_API_KEY!, {
+  projectId: 'chat-app',
+})
+
+async function chat() {
+  const messages: Anthropic.MessageParam[] = []
+
+  // Premier message : enregistrer des informations
+  messages.push({
+    role: 'user',
+    content: 'Retiens que je préfère le mode sombre et que j’utilise TypeScript'
+  })
+
+  let response = await anthropic.beta.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 8096,
+    tools: [{ type: 'memory_20250818', name: 'memory' }],
+    betas: ['context-management-2025-06-27'],
+    messages,
+  })
+
+  // Traiter les appels d’outils
+  const toolResults: Anthropic.ToolResultBlockParam[] = []
+
+  for (const block of response.content) {
+    if (block.type === 'tool_use' && block.name === 'memory') {
+      const result = await memoryTool.handleCommandForToolResult(
+        block.input as MemoryCommand,
+        block.id
+      )
+      toolResults.push(result)
+    }
+  }
+
+  // Poursuivre la conversation avec les résultats des outils
+  if (toolResults.length > 0) {
+    messages.push({ role: 'assistant', content: response.content })
+    messages.push({ role: 'user', content: toolResults })
+
+    response = await anthropic.beta.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 8096,
+      tools: [{ type: 'memory_20250818', name: 'memory' }],
+      betas: ['context-management-2025-06-27'],
+      messages,
+    })
+  }
+
+  console.log(response.content)
+}
+
+chat()
+```
+
+<div id="advanced-usage">
+  ## Utilisation avancée
+</div>
+
+<div id="custom-path-management">
+  ### Gestion personnalisée des chemins d’accès
+</div>
+
+Contrôlez l’emplacement où Claude stocke les informations :
+
+```typescript
+// Claude organise automatiquement par chemin
+// /memories/preferences/editor.txt
+// /memories/projects/current.txt
+// /memories/notes/meeting-2024.txt
+
+// Chaque chemin est normalisé et stocké avec les métadonnées appropriées
+```
+
+<div id="error-handling">
+  ### Gestion des erreurs
+</div>
+
+Gérez les opérations de manière robuste et fluide :
+
+```typescript
+const result = await memoryTool.handleCommandForToolResult(command, toolUseId)
+
+if (result.is_error) {
+  console.error('Échec de l’opération de memory :', result.content)
+  // Gérer l’erreur de manière appropriée
+} else {
+  console.log('Succès :', result.content)
+}
+```
+
+<div id="monitoring-operations">
+  ### Suivi des opérations
+</div>
+
+Suivez les opérations de memory :
+
+```typescript
+for (const block of response.content) {
+  if (block.type === 'tool_use' && block.name === 'memory') {
+    console.log('Opération :', block.input.command)
+    console.log('Chemin :', block.input.path)
+
+    const result = await memoryTool.handleCommandForToolResult(
+      block.input as MemoryCommand,
+      block.id
+    )
+
+    console.log('Résultat :', result.is_error ? 'Échec' : 'Succès')
+  }
+}
+```
+
+<div id="memory-organization">
+  ## Organisation des memory
+</div>
+
+<div id="best-practices">
+  ### Bonnes pratiques
+</div>
+
+1. **Utilisez des chemins explicites** : `/memories/user-preferences/theme.txt` est préférable à `/mem1.txt`
+2. **Organisez par catégorie** : Regroupez les informations connexes dans des répertoires
+3. **Gardez des fichiers focalisés** : Stockez les informations spécifiques dans des fichiers séparés
+4. **Nommez clairement** : Donnez des noms de fichiers explicites
+
+<div id="path-structure-examples">
+  ### Exemples de structure de chemin d’accès
+</div>
+
+```
+/memories/
+  ├── profil-utilisateur/
+  │   ├── nom.txt
+  │   ├── preferences.txt
+  │   └── parametres.txt
+  ├── projets/
+  │   ├── tache-actuelle.txt
+  │   └── objectifs.txt
+  └── notes/
+      ├── notes-reunion.txt
+      └── idees.txt
+```
+
+<div id="api-reference">
+  ## Référence de l’API
+</div>
+
+<div id="createclaudememorytoolapikey-config">
+  ### `createClaudeMemoryTool(apiKey, config)`
+</div>
+
+Crée une instance d’outil de memory pour Claude.
+
+**Paramètres :**
+
+* `apiKey` (string) : votre clé d’API Supermemory
+* `config` (optional) :
+  * `projectId` (string) : identifiant du projet
+  * `containerTags` (string[]) : alternative à projectId
+  * `baseUrl` (string) : endpoint API personnalisé
+
+**Retourne :** instance de `ClaudeMemoryTool`
+
+<div id="handlecommandfortoolresultcommand-tooluseid">
+  ### `handleCommandForToolResult(command, toolUseId)`
+</div>
+
+Traite une commande de memory et renvoie un résultat formaté.
+
+**Paramètres :**
+
+* `command` (MemoryCommand) : L’opération de memory envoyée par Claude
+* `toolUseId` (string) : L’ID d’utilisation de l’outil provenant de la réponse de Claude
+
+**Renvoie :** `Promise<MemoryToolResult>` avec :
+
+* `type` : &quot;tool&#95;result&quot;
+* `tool_use_id` : L’ID d’utilisation de l’outil
+* `content` : Résultat de l’opération ou message d’erreur
+* `is_error` : Booléen indiquant la réussite ou l’échec
+
+<div id="memory-commands">
+  ## Commandes de memory
+</div>
+
+Claude utilise ces types de commandes en interne :
+
+| Commande | Description | Exemple |
+|---------|-------------|---------|
+| `view` | Lister un répertoire ou lire un fichier | `/memories/` ou `/memories/file.txt` |
+| `create` | Créer un nouveau fichier | Créer `/memories/new.txt` avec du contenu |
+| `str_replace` | Modifier le contenu d’un fichier | Remplacer « old text » par « new text » |
+| `insert` | Ajouter du contenu à une ligne | Insérer à la ligne 5 |
+| `delete` | Supprimer un fichier | Supprimer `/memories/old.txt` |
+| `rename` | Renommer/déplacer un fichier | Renommer `old.txt` en `new.txt` |
+
+<div id="environment-variables">
+  ## Variables d’environnement
+</div>
+
+```bash
+ANTHROPIC_API_KEY=votre_clef_anthropic
+SUPERMEMORY_API_KEY=votre_clef_supermemory
+```
+
+<div id="when-to-use">
+  ## Quand l’utiliser
+</div>
+
+L’outil Claude Memory est idéal pour :
+
+* **IA conversationnelle** : Claude retient automatiquement les préférences et le contexte de l’utilisateur
+* **Assistants personnels** : Stocker et récupérer des informations propres à l’utilisateur
+* **Bots de documentation** : Conserver les connaissances d’une conversation à l’autre
+* **Gestion de projet** : Suivre les tâches et l’état d’avancement
+* **Applications de prise de notes** : memory persistante pour les comptes rendus de réunion et les idées
+
+<div id="comparison-with-other-approaches">
+  ## Comparaison avec d’autres approches
+</div>
+
+| Fonctionnalité | Outil de memory de Claude | Outils du SDK OpenAI | Outils du SDK d’IA |
+|---------|-------------------|------------------|--------------|
+| Memory automatique | ✅ Claude décide | ❌ Contrôle manuel | ❌ Contrôle manuel |
+| Métaphore du système de fichiers | ✅ Fichiers/répertoires | ❌ Stockage à plat | ❌ Stockage à plat |
+| Organisation par chemin | ✅ Hiérarchique | ❌ Tags uniquement | ❌ Tags uniquement |
+| Intégration | SDK Anthropic uniquement | SDK OpenAI uniquement | Vercel AI SDK |
+
+<div id="limitations">
+  ## Limitations
+</div>
+
+* Nécessite le SDK Anthropic avec les fonctionnalités bêta activées
+* Les séparateurs de chemin (`/`) sont convertis en `--` pour le stockage
+* 100 fichiers maximum par liste de répertoire
+* Les opérations sur les fichiers sont asynchrones
+
+<div id="next-steps">
+  ## Prochaines étapes
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Outils SDK OpenAI" icon="sparkles" href="/fr/memory-api/sdks/openai-plugins">
+    Utilisez les Memory Tools avec l’appel de fonctions d’OpenAI
+  </Card>
+
+  <Card title="Intégration du SDK d’IA" icon="triangle" href="/fr/ai-sdk/overview">
+    Intégrez le Vercel AI SDK
+  </Card>
+
+  <Card title="Memory API" icon="database" href="/fr/memory-api/overview">
+    Accès direct à l’API pour un contrôle avancé
+  </Card>
+
+  <Card title="Cookbook" icon="chef-hat" href="/fr/cookbook/overview">
+    Découvrez des exemples concrets
+  </Card>
+</CardGroup>

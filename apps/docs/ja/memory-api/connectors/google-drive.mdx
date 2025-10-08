@@ -1,0 +1,34 @@
+---
+title: "Google Drive"
+description: "Google Drive のコンテンツを supermemory と同期する"
+---
+
+supermemory は Google Drive の documents を自動かつ即時に同期します。
+
+<div id="supported-file-types">
+  ## サポートされるファイル形式
+</div>
+
+- Google ドキュメント
+- Google スライド
+- Google スプレッドシート
+
+<div id="conversions">
+  ## 変換
+</div>
+
+アイテムをインポートする際、supermemory は documents を Markdown に変換し、その後それらを supermemory に取り込みます。
+この変換は非可逆で、一部の書式が失われる場合があります。
+
+<div id="sync-frequency">
+  ## 同期頻度
+</div>
+
+supermemory は documents を次のタイミングで同期します:
+
+- **document が更新または作成されたとき（Webhook 受信時）**
+    - すべてのプロバイダが webhook 同期に対応しているわけではありません（現時点ではインスタント同期の対象が限定されます）
+    - `Google-Drive` と `Notion` の documents は即時に同期されます
+- **4時間**ごと
+- **Manual Sync**（API 呼び出し）時
+    - documents を手動で同期するには `/v3/connections/{provider}/sync` を呼び出してください

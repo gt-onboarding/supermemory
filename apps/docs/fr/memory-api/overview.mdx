@@ -1,0 +1,158 @@
+---
+title: "Démarrage rapide — 5 min"
+description: "Découvrez comment intégrer supermemory à votre application"
+---
+
+<div id="authentication">
+  ## Authentification
+</div>
+
+Rendez-vous sur la [Plateforme développeur de Supermemory](https://console.supermemory.ai), conçue pour vous aider à surveiller et à gérer chaque aspect de l’API.
+
+Toutes les requêtes vers l’API nécessitent une authentification avec une clé d’API. Incluez votre clé d’API comme suit :
+
+<CodeGroup>
+  ```bash cURL
+  Authorization: Bearer YOUR_API_KEY
+  ```
+
+  ```typescript Typescript
+  // npm install supermemory
+
+  const client = new supermemory({
+    apiKey: "YOUR_API_KEY",
+  });
+  ```
+
+  ```python Python
+  # pip install supermemory
+
+  client = supermemory(
+      api_key="YOUR_API_KEY",
+  )
+  ```
+</CodeGroup>
+
+<div id="installing-the-clients">
+  ## Installation des clients
+</div>
+
+Vous pouvez utiliser supermemory via l’API ou avec nos SDKs
+
+<CodeGroup>
+  ```bash cURL
+  https://api.supermemory.ai/v3
+  ```
+
+  ```bash Typescript
+  npm i supermemory
+  ```
+
+  ```bash Python
+  pip install supermemory
+  ```
+</CodeGroup>
+
+<div id="add-your-first-memory">
+  ## Ajoutez votre première memory
+</div>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{"content": "This is the content of my first memory."}'
+  ```
+
+  ```typescript Typescript
+  await client.memory.add({
+    content: "This is the content of my first memory.",
+  });
+  ```
+
+  ```python Python
+  client.memory.add(
+      content="This is the content of my first memory.",
+  )
+  ```
+</CodeGroup>
+
+Cela ajoutera une nouvelle memory à votre compte Supermemory.
+
+Essayez-le dans le [API Playground](/fr/api-reference/manage-memories/add-memory).
+
+<div id="content-processing">
+  ## Traitement du contenu
+</div>
+
+<Accordion title="Étapes de traitement" icon="sparkles">
+  Lorsque vous ajoutez du contenu à supermemory, il passe par plusieurs étapes de traitement :
+
+  1. **En attente** : État initial lors de la soumission du contenu
+  2. **Extraction** : Extraction du contenu depuis la source
+  3. **Segmentation en chunks** : Division du contenu en segments sémantiques
+  4. **Embedding** : Génération d’embeddings vectoriels pour la recherche
+  5. **Indexation** : Ajout du contenu à l’index de recherche
+  6. **Terminé** : Traitement achevé
+</Accordion>
+
+<Accordion title="Segmentation en chunks avancée" icon="sparkles">
+  Le système utilise des techniques NLP avancées pour une segmentation optimale :
+
+  * Découpage au niveau de la phrase pour des limites naturelles
+  * Préservation du contexte avec des chunks qui se chevauchent
+  * Gestion intelligente des contenus longs
+  * Optimisation de la cohérence sémantique
+</Accordion>
+
+<div id="search-your-memories">
+  ## Rechercher vos memories
+</div>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/search \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{"q": "This is the content of my first memory."}'
+  ```
+
+  ```typescript Typescript
+  await client.search.execute({
+    q: "This is the content of my first memory.",
+  });
+  ```
+
+  ```python Python
+  client.search.execute(
+      q="This is the content of my first memory.",
+  )
+  ```
+</CodeGroup>
+
+Essayez-le dans l&#39;[API Playground](/fr/api-reference/search-memories/search-memories).
+
+Vous pouvez faire bien plus avec supermemory, et nous vous guiderons à chaque étape.
+
+Ensuite, explorez les fonctionnalités disponibles dans supermemory
+
+<CardGroup cols={2}>
+  <Card title="Ajouter des memories" icon="plus" href="/fr/memory-api/creation">
+    Ajouter des memories
+  </Card>
+
+  <Card title="Recherche et filtrage" icon="search" href="/fr/memory-api/searching">
+    Rechercher des éléments
+  </Card>
+
+  <Card title="Connecteurs et synchronisation" icon="plug" href="/fr/memory-api/connectors">
+    Connexion à des sources externes
+  </Card>
+
+  <Card title="Fonctionnalités" icon="sparkles" href="/fr/memory-api/features">
+    Explorer les fonctionnalités
+  </Card>
+</CardGroup>

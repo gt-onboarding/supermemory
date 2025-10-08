@@ -1,0 +1,309 @@
+---
+title: "过滤"
+description: "了解如何在 supermemory 中搜索时进行内容筛选"
+icon: "list-filter-plus"
+---
+
+<div id="container-tag">
+  ## 容器标签
+</div>
+
+容器标签用于标识你的终端用户，以便将记忆存储分组管理。
+
+它可以是：
+
+- 使用你产品的某个用户
+- 使用某个 SaaS 的组织
+- 一个项目 ID，甚至是一个动态标识，例如 `user_project_etc`
+
+我们建议在所有 API 请求中使用单一的 containerTag。
+
+图谱建立在容器标签之上。例如，你的 supermemory 账户中的每个用户/标签都会各自构建一张独立的图谱。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --data '{
+    "q": "machine learning",
+    "containerTags": ["user_123"]
+  }'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "machine learning",
+  containerTags: ["user_123"],
+});
+```
+
+```python Python
+client.search.execute(
+    q="machine learning",
+    containerTags=["user_123"]
+)
+```
+
+</CodeGroup>
+
+<div id="metadata">
+  ## Metadata
+</div>
+
+有时，你可能需要添加 Metadata，并基于其进行高级过滤。
+
+借助 Metadata 过滤，你可以按以下方式进行搜索：
+
+- AND 和 OR 条件
+- 字符串匹配
+- 数值匹配
+- 日期匹配
+- 时间范围查询
+
+<div id="validation-rules-limits">
+  ### 验证规则与限制
+</div>
+
+为确保性能与安全，过滤系统设有以下限制：
+
+- **Metadata 键**：仅可包含字母、数字、下划线和连字符（`/^[a-zA-Z0-9_-]+$/`）
+- **Metadata 键长度**：最多 64 个字符
+- **条件数量上限**：每个查询最多 200 个条件
+- **嵌套深度上限**：AND/OR 表达式最多可嵌套 8 层
+- **可用运算符**：用于数值过滤的 `=`、`!=`、`<`、`<=`、`>`、`>=`
+
+<Warning>
+这些限制可避免过度复杂的查询影响性能。若需在更多条件上过滤，建议将查询拆分为多个请求，或使用更宽泛的搜索词并在后处理中细化。
+</Warning>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --data '{
+    "q": "machine learning",
+    "filters": {
+        "AND": [
+            {
+                "key": "category",
+                "value": "technology",
+                "negate": false
+            },
+            {
+                "filterType": "numeric",
+                "key": "readingTime",
+                "value": "5",
+                "negate": false,
+                "numericOperator": "<="
+            }
+        ]
+    }
+}'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "machine learning",
+  filters: {
+    AND: [
+      {
+        key: "category",
+        value: "technology",
+        negate: false,
+      },
+      {
+        filterType: "numeric",
+        key: "readingTime",
+        value: "5",
+        negate: false,
+        numericOperator: "<=",
+      },
+    ],
+  },
+});
+```
+
+```python Python
+client.search.execute(
+    q="machine learning",
+    filters={
+        "AND": [
+            {
+                "key": "category",
+                "value": "technology",
+                "negate": false
+            },
+            {
+                "filterType": "numeric",
+                "key": "readingTime",
+                "value": "5",
+                "negate": false,
+                "numericOperator": "<="
+            }
+        ]
+    }
+)
+```
+
+</CodeGroup>
+
+<div id="array-contains-filtering">
+  ## 数组包含筛选
+</div>
+
+你可以使用 `array_contains` 筛选类型按数组值筛选记忆存储。这对按参与者或其他基于数组的 Metadata 进行过滤尤其有用。
+
+首先，在 Metadata 中创建包含参与者的记忆存储：
+
+<CodeGroup>
+
+```bash cURL
+curl --location 'https://api.supermemory.ai/v3/documents' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+--data '{
+    "content": "quarterly planning meeting discussion",
+    "metadata": {
+        "participants": ["john.doe", "sarah.smith", "mike.wilson"]
+    }
+  }'
+```
+
+```typescript Typescript
+await client.memories.create({
+  content: "quarterly planning meeting discussion",
+  metadata: {
+    participants: ["john.doe", "sarah.smith", "mike.wilson"]
+  }
+});
+```
+
+```python Python
+client.memories.create(
+    content="quarterly planning meeting discussion",
+    metadata={
+        "participants": ["john.doe", "sarah.smith", "mike.wilson"]
+    }
+)
+```
+
+</CodeGroup>
+
+然后使用 `array_contains` 进行搜索筛选：
+
+<CodeGroup>
+
+```bash cURL
+curl --location 'https://api.supermemory.ai/v3/search' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+--data '{
+    "q": "meeting",
+    "filters": {
+      "AND": [
+        {
+          "key": "participants",
+          "value": "john.doe",
+          "filterType": "array_contains"
+        }
+      ]
+    },
+    "limit": 5
+  }'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "meeting",
+  filters: {
+    AND: [
+      {
+        key: "participants",
+        value: "john.doe",
+        filterType: "array_contains"
+      }
+    ]
+  },
+  limit: 5
+});
+```
+
+```python Python
+client.search.execute(
+    q="meeting",
+    filters={
+        "AND": [
+            {
+                "key": "participants",
+                "value": "john.doe",
+                "filterType": "array_contains"
+            }
+        ]
+    },
+    limit=5
+)
+```
+
+</CodeGroup>
+
+<div id="migration-notes">
+  ## 迁移说明
+</div>
+
+<Note>
+**重大变更**：我们近期对筛选系统进行了更新，引入了更严格的校验规则。如果你遇到筛选校验错误，请检查以下事项：
+
+1. **Metadata 键格式**：确保所有 Metadata 键仅由字母数字字符、下划线和连字符组成。包含空格、点或其他特殊字符的键现在将无法通过校验。
+
+2. **键长度**：Metadata 键长度必须不超过 64 个字符。
+
+3. **筛选复杂度**：包含超过 200 个条件，或嵌套深度超过 8 层的查询将被拒绝。
+
+**需要更新的无效键示例**：
+- `"user.email"` → `"user_email"`
+- `"reading time"` → `"reading_time"`
+- `"category-with-very-long-name-that-exceeds-the-limit"` → `"category_name"`
+</Note>
+
+<div id="document">
+  ## Document
+</div>
+
+你也可以在特定的大型 Documents 中查找 chunk（文档片段）。
+
+这对于书籍、播客等超大型 Documents 特别有用。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --data '{
+    "q": "machine learning",
+    "docId": "doc_123"
+  }'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "machine learning",
+  docId: "doc_123",
+});
+```
+
+```python Python
+client.search.execute(
+    q="machine learning",
+    docId="doc_123"
+)
+```
+
+</CodeGroup>

@@ -1,0 +1,81 @@
+---
+title: 'Supermemory SDKs'
+sidebarTitle: "Python と JavaScript の SDK"
+description: 'Python と JavaScript で supermemory を使う方法を学ぶ'
+---
+
+詳しくは、最新版の完全なリファレンスをご覧ください
+
+<Columns cols={2}>
+  <Card title="Python SDK" icon="python" href="https://pypi.org/project/supermemory/">
+  </Card>
+
+  <Card title="JavaScript SDK" icon="js" href="https://www.npmjs.com/package/supermemory">
+  </Card>
+</Columns>
+
+<div id="python-sdk">
+  ## Python SDK
+</div>
+
+<div id="installation">
+  ## インストール
+</div>
+
+```sh
+# PyPIからインストール
+pip install --pre supermemory
+```
+
+
+<div id="usage">
+  ## 使い方
+</div>
+
+```python
+import os
+from supermemory import Supermemory
+
+client = supermemory(
+    api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # これはデフォルト値で、省略可能です
+)
+
+response = client.search.documents(
+    q="pythonに関連するdocuments",
+)
+print(response.results)
+```
+
+
+<div id="javascript-sdk">
+  ## JavaScript SDK
+</div>
+
+<div id="installation">
+  ## インストール
+</div>
+
+```sh
+npm install supermemory
+```
+
+
+<div id="usage">
+  ## 使用方法
+</div>
+
+```js
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // これはデフォルト値で、省略可能です
+});
+
+async function main() {
+  const response = await client.search.documents({ q: 'pythonに関連するdocuments' });
+
+  console.debug(response.results);
+}
+
+main();
+```

@@ -1,0 +1,54 @@
+---
+title: "Réécriture de requêtes"
+description: "Réécriture de requêtes dans supermemory"
+icon: "blend"
+---
+
+La Réécriture de requêtes est une fonctionnalité qui vous permet de reformuler des requêtes pour en améliorer la précision.
+
+![Réécriture de requêtes](/images/query-rewriting.png)
+
+<div id="usage">
+  ### Utilisation
+</div>
+
+Dans Supermemory, vous pouvez activer la Réécriture de requêtes en définissant le paramètre `rewriteQuery` sur `true` dans l’API de recherche.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --header 'Content-Type: application/json' \
+  -d '{
+    "q": "What is the capital of France?",
+    "rewriteQuery": true
+  }'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rewriteQuery: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rewriteQuery=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### Notes et limitations
+</div>
+
+- supermemory génère plusieurs réécritures et exécute la recherche pour chacune d’entre elles.
+- Les résultats sont ensuite fusionnés et vous sont renvoyés.
+- Il n’y a aucun coût supplémentaire associé à la réécriture de requêtes.
+- Bien que la réécriture de requêtes améliore nettement la qualité, elle **entraîne une latence supplémentaire**.
+- Toutes les autres fonctionnalités, comme le filtrage, la recherche hybride, le biais de récence, etc., fonctionnent également avec les résultats réécrits.

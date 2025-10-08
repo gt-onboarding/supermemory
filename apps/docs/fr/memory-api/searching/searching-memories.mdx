@@ -1,0 +1,186 @@
+---
+title: "Recherche de memories"
+description: "Apprenez à rechercher et à récupérer du contenu à partir de supermemory"
+---
+
+<Accordion title="Meilleures pratiques" defaultOpen icon="sparkles">
+  1. **Formulation de la requête**:
+     * Utilisez des requêtes en langage naturel
+     * Incluez des mots-clés pertinents
+     * Soyez précis sans être trop verbeux
+
+  2. **Filtrage**:
+     * Utilisez des filtres de Metadata pour plus de précision
+     * Combinez plusieurs filters si nécessaire
+     * Utilisez des thresholds appropriés
+
+  3. **Performance**:
+     * Définissez des limites de résultats appropriées
+     * Utilisez des filters spécifiques de document/fragment
+     * Prenez en compte le timing de la réponse
+</Accordion>
+
+<div id="basic-search">
+  ## Recherche de base
+</div>
+
+Pour rechercher dans vos memories, envoyez une requête à `/search` :
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/search?q=machine+learning+concepts&limit=10 \
+    --request GET \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+  ```
+
+  ```typescript Typescript
+  await client.search.execute({
+    q: "machine learning concepts",
+    limit: 10,
+  });
+  ```
+
+  ```python Python
+  client.search.execute(
+      q="machine learning concepts",
+      limit=10
+  )
+  ```
+</CodeGroup>
+
+L’API renverra des résultats pertinents avec leur score de similarité :
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_xyz789",
+      "chunks": [
+        {
+          "content": "L’apprentissage automatique est un sous-ensemble de l’intelligence artificielle...",
+          "isRelevant": true,
+          "score": 0.85
+        }
+      ],
+      "score": 0.95,
+      "metadata": {
+        "source": "web",
+        "category": "technologie",
+      },
+      "title": "Introduction à l’apprentissage automatique"
+    }
+  ],
+  "total": 1,
+  "timing": 123.45
+}
+```
+
+<div id="search-parameters">
+  ## Paramètres de recherche
+</div>
+
+```json
+{
+  "q": "requête de recherche", // Requis : Chaîne de requête de recherche
+  "limit": 10, // Optionnel : Nombre maximum de résultats (par défaut : 10)
+  "threshold": 0.6, // Optionnel : Score de similarité minimum (0-1, par défaut : 0.6)
+  "containerTag": "user_123", // Optionnel : Filtrer par containerTag
+  "rerank": false, // Optionnel : Reclasser les résultats pour une meilleure pertinence
+  "rewriteQuery": false, // Optionnel : Réécrire la requête pour une meilleure correspondance
+  "include": {
+    "documents": false, // Optionnel : Inclure les métadonnées des documents
+    "summaries": false, // Optionnel : Inclure les résumés des documents
+    "relatedMemories": false, // Optionnel : Inclure le contexte des memories liées
+    "forgottenMemories": false // Optionnel : Inclure les memories oubliées dans les résultats
+  },
+  "filters": {
+    // Optionnel : Filtres de métadonnées
+    "AND": [
+      {
+        "key": "category",
+        "value": "technology"
+      }
+    ]
+  }
+}
+```
+
+<div id="search-response">
+  ## Résultats de recherche
+</div>
+
+Les résultats de recherche comprennent :
+
+```json
+{
+  "results": [
+    {
+      "documentId": "string", // ID du document
+      "chunks": [
+        {
+          // Segments correspondants
+          "content": "string", // Contenu du segment
+          "isRelevant": true, // Est directement pertinent
+          "score": 0.95 // Score de similarité
+        }
+      ],
+      "score": 0.95, // Score du document
+      "metadata": {}, // Metadata du document
+      "title": "string", // Titre du document
+      "createdAt": "string", // Date de création
+      "updatedAt": "string" // Date de dernière mise à jour
+    }
+  ],
+  "total": 1, // Total des résultats
+  "timing": 123.45 // Temps de recherche (ms)
+}
+```
+
+<div id="including-forgotten-memories">
+  ## Inclure les memories oubliées
+</div>
+
+Par défaut, l’API de recherche exclut les memories qui ont été marquées comme oubliées ou dont la date d’expiration est dépassée. Pour les inclure dans vos résultats de recherche, définissez `include.forgottenMemories` sur `true` :
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v4/search \
+    --request POST \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --header 'Content-Type: application/json' \
+    --data '{
+      "q": "old project notes",
+      "include": {
+        "forgottenMemories": true
+      }
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.search.memories({
+    q: "old project notes",
+    include: {
+      forgottenMemories: true
+    }
+  });
+  ```
+
+  ```python Python
+  await client.search.memories(
+      q="old project notes",
+      include={
+          "forgottenMemories": True
+      }
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  Les memories oubliées sont des memories qui ont été explicitement oubliées via l’API de forget ou dont la date d’expiration automatique (`forgetAfter`) est dépassée. Les inclure dans les résultats de recherche peut aider à retrouver des informations encore pertinentes.
+</Note>
+
+<div id="next-steps">
+  ## Prochaines étapes
+</div>
+
+Explorez des fonctionnalités plus avancées dans notre [référence de l’API](/fr/api-reference/search-memories/search-memories).

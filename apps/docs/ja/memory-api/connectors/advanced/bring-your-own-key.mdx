@@ -1,0 +1,140 @@
+---
+title: "独自キー（BYOK）の持ち込み"
+description: "セキュリティと管理性を高めるために、独自の OAuth アプリケーションの認証情報を設定する"
+---
+
+デフォルトでは、supermemory はサードパーティのプロバイダに接続するために自社の OAuth アプリケーションを使用します。必要に応じて、セキュリティと管理性を高めるために、独自の OAuth アプリケーションの認証情報を設定できます。これは、データアクセスを自社で厳格に管理したいエンタープライズのお客様に特に有用です。
+
+<Danger>
+  Google Drive など一部のプロバイダでは、カスタムキーを利用する前に大規模な審査や承認が必要になる場合があります。
+</Danger>
+
+<div id="setting-up-custom-provider-keys">
+  ### カスタムプロバイダキーの設定
+</div>
+
+組織向けにカスタム OAuth 資格情報を設定するには、`PATCH /v3/settings` エンドポイントを使用します:
+
+1. プロバイダの開発者コンソールで OAuth アプリケーションをセットアップします。
+
+Google: https://console.developers.google.com/apis/credentials/oauthclient \
+Notion: https://www.notion.so/my-integrations \
+OneDrive: https://portal.azure.com/#view/Microsoft&#95;AAD&#95;RegisteredApps/ApplicationsMenu
+
+2. Google Drive を使用する場合:
+
+* アプリケーションタイプとして `Web application` を選択します
+* **Cloud Console の &quot;APIs and Services&quot; で Google Drive API を有効にします**
+
+3. リダイレクト URL を次の値に設定します:
+
+```
+https://api.supermemory.ai/v3/connections/auth/callback/{provider}
+```
+
+たとえば、Google Drive を使用している場合、リダイレクト url は次のとおりです：
+
+```
+https://api.supermemory.ai/v3/connections/auth/callback/google-drive
+```
+
+4. `PATCH /v3/settings` エンドポイントで client ID と client secret を設定します。
+
+<CodeGroup>
+  ```typescript Typescript
+  import Supermemory from 'supermemory';
+
+  const client = new Supermemory({
+    apiKey: process.env['SUPERMEMORY_API_KEY'],
+  });
+
+  // 例: Google Drive のカスタム OAuth 資格情報を設定する
+  const settings = await client.settings.update({
+    googleCustomKeyEnabled: true,
+    googleDriveClientId: "your-google-client-id",
+    googleDriveClientSecret: "your-google-client-secret"
+  });
+
+  // 例: Notion のカスタム OAuth 資格情報を設定する
+  const settings = await client.settings.update({
+    notionCustomKeyEnabled: true,
+    notionClientId: "your-notion-client-id",
+    notionClientSecret: "your-notion-client-secret"
+  });
+
+  // 例: OneDrive のカスタム OAuth 資格情報を設定する
+  const settings = await client.settings.update({
+    onedriveCustomKeyEnabled: true,
+    onedriveClientId: "your-onedrive-client-id",
+    onedriveClientSecret: "your-onedrive-client-secret"
+  });
+  ```
+
+  ```python Python
+  from supermemory import supermemory
+
+  client = supermemory(
+      api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # これはデフォルトで、省略可能です
+  )
+
+  # 例: Google Drive のカスタム OAuth 資格情報を設定する
+  settings = client.settings.update(
+      google_custom_key_enabled=True,
+      google_client_id="your-google-client-id",
+      google_client_secret="your-google-client-secret"
+  )
+
+  # 例: Notion のカスタム OAuth 資格情報を設定する
+  settings = client.settings.update(
+      notion_custom_key_enabled=True,
+      notion_client_id="your-notion-client-id",
+      notion_client_secret="your-notion-client-secret"
+  )
+
+  # 例: OneDrive のカスタム OAuth 資格情報を設定する
+  settings = client.settings.update(
+      onedrive_custom_key_enabled=True,
+      onedrive_client_id="your-onedrive-client-id",
+      onedrive_client_secret="your-onedrive-client-secret"
+  )
+  ```
+
+  ```bash cURL
+  # 例: Google Drive のカスタム OAuth 資格情報を設定する
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "googleDriveCustomKeyEnabled": true,
+    "googleDriveClientId": "your-google-client-id",
+    "googleDriveClientSecret": "your-google-client-secret"
+  }'
+
+  # 例: Notion のカスタム OAuth 資格情報を設定する
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "notionCustomKeyEnabled": true,
+    "notionClientId": "your-notion-client-id",
+    "notionClientSecret": "your-notion-client-secret"
+  }'
+
+  # 例: OneDrive のカスタム OAuth 資格情報を設定する
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "onedriveCustomKeyEnabled": true,
+    "onedriveClientId": "your-onedrive-client-id",
+    "onedriveClientSecret": "your-onedrive-client-secret"
+  }'
+  ```
+</CodeGroup>
+
+<Warning>
+  プロバイダでカスタムキーを有効にすると、そのプロバイダの新規連携はすべてあなたのカスタム OAuth アプリケーションを使用します。既存の連携は再承認が必要です。
+</Warning>

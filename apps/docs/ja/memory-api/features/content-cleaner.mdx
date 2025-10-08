@@ -1,0 +1,114 @@
+---
+title: "クリーニングと分類"
+description: "supermemory におけるドキュメントクリーニングの概要"
+icon: "washing-machine"
+---
+
+supermemory は、コンテンツ処理パイプラインを自由にカスタマイズできる高度な設定オプションを提供します。中核には、特定のニーズに応じてコンテンツを自動的に分析・分類・フィルタリングできる AI 駆動のシステムがあります。
+
+<div id="configuration-schema">
+  ## 設定スキーマ
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["feature-request", "bug-report", "positive", "negative"],
+  "filterPrompt": "フィードバックの感情を分析し、機能リクエストを特定する",
+  "includeItems": ["critical", "high-priority"],
+  "excludeItems": ["spam", "irrelevant"]
+}
+```
+
+
+<div id="core-settings">
+  ## 基本設定
+</div>
+
+<div id="shouldllmfilter">
+  ### shouldLLMFilter
+</div>
+
+- **型**: `boolean`
+- **必須**: いいえ（デフォルトは `false`）
+- **説明**: AI（LLM）によるコンテンツ分析を有効化するマスター設定。高度なフィルタリング機能を使用するには有効にする必要があります。
+
+<div id="categories">
+  ### categories
+</div>
+
+- **型**: `string[]`
+- **制限**: 各カテゴリは1〜50文字である必要があります
+- **必須**: いいえ
+- **説明**: コンテンツ分類用のカスタムカテゴリを定義します。指定した場合、AIはこれらのカテゴリのみを使用します。指定しない場合は、関連するカテゴリを3〜5個自動生成します。
+
+<div id="filterprompt">
+  ### filterPrompt
+</div>
+
+- **タイプ**: `string`
+- **制限**: 1〜750文字
+- **必須**: いいえ
+- **説明**: コンテンツの分析・分類方法についてAIに指示するためのカスタム設定。特定のニーズに合わせて分類プロセスをガイドするために使用します。
+
+<div id="includeitems-excludeitems">
+  ### includeItems & excludeItems
+</div>
+
+- **型**: `string[]`
+- **制限**: 各項目は1〜20文字である必要があります
+- **必須**: いいえ
+- **説明**: 処理時に明示的に含める／除外する項目を指定して、コンテンツのフィルタリングをきめ細かく調整します。
+
+<div id="content-processing-pipeline">
+  ## コンテンツ処理パイプライン
+</div>
+
+LLM フィルタリングを有効にしてコンテンツを取り込むと、次の処理が行われます:
+
+1. **初期処理**
+   - コンテンツを抽出し、正規化する
+   - 基本的なメタデータ（title、description）を取得する
+
+2. **AI 解析**
+   - コンテンツを `filterPrompt` に基づいて分析する
+   - カテゴリを割り当てる（事前定義リスト、または自動生成）
+   - タグを評価し、score を付与する
+
+3. **チャンク化（分割処理）とインデキシング**
+   - コンテンツをセマンティックな chunks に分割する
+   - 各 chunk に効率的な検索のための埋め込みを作成する
+   - メタデータと分類情報を保存する
+
+<div id="example-use-cases">
+  ## ユースケース例
+</div>
+
+<div id="1-customer-feedback-system">
+  ### 1. 顧客フィードバックシステム
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["positive", "negative", "neutral"],
+  "filterPrompt": "顧客の感情を分析し、主要なテーマを特定する",
+}
+```
+
+
+<div id="2-content-moderation">
+  ### 2. コンテンツのモデレーション
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["safe", "needs-review", "flagged"],
+  "filterPrompt": "不適切または機密性の高いコンテンツを識別する",
+  "excludeItems": ["spam", "offensive"],
+  "includeItems": ["user-generated"]
+}
+```
+
+> **重要**: すべてのフィルタリング機能（`categories`、`filterPrompt`、`includeItems`、`excludeItems`）を使用するには、`shouldLLMFilter` を有効にする必要があります。`shouldLLMFilter` を有効にしないままこれらの機能を使用しようとすると、400 エラーが返されます。

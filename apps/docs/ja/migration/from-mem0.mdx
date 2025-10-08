@@ -1,0 +1,314 @@
+---
+title: "Mem0.ai から Supermemory への移行"
+description: "Mem0.ai から Supermemory へデータとアプリケーションを移行するための完全ガイド"
+sidebarTitle: "Mem0 から"
+---
+
+Mem0.ai から Supermemory への移行は簡単です。本ガイドでは、Mem0 からメモリーをエクスポートし、Supermemory にインポートする方法を順を追って解説します。
+
+<div id="why-migrate-to-supermemory">
+  ## なぜ Supermemory へ移行するのか？
+</div>
+
+Supermemory は Mem0.ai よりも強力な機能を提供します：
+
+* コード不要で LLM と統合できる **Memory Router**
+* 文脈関係を最適化する **ナレッジグラフ** アーキテクチャ
+* **多様なコンテンツタイプ**（URL、PDF、画像、動画）
+* **十分な無料枠**（100kトークン）と手頃な料金
+* **複数の統合手段**（API、Router、MCP、SDKs）
+
+<div id="quick-migration-all-in-one">
+  ## クイック移行（オールインワン）
+</div>
+
+1 つのスクリプトで移行を完了できます：
+
+```python
+from mem0 import MemoryClient
+from supermemory import Supermemory
+import json, time
+
+# Mem0 からエクスポート
+mem0 = MemoryClient(api_key="your_mem0_api_key")
+export = mem0.create_memory_export(
+    schema={"type": "object", "properties": {"memories": {"type": "array", "items": {"type": "object"}}}},
+    filters={}
+)
+time.sleep(5)
+data = mem0.get_memory_export(memory_export_id=export["id"])
+
+# Supermemory にインポート
+supermemory = Supermemory(api_key="your_supermemory_api_key")
+for memory in data["memories"]:
+    if memory.get("content"):
+        supermemory.memories.add(
+            content=memory["content"],
+            container_tags=["imported_from_mem0"]
+        )
+        print(f"✅ {memory['content'][:50]}...")
+
+print("移行が完了しました。")
+```
+
+<div id="step-by-step-migration">
+  ## ステップバイステップ移行ガイド
+</div>
+
+<Steps>
+  <Step title="Mem0.ai からのエクスポート">
+    Mem0 ではメモリーをエクスポートする方法が2通りあります。
+
+    ### オプション1: ダッシュボードからエクスポート（推奨）
+
+    1. [Mem0 ダッシュボード](https://app.mem0.ai) にログイン
+    2. エクスポートセクションへ移動
+    3. メモリーを JSON でダウンロード
+
+    ### オプション2: API からエクスポート
+
+    Mem0 からすべてのメモリーをエクスポートするシンプルなスクリプト:
+
+    ```python
+    from mem0 import MemoryClient
+    import json
+    import time
+
+    # Mem0 に接続
+    client = MemoryClient(api_key="your_mem0_api_key")
+
+    # エクスポートジョブを作成
+    schema = {
+        "type": "object",
+        "properties": {
+            "memories": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "content": {"type": "string"},
+                        "metadata": {"type": "object"},
+                        "created_at": {"type": "string"}
+                    }
+                }
+            }
+        }
+    }
+
+    response = client.create_memory_export(schema=schema, filters={})
+    export_id = response["id"]
+
+    # 待機して取得
+    print("Exporting memories...")
+    time.sleep(5)
+    export_data = client.get_memory_export(memory_export_id=export_id)
+
+    # ファイルに保存
+    with open("mem0_export.json", "w") as f:
+        json.dump(export_data, f, indent=2)
+
+    print(f"Exported {len(export_data['memories'])} memories")
+    ```
+  </Step>
+
+  <Step title="Supermemory のセットアップ">
+    Supermemory アカウントを作成し、APIキーを取得します。
+
+    1. [console.supermemory.ai](https://console.supermemory.ai) でサインアップ
+    2. 新規プロジェクトを作成
+    3. ダッシュボードから APIキー を発行
+
+    ```bash
+    # 環境変数を設定
+    export SUPERMEMORY_API_KEY="your_supermemory_api_key"
+    ```
+  </Step>
+
+  <Step title="Supermemory へのインポート">
+    Mem0 のメモリーを Supermemory にインポートするシンプルなスクリプト:
+
+    ```python
+    import json
+    from supermemory import Supermemory
+
+    # Mem0 のエクスポートを読み込む
+    with open("mem0_export.json", "r") as f:
+        mem0_data = json.load(f)
+
+    # Supermemory に接続
+    client = Supermemory(api_key="your_supermemory_api_key")
+
+    # メモリーをインポート
+    for memory in mem0_data["memories"]:
+        content = memory.get("content", "")
+
+        # 空のメモリーはスキップ
+        if not content:
+            continue
+
+        # Supermemory にインポート
+        try:
+            result = client.memories.add(
+                content=content,
+                container_tags=["imported_from_mem0"],
+                metadata={
+                    "source": "mem0",
+                    "created_at": memory.get("created_at"),
+                    **(memory.get("metadata") or {})
+                }
+            )
+            print(f"Imported: {content[:50]}...")
+        except Exception as e:
+            print(f"Failed: {e}")
+
+    print("Migration complete!")
+    ```
+  </Step>
+</Steps>
+
+<div id="api-migration-reference">
+  ## API 移行リファレンス
+</div>
+
+一般的な Mem0.ai の操作が Supermemory ではどのように対応するかを以下に示します。
+
+<div id="adding-memories">
+  ### メモリーを追加する
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  from mem0 import MemoryClient
+
+  client = MemoryClient(api_key="...")
+  client.add(
+      messages="ユーザーはダークモードを好む",
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  from supermemory import Supermemory
+
+  client = Supermemory(api_key="...")
+  client.memories.add(
+      content="ユーザーはダークモードを好む",
+      container_tags=["user_alice"]
+  )
+  ```
+</CodeGroup>
+
+<div id="searching-memories">
+  ### メモリーを検索する
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  results = client.search(
+      query="user preferences",
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  results = client.memories.search(
+      query="user preferences",
+      container_tags=["user_alice"]
+  )
+  ```
+</CodeGroup>
+
+<div id="getting-all-memories">
+  ### すべてのメモリーを取得する
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  memories = client.get_all(
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  memories = client.memories.list(
+      container_tags=["user_alice"],
+      limit=100
+  )
+  ```
+</CodeGroup>
+
+<div id="deleting-memories">
+  ### メモリーを削除する
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  client.delete(memory_id="mem_123")
+  ```
+
+  ```python Supermemory
+  client.memories.delete("mem_123")
+  ```
+</CodeGroup>
+
+<div id="using-memory-router-easiest-migration">
+  ## Memory Router を使う（最も簡単な移行）
+</div>
+
+最も簡単な移行方法として、コード変更を最小限にできる Supermemory の Memory Router を使用します。
+
+<CodeGroup>
+  ```python Before (Mem0 + OpenAI)
+  from openai import OpenAI
+  from mem0 import MemoryClient
+
+  # Two separate clients needed
+  openai = OpenAI(api_key="sk-...")
+  memory = MemoryClient(api_key="mem0_key")
+
+  # Manual memory management
+  context = memory.search("user preferences", user_id="alice")
+  messages = [
+      {"role": "system", "content": f"Context: {context}"},
+      {"role": "user", "content": "What are my preferences?"}
+  ]
+
+  response = openai.chat.completions.create(
+      model="gpt-5",
+      messages=messages
+  )
+  ```
+
+  ```python After (Supermemory Router)
+  from openai import OpenAI
+
+  # Single client with automatic memory management
+  client = OpenAI(
+      api_key="sk-...",
+      base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1",
+      default_headers={
+          "x-supermemory-api-key": "your_supermemory_key",
+          "x-supermemory-user-id": "alice"
+      }
+  )
+
+  # Memories handled automatically!
+  response = client.chat.completions.create(
+      model="gpt-5",
+      messages=[{"role": "user", "content": "What are my preferences?"}]
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  エンタープライズ向けの移行については、支援が必要な場合は[お問い合わせください](mailto:dhravya@supermemory.com)。
+</Note>
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+1. Supermemory の仕組みを[確認](/ja/how-it-works)する
+2. [クイックスタート](/ja/quickstart)を読み、最初の保存メモリを追加して取得する
+3. 自動同期で Google Drive、Notion、OneDrive に[接続](/ja/connectors/overview)する

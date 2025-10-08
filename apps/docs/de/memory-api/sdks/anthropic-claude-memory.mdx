@@ -1,0 +1,436 @@
+---
+title: "Claude Memory Tool"
+description: "Aktivieren Sie Claudes persistente Speicherfunktionen mit Supermemory als Backend"
+---
+
+Aktivieren Sie Claudes native Memory-Tool-Funktionen mit Supermemory als persistentem Speicher-Backend. Claude kann mithilfe vertrauter Dateisystemoperationen automatisch Informationen konversationsübergreifend speichern und abrufen.
+
+<Card title="Supermemory tools on npm" icon="npm" href="https://www.npmjs.com/package/@supermemory/tools">
+  Weitere Details finden Sie auf der npm-Seite
+</Card>
+
+<div id="installation">
+  ## Installation
+</div>
+
+```bash
+npm install @supermemory/tools @anthropic-ai/sdk
+```
+
+<div id="quick-start">
+  ## Schnellstart
+</div>
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk"
+import { createClaudeMemoryTool } from "@supermemory/tools/claude-memory"
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+})
+
+const memoryTool = createClaudeMemoryTool(process.env.SUPERMEMORY_API_KEY!, {
+  projectId: 'my-app',
+})
+
+async function chatWithMemory(userMessage: string) {
+  const response = await anthropic.beta.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 8096,
+    tools: [{ type: 'memory_20250818', name: 'memory' }],
+    betas: ['context-management-2025-06-27'],
+    messages: [{ role: 'user', content: userMessage }],
+  })
+
+  // Speicher-Tool-Aufrufe verarbeiten
+  for (const block of response.content) {
+    if (block.type === 'tool_use' && block.name === 'memory') {
+      const result = await memoryTool.handleCommandForToolResult(
+        block.input as MemoryCommand,
+        block.id
+      )
+      console.log('Ergebnis der Speicher-Operation:', result)
+    }
+  }
+
+  return response
+}
+```
+
+<div id="how-it-works">
+  ## Funktionsweise
+</div>
+
+Claudes Memory-Tool verwendet eine Dateisystemmetapher, um persistente Informationen zu verwalten:
+
+* **Dateien**: Einzelne Speicher‑Einträge, die als Supermemory documents gespeichert werden
+* **Verzeichnisse**: Organisiert über eine Pfadstruktur (z. B. `/memories/user-preferences`)
+* **Operationen**: Dateien anzeigen, erstellen, bearbeiten, löschen und umbenennen
+* **Pfadnormalisierung**: Pfade wie `/memories/preferences` werden als `--memories--preferences` gespeichert
+
+<div id="configuration">
+  ## Konfiguration
+</div>
+
+<div id="basic-configuration">
+  ### Basiskonfiguration
+</div>
+
+```typescript
+import { createClaudeMemoryTool } from "@supermemory/tools/claude-memory"
+
+const memoryTool = createClaudeMemoryTool(
+  process.env.SUPERMEMORY_API_KEY!,
+  {
+    projectId: 'my-app',           // Projekt-Kennung
+    baseUrl: 'https://api.supermemory.ai', // Optional: benutzerdefinierter API-Endpunkt
+  }
+)
+```
+
+<div id="using-container-tags">
+  ### Arbeiten mit Container-Tags
+</div>
+
+```typescript
+const memoryTool = createClaudeMemoryTool(
+  process.env.SUPERMEMORY_API_KEY!,
+  {
+    containerTags: ['user:alice', 'app:chat'],
+  }
+)
+```
+
+<div id="memory-operations">
+  ## Speicheroperationen
+</div>
+
+Claude führt diese Vorgänge bei der Verwaltung von Speicher automatisch aus:
+
+<div id="view-files">
+  ### Dateien anzeigen
+</div>
+
+Verzeichnisinhalte auflisten oder Dateiinhalt lesen:
+
+```typescript
+// Claude überprüft automatisch das /memories/ Verzeichnis
+// Dies entspricht der Suche nach Supermemory documents mit Pfad-Präfix
+```
+
+<div id="create-files">
+  ### Dateien erstellen
+</div>
+
+Neue Informationen speichern:
+
+```typescript
+// Claude erstellt: /memories/user-preferences.txt
+// Gespeichert als Dokument mit customId: "--memories--user-preferences.txt"
+```
+
+<div id="edit-files">
+  ### Dateien bearbeiten
+</div>
+
+Vorhandene Speicher-Einträge mittels Stringersetzung aktualisieren:
+
+```typescript
+// Claude führt str_replace auf Dateiinhalten aus
+// Aktualisiert das entsprechende Supermemory-Dokument
+```
+
+<div id="delete-files">
+  ### Dateien löschen
+</div>
+
+Informationen entfernen:
+
+```typescript
+// Claude löscht: /memories/old-data.txt
+// Entfernt Dokument aus Supermemory
+```
+
+<div id="rename-files">
+  ### Dateien umbenennen
+</div>
+
+Speicherstruktur neu organisieren:
+
+```typescript
+// Claude benennt um: /memories/temp.txt -> /memories/final.txt
+// Aktualisiert die customId des Dokuments in Supermemory
+```
+
+<div id="complete-chat-example">
+  ## Vollständiges Chatbeispiel
+</div>
+
+Hier ist ein komplettes Beispiel mit Handhabung der Unterhaltung:
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk"
+import { createClaudeMemoryTool, type MemoryCommand } from "@supermemory/tools/claude-memory"
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+})
+
+const memoryTool = createClaudeMemoryTool(process.env.SUPERMEMORY_API_KEY!, {
+  projectId: 'chat-app',
+})
+
+async function chat() {
+  const messages: Anthropic.MessageParam[] = []
+
+  // Erste Nachricht: Informationen speichern
+  messages.push({
+    role: 'user',
+    content: 'Merke dir, dass ich den Dark Mode bevorzuge und TypeScript verwende'
+  })
+
+  let response = await anthropic.beta.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 8096,
+    tools: [{ type: 'memory_20250818', name: 'memory' }],
+    betas: ['context-management-2025-06-27'],
+    messages,
+  })
+
+  // Tool-Aufrufe verarbeiten
+  const toolResults: Anthropic.ToolResultBlockParam[] = []
+
+  for (const block of response.content) {
+    if (block.type === 'tool_use' && block.name === 'memory') {
+      const result = await memoryTool.handleCommandForToolResult(
+        block.input as MemoryCommand,
+        block.id
+      )
+      toolResults.push(result)
+    }
+  }
+
+  // Unterhaltung mit Tool-Ergebnissen fortsetzen
+  if (toolResults.length > 0) {
+    messages.push({ role: 'assistant', content: response.content })
+    messages.push({ role: 'user', content: toolResults })
+
+    response = await anthropic.beta.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 8096,
+      tools: [{ type: 'memory_20250818', name: 'memory' }],
+      betas: ['context-management-2025-06-27'],
+      messages,
+    })
+  }
+
+  console.log(response.content)
+}
+
+chat()
+```
+
+<div id="advanced-usage">
+  ## Erweiterte Verwendung
+</div>
+
+<div id="custom-path-management">
+  ### Verwaltung eigener Pfade
+</div>
+
+Steuern, wo Claude Informationen speichert:
+
+```typescript
+// Claude organisiert automatisch nach Pfad
+// /memories/preferences/editor.txt
+// /memories/projects/current.txt
+// /memories/notes/meeting-2024.txt
+
+// Jeder Pfad wird normalisiert und mit entsprechenden Metadata gespeichert
+```
+
+<div id="error-handling">
+  ### Fehlerbehandlung
+</div>
+
+Behandeln Sie Operationen robust und fehlertolerant:
+
+```typescript
+const result = await memoryTool.handleCommandForToolResult(command, toolUseId)
+
+if (result.is_error) {
+  console.error('Speicher-Operation fehlgeschlagen:', result.content)
+  // Fehler entsprechend behandeln
+} else {
+  console.log('Erfolg:', result.content)
+}
+```
+
+<div id="monitoring-operations">
+  ### Monitoring von Vorgängen
+</div>
+
+Verfolgen Sie Speicheroperationen:
+
+```typescript
+for (const block of response.content) {
+  if (block.type === 'tool_use' && block.name === 'memory') {
+    console.log('Operation:', block.input.command)
+    console.log('Pfad:', block.input.path)
+
+    const result = await memoryTool.handleCommandForToolResult(
+      block.input as MemoryCommand,
+      block.id
+    )
+
+    console.log('Ergebnis:', result.is_error ? 'Fehlgeschlagen' : 'Erfolgreich')
+  }
+}
+```
+
+<div id="memory-organization">
+  ## Speicher-Organisation
+</div>
+
+<div id="best-practices">
+  ### Best Practices
+</div>
+
+1. **Aussagekräftige Pfade verwenden**: `/memories/user-preferences/theme.txt` ist besser als `/mem1.txt`
+2. **Nach Kategorien organisieren**: Verwandte Informationen in Verzeichnissen zusammenfassen
+3. **Dateien schlank halten**: Spezifische Informationen in separaten Dateien ablegen
+4. **Klar benennen**: Dateinamen selbsterklärend wählen
+
+<div id="path-structure-examples">
+  ### Beispiele für Pfadstrukturen
+</div>
+
+```
+/memories/
+  ├── benutzerprofil/
+  │   ├── name.txt
+  │   ├── präferenzen.txt
+  │   └── einstellungen.txt
+  ├── projekte/
+  │   ├── aktuelle-aufgabe.txt
+  │   └── ziele.txt
+  └── notizen/
+      ├── besprechungsnotizen.txt
+      └── ideen.txt
+```
+
+<div id="api-reference">
+  ## API-Referenz
+</div>
+
+<div id="createclaudememorytoolapikey-config">
+  ### `createClaudeMemoryTool(apiKey, config)`
+</div>
+
+Erstellt eine Memory-Tool-Instanz für Claude.
+
+**Parameter:**
+
+* `apiKey` (string): Dein Supermemory API-Schlüssel
+* `config` (optional):
+  * `projectId` (string): Projekt-ID
+  * `containerTags` (string[]): Alternative zu `projectId`
+  * `baseUrl` (string): Benutzerdefinierter API-Endpunkt
+
+**Rückgabe:** `ClaudeMemoryTool`-Instanz
+
+<div id="handlecommandfortoolresultcommand-tooluseid">
+  ### `handleCommandForToolResult(command, toolUseId)`
+</div>
+
+Verarbeitet einen Speicherbefehl und gibt ein formatiertes Ergebnis zurück.
+
+**Parameter:**
+
+* `command` (MemoryCommand): Die Speicheroperation von Claude
+* `toolUseId` (string): Tool-Use-ID aus der Antwort von Claude
+
+**Rückgabewert:** `Promise<MemoryToolResult>` mit:
+
+* `type`: &quot;tool&#95;result&quot;
+* `tool_use_id`: Die Tool-Use-ID
+* `content`: Ergebnis der Operation oder Fehlermeldung
+* `is_error`: Boolean, der Erfolg bzw. Fehlschlag angibt
+
+<div id="memory-commands">
+  ## Speicher-Befehle
+</div>
+
+Claude verwendet intern folgende Befehlsarten:
+
+| Befehl | Beschreibung | Beispiel |
+|---------|-------------|---------|
+| `view` | Verzeichnis auflisten oder Datei lesen | `/memories/` oder `/memories/file.txt` |
+| `create` | Neue Datei erstellen | Erstelle `/memories/new.txt` mit Inhalt |
+| `str_replace` | Dateiinhalte bearbeiten | Ersetze „old text“ durch „new text“ |
+| `insert` | Inhalt in einer bestimmten Zeile einfügen | Füge in Zeile 5 ein |
+| `delete` | Datei löschen | Lösche `/memories/old.txt` |
+| `rename` | Datei umbenennen/verschieben | Benenne `old.txt` in `new.txt` um |
+
+<div id="environment-variables">
+  ## Umgebungsvariablen
+</div>
+
+```bash
+ANTHROPIC_API_KEY=dein_anthropic_schlüssel
+SUPERMEMORY_API_KEY=dein_supermemory_schlüssel
+```
+
+<div id="when-to-use">
+  ## Wann verwenden
+</div>
+
+Das Claude Memory Tool eignet sich ideal für:
+
+* **Konversationelle KI**: Claude merkt sich automatisch Nutzerpräferenzen und Kontext
+* **Persönliche Assistenten**: Nutzerspezifische Informationen speichern und abrufen
+* **Dokumentationsbots**: Wissen über mehrere Gespräche hinweg bewahren
+* **Projektmanagement**: Aufgaben und Projektstatus nachverfolgen
+* **Notiz-Apps**: Dauerhafter Speicher für Meeting-Notizen und Ideen
+
+<div id="comparison-with-other-approaches">
+  ## Vergleich mit anderen Ansätzen
+</div>
+
+| Feature | Claude Memory Tool | OpenAI SDK Tools | AI SDK Tools |
+|---------|-------------------|------------------|--------------|
+| Automatischer Speicher | ✅ Claude entscheidet | ❌ Manuelle Steuerung | ❌ Manuelle Steuerung |
+| Dateisystemmetapher | ✅ Dateien/Verzeichnisse | ❌ Flacher Speicher | ❌ Flacher Speicher |
+| Pfadorganisation | ✅ Hierarchisch | ❌ Nur Tags | ❌ Nur Tags |
+| Integration | Nur Anthropic SDK | Nur OpenAI SDK | Vercel AI SDK |
+
+<div id="limitations">
+  ## Einschränkungen
+</div>
+
+* Erfordert das Anthropic SDK mit aktivierten Beta-Funktionen
+* Pfadtrennzeichen (`/`) werden für die Speicherung zu `--` normalisiert
+* Maximal 100 Dateien pro Verzeichnislisting
+* Dateioperationen sind asynchron
+
+<div id="next-steps">
+  ## Nächste Schritte
+</div>
+
+<CardGroup cols={2}>
+  <Card title="OpenAI SDK Tools" icon="sparkles" href="/de/memory-api/sdks/openai-plugins">
+    Memory Tools mit OpenAI Function Calling nutzen
+  </Card>
+
+  <Card title="AI SDK Integration" icon="triangle" href="/de/ai-sdk/overview">
+    Mit der Vercel AI SDK integrieren
+  </Card>
+
+  <Card title="Memory API" icon="database" href="/de/memory-api/overview">
+    Direkter API-Zugriff für umfassende Kontrolle
+  </Card>
+
+  <Card title="Cookbook" icon="chef-hat" href="/de/cookbook/overview">
+    Praxisbeispiele ansehen
+  </Card>
+</CardGroup>

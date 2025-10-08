@@ -1,0 +1,114 @@
+---
+title: "清洗与分类"
+description: "supermemory 中的文档清洗摘要"
+icon: "washing-machine"
+---
+
+supermemory 提供高级配置选项，可定制你的内容处理管道。其核心是一个由 AI 驱动的系统，能够根据你的特定需求自动分析、归类并过滤你的内容。
+
+<div id="configuration-schema">
+  ## 配置模式
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["feature-request", "bug-report", "positive", "negative"],
+  "filterPrompt": "分析反馈情感并识别功能请求",
+  "includeItems": ["critical", "high-priority"],
+  "excludeItems": ["spam", "irrelevant"]
+}
+```
+
+
+<div id="core-settings">
+  ## 核心设置
+</div>
+
+<div id="shouldllmfilter">
+  ### shouldLLMFilter
+</div>
+
+- **类型**: `boolean`
+- **是否必需**: 否（默认值为 `false`）
+- **描述**: AI 驱动的内容分析总开关。必须启用后才能使用任何高级过滤功能。
+
+<div id="categories">
+  ### categories
+</div>
+
+- **类型**: `string[]`
+- **限制**: 每个类别长度须为 1–50 个字符
+- **是否必填**: 否
+- **描述**: 为内容分类定义自定义类别。指定后，AI 仅使用这些类别；未指定时，会自动生成 3–5 个相关类别。
+
+<div id="filterprompt">
+  ### filterPrompt
+</div>
+
+- **类型**: `string`
+- **长度限制**: 1-750 个字符
+- **必填**: 否
+- **说明**: 为 AI 提供关于如何分析和分类内容的自定义指令。可根据你的具体需求，用于引导分类过程。
+
+<div id="includeitems-excludeitems">
+  ### includeItems 与 excludeItems
+</div>
+
+- **类型**: `string[]`
+- **限制**: 每个条目长度为 1–20 个字符
+- **必填**: 否
+- **描述**: 通过在处理过程中指定需明确包含或排除的条目来细化内容过滤。
+
+<div id="content-processing-pipeline">
+  ## 内容处理流水线
+</div>
+
+当启用 LLM 筛选并摄取内容时：
+
+1. **初始处理**
+   - 提取并规范化内容
+   - 记录基础 Metadata（title、description）
+
+2. **AI 分析**
+   - 根据你的 `filterPrompt` 对内容进行分析
+   - 分配类别（来自你预设的列表或自动生成）
+   - 评估标签并打分
+
+3. **内容分块与索引**
+   - 将内容切分为语义 chunk（文档片段）
+   - 为每个 chunk 生成嵌入向量以便高效搜索
+   - 存储 Metadata 和分类结果
+
+<div id="example-use-cases">
+  ## 示例场景
+</div>
+
+<div id="1-customer-feedback-system">
+  ### 1. 客户反馈系统
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["positive", "negative", "neutral"],
+  "filterPrompt": "分析客户情感并识别关键主题",
+}
+```
+
+
+<div id="2-content-moderation">
+  ### 2. 内容审核
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["safe", "needs-review", "flagged"],
+  "filterPrompt": "识别可能不当或敏感的内容",
+  "excludeItems": ["spam", "offensive"],
+  "includeItems": ["user-generated"]
+}
+```
+
+> **重要**：所有筛选功能（`categories`、`filterPrompt`、`includeItems`、`excludeItems`）都需启用 `shouldLLMFilter`。未启用 `shouldLLMFilter` 即尝试使用这些功能将导致返回 400 错误。

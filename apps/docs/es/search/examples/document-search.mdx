@@ -1,0 +1,618 @@
+---
+title: "Búsqueda de Documentos (/v3/search)"
+description: "Búsqueda completa con amplio control sobre la clasificación, el filtrado y los resultados"
+---
+
+La Búsqueda de Documentos (`POST /v3/search`) ofrece el máximo control sobre el comportamiento de la búsqueda, con amplios parámetros para ajustar los resultados.
+
+<div id="basic-implementation">
+  ## Implementación básica
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const results = await client.search.documents({
+      q: "machine learning neural networks",
+      limit: 5
+    });
+
+    console.log(`Se encontraron ${results.total} documentos en ${results.timing} ms`);
+
+    // Estructura de salida de ejemplo
+    results.results.forEach((doc, i) => {
+      console.log(`${i + 1}. ${doc.title} (Relevancia: ${doc.score})`);
+      console.log(`   ${doc.chunks.length} chunks encontrados`);
+    });
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    results = client.search.documents(
+        q="machine learning neural networks",
+        limit=5
+    )
+
+    print(f"Se encontraron {results.total} documentos en {results.timing} ms")
+
+    # Estructura de salida de ejemplo
+    for i, doc in enumerate(results.results):
+        print(f"{i + 1}. {doc.title} (Relevancia: {doc.score})")
+        print(f"   {len(doc.chunks)} chunks encontrados")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning neural networks",
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Salida de ejemplo:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_ml_guide_2024",
+      "title": "Aprendizaje automático con redes neuronales: una guía integral",
+      "score": 0.89,
+      "chunks": [
+        {
+          "content": "Las redes neuronales son modelos computacionales inspirados en las redes neuronales biológicas. Están compuestas por nodos interconectados (neuronas) que procesan información a través de conexiones con pesos...",
+          "score": 0.92,
+          "isRelevant": true
+        },
+        {
+          "content": "El aprendizaje profundo, un subcampo del aprendizaje automático, utiliza redes neuronales con múltiples capas ocultas para aprender patrones complejos en los datos...",
+          "score": 0.87,
+          "isRelevant": true
+        }
+      ],
+      "createdAt": "2024-01-15T10:30:00Z",
+      "metadata": {
+        "category": "ai",
+        "difficulty": "intermedio"
+      }
+    }
+  ],
+  "total": 12,
+  "timing": 156
+}
+```
+
+
+<div id="container-tags-filtering">
+  ## Filtrado por etiquetas de contenedor
+</div>
+
+Las etiquetas de contenedor son la forma principal de aislar los resultados de búsqueda por usuario, proyecto u organización.
+
+**Comportamientos clave:**
+
+- **Basado en arrays**: A diferencia de `/v4/search`, este endpoint acepta varias etiquetas de contenedor como un array.
+- **Coincidencia exacta del array**: Los documentos deben tener EXACTAMENTE el mismo array de etiquetas de contenedor para coincidir.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "quarterly reports",
+      containerTags: ["user_123"],
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="quarterly reports",
+        container_tags=["user_123"],
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "quarterly reports",
+        "containerTags": ["user_123"],
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="metadata-filtering">
+  ## Filtrado por metadata
+</div>
+
+El filtrado por metadata permite definir condiciones complejas sobre datos estructurados asociados a tus Documentos. En el backend se usa una construcción de consultas similar a SQL, que requiere estructuras explícitas AND/OR.
+
+**Reglas de estructura de filtros:**
+
+* **Debes envolver las condiciones** en arreglos AND u OR, incluso si es una sola condición
+* **Admite coincidencia de cadenas** (exacta), operadores numéricos y verificación de pertenencia en arreglos
+* **Puedes negar cualquier condición** con `negate: true`
+* **Se combina con etiquetas de contenedor**: ambos filtros se aplican
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning",
+      filters: {
+        AND: [
+          {
+            key: "category",
+            value: "technology",
+            negate: false
+          },
+          {
+            filterType: "numeric",
+            key: "readingTime",
+            value: "5",
+            negate: false,
+            numericOperator: "<="
+          }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning",
+        filters={
+            "AND": [
+                {
+                    "key": "category",
+                    "value": "technology",
+                    "negate": False
+                },
+                {
+                    "filterType": "numeric",
+                    "key": "readingTime",
+                    "value": "5",
+                    "negate": False,
+                    "numericOperator": "<="
+                }
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning",
+        "filters": {
+          "AND": [
+            {
+              "key": "category",
+              "value": "technology",
+              "negate": false
+            },
+            {
+              "filterType": "numeric",
+              "key": "readingTime",
+              "value": "5",
+              "negate": false,
+              "numericOperator": "<="
+            }
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Ejemplo de salida:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_tech_trends_2024",
+      "title": "Tendencias Tecnológicas en Aprendizaje Automático",
+      "score": 0.91,
+      "chunks": [
+        {
+          "content": "El aprendizaje automático continúa evolucionando con nuevas arquitecturas y técnicas de optimización. El tiempo de lectura de esta guía completa es de aproximadamente 8 minutos...",
+          "score": 0.88,
+          "isRelevant": true
+        }
+      ],
+      "metadata": {
+        "category": "tecnología",
+        "readingTime": 8,
+        "difficulty": "intermedio",
+        "published": true
+      }
+    }
+  ],
+  "total": 6,
+  "timing": 189
+}
+```
+
+
+<div id="array-contains-filtering">
+  ## Filtrado con array_contains
+</div>
+
+Cuando tu metadata incluye arreglos (como listas de participantes, etiquetas o categorías), usa `array_contains` para verificar si el arreglo contiene un valor específico.
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "meeting discussion",
+      filters: {
+        AND: [
+          {
+            key: "participants",
+            value: "john.doe",
+            filterType: "array_contains"
+          }
+        ]
+      },
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="meeting discussion",
+        filters={
+            "AND": [
+                {
+                    "key": "participants",
+                    "value": "john.doe",
+                    "filterType": "array_contains"
+                }
+            ]
+        },
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "meeting discussion",
+        "filters": {
+          "AND": [
+            {
+              "key": "participants",
+              "value": "john.doe",
+              "filterType": "array_contains"
+            }
+          ]
+        },
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="threshold-control">
+  ## Control de umbrales
+</div>
+
+Ajusta la calidad de los resultados con umbrales de sensibilidad:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "artificial intelligence",
+      documentThreshold: 0.7,  // Más alto = menos documentos, más relevantes
+      chunkThreshold: 0.8,     // Más alto = menos chunks, más relevantes
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="artificial intelligence",
+        document_threshold=0.7,  # Más alto = menos documentos, más relevantes
+        chunk_threshold=0.8,     # Más alto = menos chunks, más relevantes
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "artificial intelligence",
+        "documentThreshold": 0.7,
+        "chunkThreshold": 0.8,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="query-rewriting">
+  ## Reescritura de consultas
+</div>
+
+Mejora la precisión de la búsqueda con reescritura automática de consultas:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "What is the capital of France?",
+      rewriteQuery: true,  // +400ms de latencia, pero mejores resultados
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="What is the capital of France?",
+        rewrite_query=True,  # +400ms de latencia, pero mejores resultados
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "What is the capital of France?",
+        "rewriteQuery": true,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+La reescritura de consultas genera varias variantes de la consulta, las busca todas y luego combina los resultados. No tiene costo adicional, pero añade ~400 ms de latencia.
+</Note>
+
+<div id="reranking">
+  ## Reordenamiento
+</div>
+
+Mejora la calidad de los resultados con un ranking secundario:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning applications",
+      rerank: true,  // Aplica un algoritmo de ranking secundario
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning applications",
+        rerank=True,  # Aplica un algoritmo de ranking secundario
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning applications",
+        "rerank": true,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="document-specific-search">
+  ## Búsqueda específica por documento
+</div>
+
+Busca dentro de un documento grande en particular:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "neural networks",
+      docId: "doc_123",  // Buscar solo dentro de este documento
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="neural networks",
+        doc_id="doc_123",  # Buscar solo dentro de este documento
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural networks",
+        "docId": "doc_123",
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="full-context-options">
+  ## Opciones de contexto completo
+</div>
+
+Incluye el contenido completo de los documentos y sus resúmenes:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "research findings",
+      includeFullDocs: true,    // Incluir el contenido completo del documento
+      includeSummary: true,     // Incluir resúmenes del documento
+      onlyMatchingChunks: false, // Incluir todos los chunks, no solo los coincidentes
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="research findings",
+        include_full_docs=True,    # Incluir el contenido completo del documento
+        include_summary=True,      # Incluir resúmenes del documento
+        only_matching_chunks=False, # Incluir todos los chunks, no solo los coincidentes
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "research findings",
+        "includeFullDocs": true,
+        "includeSummary": true,
+        "onlyMatchingChunks": false,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="complete-advanced-example">
+  ## Ejemplo avanzado completo
+</div>
+
+Combinando todas las funcionalidades para obtener el máximo control:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning performance metrics",
+      containerTags: ["research_project"],
+      filters: {
+        AND: [
+          { key: "category", value: "ai", negate: false },
+          { key: "status", value: "published", negate: false }
+        ]
+      },
+      documentThreshold: 0.6,
+      chunkThreshold: 0.7,
+      rewriteQuery: true,
+      rerank: true,
+      includeFullDocs: false,
+      includeSummary: true,
+      onlyMatchingChunks: true,
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning performance metrics",
+        container_tags=["research_project"],
+        filters={
+            "AND": [
+                {"key": "category", "value": "ai", "negate": False},
+                {"key": "status", "value": "published", "negate": False}
+            ]
+        },
+        document_threshold=0.6,
+        chunk_threshold=0.7,
+        rewrite_query=True,
+        rerank=True,
+        include_full_docs=False,
+        include_summary=True,
+        only_matching_chunks=True,
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning performance metrics",
+        "containerTags": ["research_project"],
+        "filters": {
+          "AND": [
+            {"key": "category", "value": "ai", "negate": false},
+            {"key": "status", "value": "published", "negate": false}
+          ]
+        },
+        "documentThreshold": 0.6,
+        "chunkThreshold": 0.7,
+        "rewriteQuery": true,
+        "rerank": true,
+        "includeFullDocs": false,
+        "includeSummary": true,
+        "onlyMatchingChunks": true,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>

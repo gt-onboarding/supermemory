@@ -1,0 +1,234 @@
+---
+title: "Infinite Chat"
+description: "Contesto illimitato per le applicazioni di chat con gestione automatica della memory"
+sidebarTitle: "Infinite Chat"
+---
+
+Infinite Chat offre un contesto illimitato per le applicazioni di chat con gestione automatica della memory.
+
+<div id="setup">
+  ## Configurazione
+</div>
+
+```typescript
+import { streamText } from "ai"
+
+const infiniteChat = createAnthropic({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+
+const result = await streamText({
+  model: infiniteChat("claude-3-sonnet"),
+  messages: [
+    { role: "user", content: "Ciao! Ricorda che amo TypeScript." }
+  ]
+})
+```
+
+<div id="provider-configuration">
+  ## Configurazione del provider
+</div>
+
+<div id="named-providers">
+  ### Provider con nome
+</div>
+
+<CodeGroup>
+  ```typescript OpenAI
+  const infiniteChat = createOpenAI({
+    baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+    apiKey: 'your-provider-api-key',
+    headers: {
+      'x-supermemory-api-key': 'supermemory-api-key',
+      'x-sm-conversation-id': 'conversation-id'
+    }
+  })
+
+  const result = await streamText({
+    model: infiniteChat("gpt-5"),
+    messages: [...]
+  })
+  ```
+
+  ```typescript Anthropic
+  const infiniteChat = createAnthropic({
+    baseUrl: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+    apiKey: 'your-provider-api-key',
+    headers: {
+      'x-supermemory-api-key': 'supermemory-api-key',
+      'x-sm-conversation-id': 'conversation-id'
+    }
+  })
+
+  const result = await streamText({
+    model: infiniteChat("claude-3-sonnet"),
+    messages: [...]
+  })
+  ```
+
+  ```typescript Google
+  const infiniteChat = createGoogleGenerativeAI({
+    baseUrl: 'https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta',
+    apiKey: 'your-provider-api-key',
+    headers: {
+      'x-supermemory-api-key': 'supermemory-api-key',
+      'x-sm-conversation-id': 'conversation-id'
+    }
+  })
+
+  const result = await streamText({
+    model: infiniteChat("gemini-pro"),
+    messages: [...]
+  })
+  ```
+
+  ```typescript Groq
+  const infiniteChat = createGroq({
+    baseUrl: 'https://api.supermemory.ai/v3/https://api.groq.com/v1',
+    apiKey: 'your-provider-api-key',
+    headers: {
+      'x-supermemory-api-key': 'supermemory-api-key',
+      'x-sm-conversation-id': 'conversation-id'
+    }
+  })
+
+  const result = await streamText({
+    model: infiniteChat("mixtral-8x7b"),
+    messages: [...]
+  })
+  ```
+</CodeGroup>
+
+<div id="custom-provider-url">
+  ### URL del provider personalizzato
+</div>
+
+```typescript
+const infiniteChat = createOpenAI({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+```
+
+## Esempio d&#39;uso
+
+```typescript
+import { streamText } from "ai"
+
+const infiniteChat = createOpenAI({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+
+const result = await streamText({
+  model: infiniteChat("gpt-5"),
+  messages: [
+    { role: "user", content: "Di cosa abbiamo parlato ieri?" }
+  ]
+})
+
+return result.toAIStreamResponse()
+```
+
+<div id="configuration-options">
+  ## Opzioni di configurazione
+</div>
+
+```typescript
+interface ConfigWithProviderName {
+  providerName: 'openai' | 'anthropic' | 'openrouter' |
+                'deepinfra' | 'groq' | 'google' | 'cloudflare'
+  providerApiKey: string
+  headers?: Record<string, string>
+}
+
+interface ConfigWithProviderUrl {
+  providerUrl: string
+  providerApiKey: string
+  headers?: Record<string, string>
+}
+```
+
+<div id="custom-headers">
+  ### Intestazioni personalizzate
+</div>
+
+Aggiungi ID utente, ID conversazione o altri metadata:
+
+```typescript
+const infiniteChat = createOpenAI({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+```
+
+<div id="comparison-with-memory-tools">
+  ## Confronto con Memory Tools
+</div>
+
+| Funzionalità | Infinite Chat | Memory Tools |
+|--------------|---------------|--------------|
+| Gestione delle memory | Automatica | Manuale |
+| Gestione del contesto | Automatica | Manuale |
+| Chiamate agli strumenti | Nessuna | searchMemories, addMemory, fetchMemory |
+| Ideale per | App di chat | Agenti AI |
+| Complessità di configurazione | Bassa | Media |
+
+<div id="headers">
+  ## Intestazioni
+</div>
+
+Aggiungi il contesto dell’utente e della conversazione:
+
+```typescript
+const infiniteChat = createOpenAI({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+```
+
+<div id="comparison">
+  ## Confronto
+</div>
+
+| Funzionalità | Infinite Chat | Memory Tools |
+|---------|--------------|-------------|
+| Gestione delle memory | Automatica | Manuale |
+| Gestione del contesto | Automatica | Manuale |
+| Chiamate agli strumenti | Nessuna | searchMemories, addMemory, fetchMemory |
+| Ideale per | App di chat | Agent AI |
+
+<div id="next-steps">
+  ## Prossimi passi
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Memory Tools" icon="wrench" href="/it/ai-sdk/memory-tools">
+    Esplora il controllo esplicito delle memory
+  </Card>
+
+  <Card title="Examples" icon="code" href="/it/cookbook/ai-sdk-integration">
+    Scopri implementazioni complete
+  </Card>
+</CardGroup>

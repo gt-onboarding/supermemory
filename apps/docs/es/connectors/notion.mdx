@@ -1,0 +1,464 @@
+---
+title: "Conector de Notion"
+description: "Sincroniza páginas, bases de datos y bloques de Notion con webhooks en tiempo real e integración con el espacio de trabajo"
+icon: "notion"
+---
+
+Conecta espacios de trabajo de Notion para sincronizar automáticamente páginas, bases de datos y bloques de contenido en tu base de conocimientos de Supermemory. Admite actualizaciones en tiempo real, formato enriquecido y propiedades de base de datos.
+
+<div id="quick-setup">
+  ## Configuración rápida
+</div>
+
+<div id="1-create-notion-connection">
+  ### 1. Crear integración con Notion
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const connection = await client.connections.create('notion', {
+      redirectUrl: 'https://yourapp.com/auth/notion/callback',
+      containerTags: ['user-123', 'notion-workspace'],
+      documentLimit: 2000,
+      metadata: {
+        source: 'notion',
+        workspaceType: 'team',
+        department: 'product'
+      }
+    });
+
+    // Redirige al usuario a OAuth de Notion
+    window.location.href = connection.authLink;
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    connection = client.connections.create(
+        'notion',
+        redirect_url='https://yourapp.com/auth/notion/callback',
+        container_tags=['user-123', 'notion-workspace'],
+        document_limit=2000,
+        metadata={
+            'source': 'notion',
+            'workspaceType': 'team',
+            'department': 'product'
+        }
+    )
+
+    # Redirige al usuario a OAuth de Notion
+    print(f'Redirect to: {connection.auth_link}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "redirectUrl": "https://yourapp.com/auth/notion/callback",
+        "containerTags": ["user-123", "notion-workspace"],
+        "documentLimit": 2000,
+        "metadata": {
+          "source": "notion",
+          "workspaceType": "team",
+          "department": "product"
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="2-handle-oauth-flow">
+  ### 2. Gestionar el flujo de OAuth
+</div>
+
+Después de que el usuario otorgue acceso al espacio de trabajo, Notion redirige a tu url de callback. La integración se establece automáticamente.
+
+<div id="3-monitor-sync-progress">
+  ### 3. Supervisar el progreso de la sincronización
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Consultar los detalles de la integración
+    const connection = await client.connections.getByTags('notion', {
+      containerTags: ['user-123', 'notion-workspace']
+    });
+
+    console.log('Espacio de trabajo conectado:', connection.email);
+    console.log('Integración creada:', connection.createdAt);
+
+    // Listar páginas y bases de datos sincronizadas
+    const documents = await client.connections.listDocuments('notion', {
+      containerTags: ['user-123', 'notion-workspace']
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Consultar los detalles de la integración
+    connection = client.connections.get_by_tags(
+        'notion',
+        container_tags=['user-123', 'notion-workspace']
+    )
+
+    print(f'Espacio de trabajo conectado: {connection.email}')
+    print(f'Integración creada: {connection.created_at}')
+
+    # Listar páginas y bases de datos sincronizadas
+    documents = client.connections.list_documents(
+        'notion',
+        container_tags=['user-123', 'notion-workspace']
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Obtener detalles de la integración por provider y tags
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion/connection" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123", "notion-workspace"]}'
+
+    # La respuesta incluye detalles de la integración:
+    # {
+    #   "id": "conn_abc123",
+    #   "provider": "notion",
+    #   "email": "workspace@example.com",
+    #   "createdAt": "2024-01-15T10:00:00Z",
+    #   "documentLimit": 2000,
+    #   "metadata": {...}
+    # }
+
+    # Listar documentos sincronizados
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion/documents" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123", "notion-workspace"]}'
+
+    # Respuesta: Array de objetos de documento con estado de sincronización
+    # [
+    #   {"title": "Product Roadmap", "type": "notion_database", "status": "done"},
+    #   {"title": "Meeting Notes", "type": "notion_page", "status": "done"}
+    # ]
+    ```
+  </Tab>
+</Tabs>
+
+<div id="supported-content-types">
+  ## Tipos de contenido admitidos
+</div>
+
+<div id="notion-pages">
+  ### Páginas de Notion
+</div>
+
+- **Bloques de texto enriquecido** con formato conservado
+- **Páginas anidadas** y estructura jerárquica
+- **Contenido incrustado** (imágenes, videos, archivos)
+- **Bloques de código** con resaltado de sintaxis
+- **Llamadas de atención y citas** convertidas a Markdown
+
+<div id="notion-databases">
+  ### Bases de datos de Notion
+</div>
+
+- **Entradas de base de datos** sincronizadas como Documentos individuales
+- **Propiedades** incluidas en metadata
+- **Relaciones** entre entradas de base de datos
+- **Fórmulas y rollups** con valores calculados
+- **Propiedades de selección múltiple y de selección**
+
+<div id="block-types">
+  ### Tipos de bloques
+</div>
+
+| Tipo de bloque | Procesamiento | Salida en Markdown |
+|------------|------------|-----------------|
+| **Texto** | Se conserva el formato | `**negrita**`, `*cursiva*`, `~~tachado~~` |
+| **Encabezado** | Se mantiene la jerarquía | `# H1`, `## H2`, `### H3` |
+| **Código** | Detección de lenguaje | ````python\ncode here\n```` |
+| **Cita** | Formato de cita en bloque | `> quoted text` |
+| **Aviso** | Formato personalizado | `> 💡 **Nota:** callout text` |
+| **Lista** | Se conserva la estructura | `- item 1\n  - nested item` |
+| **Tabla** | Tablas en Markdown | `| Col 1 | Col 2 |\n|-------|-------|` |
+| **Imagen** | Referenciada con metadata | `![alt text](url)` |
+| **Inserción** | Enlace con contexto | `[Contenido incrustado](url)` |
+
+<div id="delete-connection">
+  ## Eliminar integración
+</div>
+
+Elimina una integración de Notion cuando ya no la necesites:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Delete by connection ID
+    const result = await client.connections.delete('connection_id_123');
+    console.log('Deleted connection:', result.id);
+
+    // Delete by provider and container tags
+    const providerResult = await client.connections.deleteByProvider('notion', {
+      containerTags: ['user-123']
+    });
+    console.log('Deleted Notion connection for user');
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Delete by connection ID
+    result = client.connections.delete('connection_id_123')
+    print(f'Deleted connection: {result.id}')
+
+    # Delete by provider and container tags
+    provider_result = client.connections.delete_by_provider(
+        'notion',
+        container_tags=['user-123']
+    )
+    print('Deleted Notion connection for user')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Delete by connection ID
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+    # Delete by provider and container tags
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/notion" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123"]}'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+Al eliminar una integración:
+- Se detendrán todas las sincronizaciones futuras desde Notion
+- Se retirará la autorización de OAuth
+- Se mantendrán los Documentos ya sincronizados en Supermemory (no se eliminarán)
+</Note>
+
+<div id="advanced-configuration">
+  ## Configuración avanzada
+</div>
+
+<div id="custom-notion-integration">
+  ### Integración personalizada de Notion
+</div>
+
+Para implementaciones en producción, crea tu propia integración de Notion:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Primero, actualiza la configuración de la organización con las credenciales de tu app de Notion
+    await client.settings.update({
+      notionCustomKeyEnabled: true,
+      notionClientId: 'your-notion-client-id',
+      notionClientSecret: 'your-notion-client-secret'
+    });
+
+    // Luego, crea conexiones usando tu integración personalizada
+    const connection = await client.connections.create('notion', {
+      redirectUrl: 'https://yourapp.com/callback',
+      containerTags: ['org-456', 'user-789'],
+      metadata: { customIntegration: true }
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Primero, actualiza la configuración de la organización con las credenciales de tu app de Notion
+    client.settings.update(
+        notion_custom_key_enabled=True,
+        notion_client_id='your-notion-client-id',
+        notion_client_secret='your-notion-client-secret'
+    )
+
+    # Luego, crea conexiones usando tu integración personalizada
+    connection = client.connections.create(
+        'notion',
+        redirect_url='https://yourapp.com/callback',
+        container_tags=['org-456', 'user-789'],
+        metadata={'customIntegration': True}
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Actualiza la configuración de la organización
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "notionCustomKeyEnabled": true,
+        "notionClientId": "your-notion-client-id",
+        "notionClientSecret": "your-notion-client-secret"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="content-filtering">
+  ### Filtrado de contenido
+</div>
+
+Controla qué contenido de Notion se sincroniza:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Configura el filtrado inteligente para el contenido de Notion
+    await client.settings.update({
+      shouldLLMFilter: true,
+      includeItems: {
+        pageTypes: ['page', 'database'],
+        titlePatterns: ['*Spec*', '*Documentation*', '*Meeting Notes*'],
+        databases: ['Project Tracker', 'Knowledge Base', 'Team Wiki']
+      },
+      excludeItems: {
+        titlePatterns: ['*Draft*', '*Personal*', '*Archive*'],
+        databases: ['Personal Tasks', 'Scratchpad']
+      },
+      filterPrompt: "Sync professional documentation, project specs, meeting notes, and team knowledge. Skip personal notes, drafts, and archived content."
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Configura el filtrado inteligente para el contenido de Notion
+    client.settings.update(
+        should_llm_filter=True,
+        include_items={
+            'pageTypes': ['page', 'database'],
+            'titlePatterns': ['*Spec*', '*Documentation*', '*Meeting Notes*'],
+            'databases': ['Project Tracker', 'Knowledge Base', 'Team Wiki']
+        },
+        exclude_items={
+            'titlePatterns': ['*Draft*', '*Personal*', '*Archive*'],
+            'databases': ['Personal Tasks', 'Scratchpad']
+        },
+        filter_prompt="Sync professional documentation, project specs, meeting notes, and team knowledge. Skip personal notes, drafts, and archived content."
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Configura el filtrado inteligente para el contenido de Notion
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "includeItems": {
+          "pageTypes": ["page", "database"],
+          "titlePatterns": ["*Spec*", "*Documentation*", "*Meeting Notes*"],
+          "databases": ["Project Tracker", "Knowledge Base", "Team Wiki"]
+        },
+        "excludeItems": {
+          "titlePatterns": ["*Draft*", "*Personal*", "*Archive*"],
+          "databases": ["Personal Tasks", "Scratchpad"]
+        },
+        "filterPrompt": "Sync professional documentation, project specs, meeting notes, and team knowledge. Skip personal notes, drafts, and archived content."
+      }'
+
+    # Respuesta:
+    # {
+    #   "success": true,
+    #   "message": "Settings updated successfully"
+    # }
+    ```
+  </Tab>
+</Tabs>
+
+<div id="workspace-permissions">
+  ## Permisos del espacio de trabajo
+</div>
+
+El conector de Notion respeta los permisos del espacio de trabajo:
+
+| Nivel de permiso | Comportamiento de sincronización |
+|------------------|----------------------------------|
+| **Admin** | Acceso total al espacio de trabajo |
+| **Member** | Páginas con permiso de lectura |
+| **Guest** | Solo páginas compartidas |
+| **No Access** | Excluido del índice |
+
+<div id="database-integration">
+  ## Integración de bases de datos
+</div>
+
+<div id="database-properties">
+  ### Propiedades de la base de datos
+</div>
+
+Las propiedades de las bases de datos de Notion se mapean a metadata:
+
+```typescript
+// Ejemplo: Base de datos de proyecto con propiedades
+const documents = await client.connections.listDocuments('notion', {
+  containerTags: ['user-123']
+});
+
+// Buscar entradas de base de datos
+const projectEntries = documents.filter(doc =>
+  doc.metadata?.database === 'Projects'
+);
+
+// Las propiedades de la base de datos se convierten en metadata consultable
+const projectWithStatus = await client.search.documents({
+  q: "proyecto de aprendizaje automático",
+  containerTags: ['user-123'],
+  filters: JSON.stringify({
+    AND: [
+      { key: "status", value: "In Progress", negate: false },
+      { key: "priority", value: "High", negate: false }
+    ]
+  })
+});
+```
+
+
+<div id="optimization-strategies">
+  ### Estrategias de optimización
+</div>
+
+1. **Define límites de documentos adecuados** según el tamaño del espacio de trabajo
+2. **Usa etiquetas de contenedor específicas** para organizar de forma eficiente
+3. **Supervisa el rendimiento de la sincronización de bases de datos** con conjuntos de datos grandes
+4. **Implementa filtros de contenido** para sincronizar solo las páginas relevantes
+5. **Gestiona con gracia los retrasos de los webhooks** en tu aplicación
+
+<Callout type="info">
+**Beneficios específicos de Notion:**
+- Sincronización en tiempo real vía webhooks para actualizaciones instantáneas
+- Se conservan el formato enriquecido y la estructura de bloques
+- Las propiedades de las bases de datos pasan a ser metadata consultable
+- Se mantiene la estructura jerárquica de las páginas
+- Compatibilidad con espacios de trabajo colaborativos
+</Callout>
+
+<Warning>
+**Limitaciones importantes:**
+- El formato complejo de bloques puede simplificarse al convertir a Markdown
+- Las bases de datos grandes pueden tardar mucho en sincronizarse inicialmente
+- Los permisos del espacio de trabajo determinan qué contenido es accesible
+- Los límites de tasa de la Notion API pueden afectar la velocidad de sincronización en espacios de trabajo grandes
+- Los archivos e imágenes incrustados se referencian; no se almacenan directamente
+</Warning>

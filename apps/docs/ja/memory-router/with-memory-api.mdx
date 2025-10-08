@@ -1,0 +1,130 @@
+---
+title: "Memory API と併用する"
+description: "最大限のコントロールのために Memory Router と Memory API を組み合わせる"
+sidebarTitle: "Memory API と併用する"
+---
+
+Memory Router と Memory API は同じメモリープールを共有します。同じ `user_id` を使用すると、保存メモリは両方のシステム間で自動的に共有されます。
+
+<div id="how-they-work-together">
+  ## 相互の連携方法
+</div>
+
+<Note>
+**重要なポイント**: Router と API は、同じ `user_id` 値を用いる場合、同一の保存メモリにアクセスします。これにより、強力なハイブリッド実装が可能になります。
+</Note>
+
+<div id="shared-memory-pool">
+  ### 共有メモリープール
+</div>
+
+```python
+# APIを介して作成されたメモリー
+from supermemory import Client
+
+api_client = Client(api_key="YOUR_SUPERMEMORY_KEY")
+
+# APIを介してメモリーを追加
+api_client.memories.add({
+    "content": "ユーザーはバックエンド開発でJavaScriptよりもPythonを好む",
+    "user_id": "user123"
+})
+
+# 後で、Routerを使用するチャットアプリケーションで
+from openai import OpenAI
+
+router_client = OpenAI(
+    api_key="YOUR_OPENAI_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+    default_headers={
+        "x-supermemory-api-key": "YOUR_SUPERMEMORY_KEY",
+        "x-sm-user-id": "user123"  # 同じuser_id
+    }
+)
+
+# RouterはAPIで作成されたメモリーに自動的にアクセス可能
+response = router_client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "新しいバックエンドにはどの言語を使うべきですか？"}]
+)
+# レスポンスはPythonの好みを考慮する
+```
+
+
+<div id="pre-load-context-via-api">
+  ## API でコンテキストを事前読み込みする
+</div>
+
+会話を始める前に、API を使って documents とコンテキストを追加します:
+
+```python
+# ステップ1: APIを介してユーザーのdocumentsを読み込む
+api_client.memories.add({
+    "content": "https://company.com/product-docs.pdf",
+    "user_id": "support_agent_123",
+    "metadata": {"type": "product_documentation"}
+})
+
+# ステップ2: サポートエージェントがRouterでチャットを使用
+router_client = OpenAI(
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+    default_headers={"x-sm-user-id": "support_agent_123"}
+)
+
+# エージェントは製品ドキュメントに自動的にアクセス可能
+response = router_client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "エンタープライズ価格設定はどのように機能しますか？"}]
+)
+```
+
+
+<div id="best-practices">
+  ## ベストプラクティス
+</div>
+
+<div id="1-consistent-user-ids">
+  ### 1. 一貫したユーザーID
+</div>
+
+両システムで常に同一の `user_id` 形式を使用してください。
+
+```python
+# ✅ 良い例 - 一貫したuser_id
+api_client.memories.add({"user_id": "user_123"})
+router_headers = {"x-sm-user-id": "user_123"}
+
+# ❌ 悪い例 - 一貫しないuser_id
+api_client.memories.add({"user_id": "user-123"})
+router_headers = {"x-sm-user-id": "user_123"}  # 異なる形式！
+```
+
+
+<div id="2-use-container-tags-for-organization">
+  ### 2. 組織化にはコンテナタグを使う
+</div>
+
+```python
+# API: タグ付きで保存メモリを追加
+api_client.memories.add({
+    "content": "Q3 revenue report",
+    "user_id": "analyst_1",
+    "containerTag": "financial_reports"
+})
+
+# Router: 保存メモリは自動的に整理される
+# Routerは適切なコンテナから自動的に取得する
+```
+
+
+<div id="3-leverage-each-systems-strengths">
+  ### 3. 各システムの強みを活かす
+</div>
+
+| ユースケース | 最適な選択 | 理由 |
+|----------|------------|-----|
+| チャット会話 | Router | コンテキストの自動管理 |
+| ドキュメントのアップロード | API | バッチ処理、カスタム id |
+| 検索・フィルター | API | 高度なクエリ機能 |
+| 迅速なプロトタイピング | Router | コード変更不要 |
+| メモリー管理 | API | 完全な CRUD 操作 |

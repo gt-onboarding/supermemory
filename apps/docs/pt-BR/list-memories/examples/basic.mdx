@@ -1,0 +1,91 @@
+---
+title: "Listagem básica"
+description: "Recuperação simples de memory em vários idiomas"
+---
+
+Exemplos de recuperação simples de memory para começar a usar o endpoint de listagem de memórias.
+
+<div id="basic-usage">
+  ## Uso básico
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const response = await client.memories.list({ limit: 10 });
+    console.log(response);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+    response = client.memories.list(limit=10)
+    print(response)
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 10}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="with-custom-parameters">
+  ## Com parâmetros personalizados
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const response = await client.memories.list({
+      containerTags: ["user_123"],
+      limit: 20,
+      sort: "updatedAt",
+      order: "desc"
+    });
+
+    console.log(`Found ${response.memories.length} memories`);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    response = client.memories.list(
+        container_tags=["user_123"],
+        limit=20,
+        sort="updatedAt",
+        order="desc"
+    )
+
+    print(f"Found {len(response.memories)} memories")
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user_123"],
+        "limit": 20,
+        "sort": "updatedAt",
+        "order": "desc"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  Ao testar, comece com valores baixos de `limit` (10–20) para evitar respostas excessivamente grandes.
+</Info>

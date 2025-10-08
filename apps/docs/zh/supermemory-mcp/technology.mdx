@@ -1,0 +1,60 @@
+---
+title: "技术实现细节"
+description: "supermemory MCP 的技术实现细节"
+---
+
+在保持强大功能的同时，该技术架构将「简洁与用户体验」置于首位。按照创建者的说法，它是“你见过的最简单的东西”——本质上就是一个通过 fetch 调用 supermemory API 的 React Router 应用——整个系统大约用 5 小时的实际工作时间就开发完成并发布。
+
+<div id="architecture-components">
+  ### 架构组件
+</div>
+
+- **后端 API**：基于 supermemory API（https://api.supermemory.ai/v3）构建
+- **传输层**：使用 Server-Sent Events（SSE）进行实时通信
+- **动态服务器生成**：通过 URL 路径参数为每位用户创建唯一的 MCP 服务器实例
+- **会话管理**：通过唯一的 URL 实现用户完全隔离
+- **基础设施**：托管于 Cloudflare，采用 Durable Objects 支持持久、长时连接
+
+系统利用 **Cloudflare 的基础设施** 与基于 CPU 的计费模式，具备极高效率；由于 memory 连接在交互间大多处于等待而非主动处理状态，即便运行时长可能达到数百万毫秒，CPU 占用仍然极低。
+
+<div id="the-two-main-components-explained">
+  ## 两个核心组件解读
+</div>
+
+<div id="addtosupermemory-action">
+  ### addToSupermemory 动作
+</div>
+
+该组件通过精巧的触发机制**存储用户信息、偏好和行为模式**：
+
+**触发方式：**
+
+- **显式指令**：用户直接给出的指令，如“remember this”
+- **隐式检测**：在对话过程中自动识别用户的重要特征、偏好或模式
+
+**捕获的数据类型：**
+
+- 技术偏好与细节（例如，“My primary programming language is Python”）
+- 项目信息与上下文（例如，“I'm currently working on a project named 'Apollo'”）
+- 用户行为与情绪反应
+- 个人事实、偏好与决策偏好
+- 包含技术细节与示例的丰富上下文
+
+<div id="searchsupermemory-action">
+  ### searchSupermemory 操作
+</div>
+
+该组件通过高级搜索功能，从已存储的记忆存储中**检索相关信息**：
+
+**触发方式：**
+
+- 用户明确请求历史信息
+- 在当前语境中，过往用户选择有助于做出当前决策的情形
+- 基于对话走向的自动上下文增强
+
+**搜索能力：**
+
+- **语义匹配**：利用向量搜索在相关经历中定位关键信息
+- **模式识别**：识别行为模式与偏好
+- **跨会话检索**：获取来自先前对话和不同平台的记忆存储
+- **智能过滤**：依据当前对话需求返回最相关的上下文

@@ -1,0 +1,90 @@
+---
+title: "Integración con AI SDK"
+description: "Usa Supermemory con Vercel AI SDK para una gestión de memory sin fricciones"
+sidebarTitle: "Descripción general"
+---
+
+El AI SDK de Supermemory ofrece integración nativa con el AI SDK de Vercel mediante dos enfoques: **Memory Tools** para interacciones basadas en agentes e **Infinite Chat** para la gestión automática del contexto.
+
+<Card title="Supermemory tools on npm" icon="npm" href="https://www.npmjs.com/package/@supermemory/tools">
+  Consulta la página de npm para más detalles
+</Card>
+
+<div id="installation">
+  ## Instalación
+</div>
+
+```bash
+npm install @supermemory/tools
+```
+
+<div id="memory-tools">
+  ## Memory Tools
+</div>
+
+Añade capacidades de memory a los agentes de IA con operaciones de búsqueda, agregado y obtención.
+
+```typescript
+import { streamText } from "ai"
+import { createAnthropic } from "@ai-sdk/anthropic"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const anthropic = createAnthropic({
+  apiKey: "YOUR_ANTHROPIC_KEY"
+})
+
+const result = await streamText({
+  model: anthropic("claude-3-sonnet"),
+  prompt: "Recuerda que mi nombre es Alice",
+  tools: supermemoryTools("YOUR_SUPERMEMORY_KEY")
+})
+```
+
+<div id="infinite-chat">
+  ## Infinite Chat
+</div>
+
+Gestión automática de memory para aplicaciones de chat con contexto ilimitado.
+
+```typescript
+import { streamText } from "ai"
+
+const infiniteChat = createAnthropic({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+  apiKey: 'tu-clave-api-del-proveedor',
+  headers: {
+    'x-supermemory-api-key': 'clave-api-supermemory',
+    'x-sm-conversation-id': 'id-conversacion'
+  }
+})
+
+const result = await streamText({
+  model: infiniteChat("claude-3-sonnet"),
+  messages: [
+    { role: "user", content: "¿Cómo me llamo?" }
+  ]
+})
+```
+
+<div id="when-to-use">
+  ## Cuándo usarlo
+</div>
+
+| Enfoque | Caso de uso |
+|----------|----------|
+| Memory Tools | Agentes de IA que necesitan control explícito de memory |
+| Infinite Chat | Aplicaciones de chat con contexto automático |
+
+<div id="next-steps">
+  ## Próximos pasos
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Memory Tools" icon="wrench" href="/es/ai-sdk/memory-tools">
+    Gestión de memories basada en agentes
+  </Card>
+
+  <Card title="Infinite Chat" icon="infinity" href="/es/ai-sdk/infinite-chat">
+    Gestión automática del contexto
+  </Card>
+</CardGroup>

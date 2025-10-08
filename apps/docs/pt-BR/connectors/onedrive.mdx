@@ -1,0 +1,422 @@
+---
+title: "Conector do OneDrive"
+description: "Sincronize documentos do Microsoft Office a partir do OneDrive com sincronização agendada e suporte a contas corporativas"
+icon: "microsoft"
+---
+
+Conecte o OneDrive para sincronizar automaticamente documentos do Word, planilhas do Excel e apresentações do PowerPoint à sua base de conhecimento do Supermemory. Oferece suporte a contas pessoais e corporativas com sincronização agendada.
+
+<div id="quick-setup">
+  ## Configuração rápida
+</div>
+
+<div id="1-create-onedrive-connection">
+  ### 1. Criar integração com OneDrive
+</div>
+
+<CodeGroup>
+
+```typescript Typescript
+import Supermemory from 'supermemory';
+
+const client = new Supermemory({
+  apiKey: process.env.SUPERMEMORY_API_KEY!
+});
+
+const connection = await client.connections.create('onedrive', {
+  redirectUrl: 'https://yourapp.com/auth/onedrive/callback',
+  containerTags: ['user-123', 'onedrive-sync'],
+  documentLimit: 1500,
+  metadata: {
+    source: 'onedrive',
+    accountType: 'business',
+    department: 'marketing'
+  }
+});
+
+// Redirecione o usuário para o OAuth da Microsoft
+window.location.href = connection.authLink;
+// Saída: redireciona para o provedor OAuth
+// Saída: redireciona para https://login.microsoftonline.com/oauth2/authorize?...
+```
+
+```python Python
+from supermemory import Supermemory
+import os
+
+client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+connection = client.connections.create(
+    'onedrive',
+    redirect_url='https://yourapp.com/auth/onedrive/callback',
+    container_tags=['user-123', 'onedrive-sync'],
+    document_limit=1500,
+    metadata={
+        'source': 'onedrive',
+        'accountType': 'business',
+        'department': 'marketing'
+    }
+)
+
+# Redirecione o usuário para o OAuth da Microsoft
+print(f'Redirecionar para: {connection.auth_link}')
+# Saída: Redirecionar para: https://oauth.provider.com/...
+# Saída: Redirecionar para: https://login.microsoftonline.com/oauth2/authorize?...
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/connections/onedrive" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "redirectUrl": "https://yourapp.com/auth/onedrive/callback",
+    "containerTags": ["user-123", "onedrive-sync"],
+    "documentLimit": 1500,
+    "metadata": {
+      "source": "onedrive",
+      "accountType": "business",
+      "department": "marketing"
+    }
+  }'
+
+# Resposta: {
+#   "authLink": "https://login.microsoftonline.com/oauth2/authorize?...",
+#   "expiresIn": "1 hour",
+#   "id": "conn_od123"
+# }
+```
+
+</CodeGroup>
+
+<div id="2-handle-microsoft-oauth">
+  ### 2. Tratar o OAuth da Microsoft
+</div>
+
+Após o usuário conceder as permissões, a Microsoft redireciona para sua URL de callback. A integração é estabelecida automaticamente e a sincronização inicial é iniciada.
+
+<div id="3-monitor-sync-status">
+  ### 3. Monitorar o status da sincronização
+</div>
+
+<CodeGroup>
+  ```typescript Typescript
+    // Verificar detalhes da integração
+    const connection = await client.connections.getByTags('onedrive', {
+      containerTags: ['user-123', 'onedrive-sync']
+    });
+
+
+    // Listar documentos do Office sincronizados
+    const documents = await client.connections.listDocuments('onedrive', {
+      containerTags: ['user-123', 'onedrive-sync']
+    });
+    ```
+  ```python Python
+    # Verificar detalhes da integração
+    connection = client.connections.get_by_tags(
+        'onedrive',
+        container_tags=['user-123', 'onedrive-sync']
+    )
+
+    # Listar documentos do Office sincronizados
+    documents = client.connections.list_documents(
+        'onedrive',
+        container_tags=['user-123', 'onedrive-sync']
+    )
+    ```
+  ```bash cURL
+    # Obter integrações por provider e tags
+    curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "onedrive-sync"],
+        "provider": "onedrive"
+      }'
+
+    # Listar documentos do Office sincronizados
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "onedrive-sync"],
+        "source": "onedrive"
+      }'
+    ```
+</CodeGroup>
+
+<div id="supported-document-types">
+  ## Tipos de documentos suportados
+</div>
+
+<div id="microsoft-word-documents">
+  ### Documentos do Microsoft Word
+</div>
+
+- **Formatação rich text** convertida para Markdown
+- **Cabeçalhos e estilos** preservados como hierarquia de Markdown
+- **Imagens e gráficos** extraídos e referenciados
+- **Tabelas** convertidas em tabelas Markdown
+
+<div id="excel-spreadsheets">
+  ### Planilhas do Excel
+</div>
+
+- **Dados da planilha** convertidos em Markdown estruturado
+- **Múltiplas planilhas** processadas separadamente
+- **Gráficos** extraídos como imagens
+- **Fórmulas** convertidas em valores calculados
+- **Formatação de células** simplificada em Markdown
+
+<div id="powerpoint-presentations">
+  ### Apresentações do PowerPoint
+</div>
+
+- **Conteúdo dos slides** convertido para Markdown estruturado
+- **Notas do apresentador** incluídas quando disponíveis
+- **Imagens e mídia** extraídas e referenciadas
+- **Objetos incorporados** processados quando possível
+
+<div id="sync-mechanism">
+  ## Mecanismo de sincronização
+</div>
+
+Webhooks proporcionam a sincronização em tempo real de alterações em documents. Você também pode acionar uma sincronização manualmente.
+
+<div id="manual-sync-trigger">
+  ### Acionamento manual de sincronização
+</div>
+
+<CodeGroup>
+  ```typescript Typescript
+    // Acionar sincronização imediata para todas as integrações do OneDrive
+    await client.connections.import('onedrive');
+
+    // Acionar sincronização para um usuário específico
+    await client.connections.import('onedrive', {
+      containerTags: ['user-123']
+    });
+
+    console.log('Sincronização manual iniciada — os documents serão atualizados em 5–10 minutos');
+    ```
+  ```python Python
+    # Acionar sincronização imediata para todas as integrações do OneDrive
+    client.connections.import_('onedrive')
+
+    # Acionar sincronização para um usuário específico
+    client.connections.import_(
+        'onedrive',
+        container_tags=['user-123']
+    )
+
+    print('Sincronização manual iniciada — os documents serão atualizados em 5–10 minutos')
+    ```
+  ```bash cURL
+    # Acionar sincronização manual
+    curl -X POST "https://api.supermemory.ai/v3/connections/onedrive/import" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123"]}'
+    ```
+</CodeGroup>
+
+<div id="delete-connection">
+  ## Excluir integração
+</div>
+
+Remova a integração do OneDrive quando não for mais necessária:
+
+<CodeGroup>
+
+```typescript Typescript
+// Excluir pelo ID da integração
+const result = await client.connections.delete('connection_id_123');
+console.log('Integração excluída:', result.id);
+
+// Excluir por provider e container tags
+const providerResult = await client.connections.deleteByProvider('onedrive', {
+  containerTags: ['user-123']
+});
+console.log('Integração do OneDrive do usuário excluída');
+```
+
+```python Python
+# Excluir pelo ID da integração
+result = client.connections.delete('connection_id_123')
+print(f'Integração excluída: {result.id}')
+
+# Excluir por provider e container tags
+provider_result = client.connections.delete_by_provider(
+    'onedrive',
+    container_tags=['user-123']
+)
+print('Integração do OneDrive do usuário excluída')
+```
+
+```bash cURL
+# Excluir pelo ID da integração
+curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+# Excluir por provider e container tags
+curl -X DELETE "https://api.supermemory.ai/v3/connections/onedrive" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"]}'
+```
+
+</CodeGroup>
+
+<Note>
+Excluir uma integração irá:
+- Interromper todas as sincronizações futuras do OneDrive
+- Remover a autorização OAuth
+- Manter os documents já sincronizados no Supermemory (eles não serão excluídos)
+</Note>
+
+<div id="advanced-configuration">
+  ## Configurações avançadas
+</div>
+
+<div id="custom-microsoft-app">
+  ### Aplicativo Microsoft personalizado
+</div>
+
+Para ambientes de produção, configure seu próprio aplicativo Microsoft:
+
+<CodeGroup>
+  ```typescript Typescript
+    // Primeiro, atualize as configurações da organização com as credenciais do seu aplicativo Microsoft
+    await client.settings.update({
+      onedriveCustomKeyEnabled: true,
+      onedriveClientId: 'your-microsoft-app-id',
+      onedriveClientSecret: 'your-microsoft-app-secret'
+    });
+
+    // Em seguida, crie integrações usando seu aplicativo personalizado
+    const connection = await client.connections.create('onedrive', {
+      redirectUrl: 'https://yourapp.com/callback',
+      containerTags: ['org-456', 'user-789'],
+      metadata: { customApp: true }
+    });
+    ```
+  ```python Python
+    # Primeiro, atualize as configurações da organização com as credenciais do seu aplicativo Microsoft
+    client.settings.update(
+        onedrive_custom_key_enabled=True,
+        onedrive_client_id='your-microsoft-app-id',
+        onedrive_client_secret='your-microsoft-app-secret'
+    )
+
+    # Em seguida, crie integrações usando seu aplicativo personalizado
+    connection = client.connections.create(
+        'onedrive',
+        redirect_url='https://yourapp.com/callback',
+        container_tags=['org-456', 'user-789'],
+        metadata={'customApp': True}
+    )
+    ```
+  ```bash cURL
+    # Atualize as configurações da organização
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "onedriveCustomKeyEnabled": true,
+        "onedriveClientId": "your-microsoft-app-id",
+        "onedriveClientSecret": "your-microsoft-app-secret"
+      }'
+    ```
+</CodeGroup>
+
+<div id="document-filtering">
+  ### Filtragem de documentos
+</div>
+
+Defina quais documentos do OneDrive serão sincronizados:
+
+<CodeGroup>
+  ```typescript Typescript
+    // Configurar a filtragem para documentos do Office
+    await client.settings.update({
+      shouldLLMFilter: true,
+      includeItems: {
+        fileTypes: ['docx', 'xlsx', 'pptx'],
+        folderNames: ['Projects', 'Documentation', 'Reports'],
+        titlePatterns: ['*Proposal*', '*Specification*', '*Analysis*']
+      },
+      excludeItems: {
+        folderNames: ['Archive', 'Templates', 'Personal'],
+        titlePatterns: ['*Draft*', '*Old*', '*Backup*', '*~$*']
+      },
+      filterPrompt: "Sync professional business documents, project files, reports, and presentations. Skip personal files, drafts, temporary files, and archived content."
+    });
+    ```
+  ```python Python
+    # Configurar a filtragem para documentos do Office
+    client.settings.update(
+        should_llm_filter=True,
+        include_items={
+            'fileTypes': ['docx', 'xlsx', 'pptx'],
+            'folderNames': ['Projects', 'Documentation', 'Reports'],
+            'titlePatterns': ['*Proposal*', '*Specification*', '*Analysis*']
+        },
+        exclude_items={
+            'folderNames': ['Archive', 'Templates', 'Personal'],
+            'titlePatterns': ['*Draft*', '*Old*', '*Backup*', '*~$*']
+        },
+        filter_prompt="Sync professional business documents, project files, reports, and presentations. Skip personal files, drafts, temporary files, and archived content."
+    )
+    ```
+  ```bash cURL
+    # Configurar a filtragem para documentos do Office
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "includeItems": {
+          "fileTypes": ["docx", "xlsx", "pptx"],
+          "folderNames": ["Projects", "Documentation", "Reports"],
+          "titlePatterns": ["*Proposal*", "*Specification*", "*Analysis*"]
+        },
+        "excludeItems": {
+          "folderNames": ["Archive", "Templates", "Personal"],
+          "titlePatterns": ["*Draft*", "*Old*", "*Backup*", "*~$*"]
+        },
+        "filterPrompt": "Sync professional business documents, project files, reports, and presentations. Skip personal files, drafts, temporary files, and archived content."
+      }'
+
+    # Response: {
+    #   "shouldLLMFilter": true,
+    #   "includeItems": {...},
+    #   "excludeItems": {...},
+    #   "filterPrompt": "..."
+    # }
+    ```
+</CodeGroup>
+
+<div id="optimization-tips">
+  ### Dicas de otimização
+</div>
+
+1. **Defina limites realistas de documentos** com base no armazenamento e no uso
+2. **Use filtragem direcionada** para sincronizar apenas documentos críticos para o negócio
+3. **Monitore a integridade da sincronização** regularmente devido ao agendamento
+4. **Acione sincronizações manuais** quando atualizações imediatas forem necessárias
+5. **Considere o tipo de conta** ao definir expectativas
+
+<Callout type="info">
+**Benefícios específicos do OneDrive:**
+- Suporta contas Microsoft pessoais e corporativas
+- Processa todos os principais formatos de documentos do Office
+- Preserva a estrutura e a formatação dos documentos
+- Lida com grandes coleções de documentos corporativos
+</Callout>
+
+<Warning>
+**Limitações importantes:**
+- Documentos grandes do Office podem levar um tempo significativo para serem processados
+- Fórmulas complexas do Excel podem não ser convertidas perfeitamente para Markdown
+- Os limites de taxa da API da Microsoft podem desacelerar a sincronização em contas grandes
+</Warning>

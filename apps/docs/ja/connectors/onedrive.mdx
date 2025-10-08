@@ -1,0 +1,422 @@
+---
+title: "OneDrive コネクタ"
+description: "OneDrive 上の Microsoft Office ドキュメントを、スケジュール同期とビジネスアカウント対応で同期します"
+icon: "microsoft"
+---
+
+OneDrive を接続すると、Word、Excel、PowerPoint のファイルを自動的に Supermemory のナレッジベースへ同期できます。個人アカウントとビジネスアカウントの両方に対応し、スケジュール同期もサポートします。
+
+<div id="quick-setup">
+  ## かんたんセットアップ
+</div>
+
+<div id="1-create-onedrive-connection">
+  ### 1. OneDrive 連携を作成する
+</div>
+
+<CodeGroup>
+
+```typescript Typescript
+import Supermemory from 'supermemory';
+
+const client = new Supermemory({
+  apiKey: process.env.SUPERMEMORY_API_KEY!
+});
+
+const connection = await client.connections.create('onedrive', {
+  redirectUrl: 'https://yourapp.com/auth/onedrive/callback',
+  containerTags: ['user-123', 'onedrive-sync'],
+  documentLimit: 1500,
+  metadata: {
+    source: 'onedrive',
+    accountType: 'business',
+    department: 'marketing'
+  }
+});
+
+// ユーザーを Microsoft の OAuth にリダイレクト
+window.location.href = connection.authLink;
+// 出力: OAuth プロバイダへリダイレクト
+// 出力: https://login.microsoftonline.com/oauth2/authorize?... にリダイレクト
+```
+
+```python Python
+from supermemory import Supermemory
+import os
+
+client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+connection = client.connections.create(
+    'onedrive',
+    redirect_url='https://yourapp.com/auth/onedrive/callback',
+    container_tags=['user-123', 'onedrive-sync'],
+    document_limit=1500,
+    metadata={
+        'source': 'onedrive',
+        'accountType': 'business',
+        'department': 'marketing'
+    }
+)
+
+# ユーザーを Microsoft の OAuth にリダイレクト
+print(f'Redirect to: {connection.auth_link}')
+# 出力: Redirect to: https://oauth.provider.com/...
+# 出力: Redirect to: https://login.microsoftonline.com/oauth2/authorize?...
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/connections/onedrive" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "redirectUrl": "https://yourapp.com/auth/onedrive/callback",
+    "containerTags": ["user-123", "onedrive-sync"],
+    "documentLimit": 1500,
+    "metadata": {
+      "source": "onedrive",
+      "accountType": "business",
+      "department": "marketing"
+    }
+  }'
+
+# レスポンス: {
+#   "authLink": "https://login.microsoftonline.com/oauth2/authorize?...",
+#   "expiresIn": "1 hour",
+#   "id": "conn_od123"
+# }
+```
+
+</CodeGroup>
+
+<div id="2-handle-microsoft-oauth">
+  ### 2. Microsoft OAuth を処理する
+</div>
+
+ユーザーが権限を付与すると、Microsoft はコールバック url にリダイレクトします。連携は自動的に確立され、初回同期が開始されます。
+
+<div id="3-monitor-sync-status">
+  ### 3. 同期状況を監視する
+</div>
+
+<CodeGroup>
+  ```typescript Typescript
+    // 連携の詳細を確認
+    const connection = await client.connections.getByTags('onedrive', {
+      containerTags: ['user-123', 'onedrive-sync']
+    });
+
+
+    // 同期済みの Office ドキュメントを一覧表示
+    const documents = await client.connections.listDocuments('onedrive', {
+      containerTags: ['user-123', 'onedrive-sync']
+    });
+    ```
+  ```python Python
+    # 連携の詳細を確認
+    connection = client.connections.get_by_tags(
+        'onedrive',
+        container_tags=['user-123', 'onedrive-sync']
+    )
+
+    # 同期済みの Office ドキュメントを一覧表示
+    documents = client.connections.list_documents(
+        'onedrive',
+        container_tags=['user-123', 'onedrive-sync']
+    )
+    ```
+  ```bash cURL
+    # プロバイダとタグで connections を取得
+    curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "onedrive-sync"],
+        "provider": "onedrive"
+      }'
+
+    # 同期済みの Office ドキュメントを一覧表示
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "onedrive-sync"],
+        "source": "onedrive"
+      }'
+    ```
+</CodeGroup>
+
+<div id="supported-document-types">
+  ## サポート対象のドキュメントタイプ
+</div>
+
+<div id="microsoft-word-documents">
+  ### Microsoft Word documents
+</div>
+
+- **リッチテキストの書式**をMarkdownに変換
+- **見出しとスタイル**をMarkdownの階層として保持
+- **画像とグラフ**を抽出して参照に追加
+- **表**をMarkdownの表に変換
+
+<div id="excel-spreadsheets">
+  ### Excel スプレッドシート
+</div>
+
+- **ワークシートのデータ**を構造化された Markdown に変換
+- **複数のシート**を個別に処理
+- **チャートやグラフ**を画像として抽出
+- **数式**を計算結果の値に変換
+- **セルの書式**を Markdown で簡略化
+
+<div id="powerpoint-presentations">
+  ### PowerPoint プレゼンテーション
+</div>
+
+- **スライド内容**を構造化されたMarkdownに変換
+- **発表者ノート**は存在する場合に含める
+- **画像やメディア**を抽出して参照
+- **埋め込みオブジェクト**は可能な場合に処理
+
+<div id="sync-mechanism">
+  ## 同期メカニズム
+</div>
+
+Webhooks によって documents の変更がリアルタイムに同期されます。手動で同期を実行することも可能です。
+
+<div id="manual-sync-trigger">
+  ### 手動同期の実行
+</div>
+
+<CodeGroup>
+  ```typescript Typescript
+    // すべての OneDrive 連携で即時同期を実行
+    await client.connections.import('onedrive');
+
+    // 特定ユーザーのみ同期を実行
+    await client.connections.import('onedrive', {
+      containerTags: ['user-123']
+    });
+
+    console.log('手動同期を開始しました。documents は 5～10 分以内に更新されます');
+    ```
+  ```python Python
+    # すべての OneDrive 連携で即時同期を実行
+    client.connections.import_('onedrive')
+
+    # 特定ユーザーのみ同期を実行
+    client.connections.import_(
+        'onedrive',
+        container_tags=['user-123']
+    )
+
+    print('手動同期を開始しました。documents は 5～10 分以内に更新されます')
+    ```
+  ```bash cURL
+    # 手動同期を実行
+    curl -X POST "https://api.supermemory.ai/v3/connections/onedrive/import" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123"]}'
+    ```
+</CodeGroup>
+
+<div id="delete-connection">
+  ## 連携の削除
+</div>
+
+不要になった OneDrive 連携を削除します:
+
+<CodeGroup>
+
+```typescript Typescript
+// 連携IDで削除
+const result = await client.connections.delete('connection_id_123');
+console.log('連携を削除しました:', result.id);
+
+// プロバイダとコンテナタグで削除
+const providerResult = await client.connections.deleteByProvider('onedrive', {
+  containerTags: ['user-123']
+});
+console.log('ユーザーの OneDrive 連携を削除しました');
+```
+
+```python Python
+# 連携IDで削除
+result = client.connections.delete('connection_id_123')
+print(f'連携を削除しました: {result.id}')
+
+# プロバイダとコンテナタグで削除
+provider_result = client.connections.delete_by_provider(
+    'onedrive',
+    container_tags=['user-123']
+)
+print('ユーザーの OneDrive 連携を削除しました')
+```
+
+```bash cURL
+# 連携IDで削除
+curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+# プロバイダとコンテナタグで削除
+curl -X DELETE "https://api.supermemory.ai/v3/connections/onedrive" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"]}'
+```
+
+</CodeGroup>
+
+<Note>
+連携を削除すると、次のことが行われます:
+- 今後の OneDrive からの同期がすべて停止します
+- OAuth の認可が取り消されます
+- 既存の同期済み documents は Supermemory に残ります（削除されません）
+</Note>
+
+<div id="advanced-configuration">
+  ## 詳細設定
+</div>
+
+<div id="custom-microsoft-app">
+  ### カスタム Microsoft アプリ
+</div>
+
+本番環境へのデプロイでは、独自の Microsoft アプリケーションを設定します:
+
+<CodeGroup>
+  ```typescript Typescript
+    // まず、Microsoft アプリの認証情報で組織設定を更新します
+    await client.settings.update({
+      onedriveCustomKeyEnabled: true,
+      onedriveClientId: 'your-microsoft-app-id',
+      onedriveClientSecret: 'your-microsoft-app-secret'
+    });
+
+    // 次に、カスタムアプリを使って連携を作成します
+    const connection = await client.connections.create('onedrive', {
+      redirectUrl: 'https://yourapp.com/callback',
+      containerTags: ['org-456', 'user-789'],
+      metadata: { customApp: true }
+    });
+    ```
+  ```python Python
+    # まず、Microsoft アプリの認証情報で組織設定を更新します
+    client.settings.update(
+        onedrive_custom_key_enabled=True,
+        onedrive_client_id='your-microsoft-app-id',
+        onedrive_client_secret='your-microsoft-app-secret'
+    )
+
+    # 次に、カスタムアプリを使って連携を作成します
+    connection = client.connections.create(
+        'onedrive',
+        redirect_url='https://yourapp.com/callback',
+        container_tags=['org-456', 'user-789'],
+        metadata={'customApp': True}
+    )
+    ```
+  ```bash cURL
+    # 組織設定を更新
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "onedriveCustomKeyEnabled": true,
+        "onedriveClientId": "your-microsoft-app-id",
+        "onedriveClientSecret": "your-microsoft-app-secret"
+      }'
+    ```
+</CodeGroup>
+
+<div id="document-filtering">
+  ### ドキュメントのフィルタリング
+</div>
+
+どの OneDrive の documents を同期するかを制御します:
+
+<CodeGroup>
+  ```typescript Typescript
+    // Office ドキュメント用のフィルタリングを設定
+    await client.settings.update({
+      shouldLLMFilter: true,
+      includeItems: {
+        fileTypes: ['docx', 'xlsx', 'pptx'],
+        folderNames: ['Projects', 'Documentation', 'Reports'],
+        titlePatterns: ['*Proposal*', '*Specification*', '*Analysis*']
+      },
+      excludeItems: {
+        folderNames: ['Archive', 'Templates', 'Personal'],
+        titlePatterns: ['*Draft*', '*Old*', '*Backup*', '*~$*']
+      },
+      filterPrompt: "Sync professional business documents, project files, reports, and presentations. Skip personal files, drafts, temporary files, and archived content."
+    });
+    ```
+  ```python Python
+    # Office ドキュメント用のフィルタリングを設定
+    client.settings.update(
+        should_llm_filter=True,
+        include_items={
+            'fileTypes': ['docx', 'xlsx', 'pptx'],
+            'folderNames': ['Projects', 'Documentation', 'Reports'],
+            'titlePatterns': ['*Proposal*', '*Specification*', '*Analysis*']
+        },
+        exclude_items={
+            'folderNames': ['Archive', 'Templates', 'Personal'],
+            'titlePatterns': ['*Draft*', '*Old*', '*Backup*', '*~$*']
+        },
+        filter_prompt="Sync professional business documents, project files, reports, and presentations. Skip personal files, drafts, temporary files, and archived content."
+    )
+    ```
+  ```bash cURL
+    # Office ドキュメント用のフィルタリングを設定
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "includeItems": {
+          "fileTypes": ["docx", "xlsx", "pptx"],
+          "folderNames": ["Projects", "Documentation", "Reports"],
+          "titlePatterns": ["*Proposal*", "*Specification*", "*Analysis*"]
+        },
+        "excludeItems": {
+          "folderNames": ["Archive", "Templates", "Personal"],
+          "titlePatterns": ["*Draft*", "*Old*", "*Backup*", "*~$*"]
+        },
+        "filterPrompt": "Sync professional business documents, project files, reports, and presentations. Skip personal files, drafts, temporary files, and archived content."
+      }'
+
+    # Response: {
+    #   "shouldLLMFilter": true,
+    #   "includeItems": {...},
+    #   "excludeItems": {...},
+    #   "filterPrompt": "..."
+    # }
+    ```
+</CodeGroup>
+
+<div id="optimization-tips">
+  ### 最適化のヒント
+</div>
+
+1. ストレージと利用状況に基づいて**現実的なdocumentsの上限**を設定する
+2. **ターゲットを絞ったフィルタリング**で、ビジネスに重要なdocumentsのみ同期する
+3. スケジュール実行の性質上、**同期のヘルスを定期的に監視**する
+4. すぐに更新が必要な場合は**手動同期を実行**する
+5. 期待値を設定する際は**アカウント種別を考慮**する
+
+<Callout type="info">
+**OneDrive固有の利点:**
+- 個人用・法人向けのMicrosoftアカウントの両方をサポート
+- 主要なOfficeドキュメント形式を網羅して処理
+- ドキュメントの構造と書式を保持
+- 企業規模の大規模なdocumentsコレクションに対応
+</Callout>
+
+<Warning>
+**重要な制限事項:**
+- 大きなOfficeドキュメントは処理に時間がかかる場合がある
+- 複雑なExcelの数式はMarkdownに完全には変換されない可能性がある
+- MicrosoftのAPIレート制限により、大規模アカウントの同期が遅くなる場合がある
+</Warning>

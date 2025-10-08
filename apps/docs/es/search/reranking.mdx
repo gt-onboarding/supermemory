@@ -1,0 +1,408 @@
+---
+title: "Reordenamiento"
+description: "Mejora la relevancia de los resultados con algoritmos de ordenamiento secundarios"
+---
+
+El reordenamiento aplica un algoritmo de ordenamiento secundario para mejorar el orden de relevancia de los resultados de búsqueda. Tras la búsqueda inicial, el reranker analiza la relación entre tu consulta y cada resultado para ofrecer un orden más preciso.
+
+<div id="how-reranking-works">
+  ## Cómo funciona el Reordenamiento
+</div>
+
+El proceso de reordenamiento de Supermemory:
+
+1. **Búsqueda inicial** devuelve resultados usando similaridad semántica estándar
+2. **Modelo de reordenamiento** analiza pares consulta–resultado
+3. **Las puntuaciones se recalculan** en función de una comprensión semántica más profunda
+4. **Los resultados se reordenan** según las nuevas puntuaciones de relevancia
+5. **Los resultados finales** mantienen la misma estructura pero con un orden mejorado
+
+El reranker es particularmente eficaz para:
+
+- **Comprender el contexto** y relaciones matizadas
+- **Gestionar consultas ambiguas** con múltiples posibles significados
+- **Mejorar la precisión** en temas técnicos complejos
+- **Mejorar la clasificación** cuando los resultados tienen puntuaciones iniciales similares
+
+<div id="basic-reranking-comparison">
+  ## Comparación básica de Reordenamiento
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    // Búsqueda sin reordenamiento
+    const standardResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: false,
+      limit: 5
+    });
+
+    // Búsqueda con reordenamiento
+    const rerankedResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: true,
+      limit: 5
+    });
+
+    console.log("Mejor resultado estándar:", standardResults.results[0].score);
+    console.log("Mejor resultado reordenado:", rerankedResults.results[0].score);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    # Búsqueda sin reordenamiento
+    standard_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=False,
+        limit=5
+    )
+
+    # Búsqueda con reordenamiento
+    reranked_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=True,
+        limit=5
+    )
+
+    print("Mejor resultado estándar:", standard_results.results[0].score)
+    print("Mejor resultado reordenado:", reranked_results.results[0].score)
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # Sin reordenamiento
+    echo "Ranking estándar:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": false,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+
+    # Con reordenamiento
+    echo "Resultados reordenados:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": true,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+    ```
+  </Tab>
+</Tabs>
+
+**Comparación de resultados de ejemplo:**
+
+```json
+// Sin reranking - resultados ordenados por similaridad semántica
+{
+  "results": [
+    {
+      "title": "Métodos de Optimización de Aprendizaje Profundo",
+      "score": 0.82,
+      "chunks": [
+        {
+          "content": "Varios algoritmos de optimización como Adam, RMSprop y SGD se utilizan en el entrenamiento de redes neuronales...",
+          "score": 0.79
+        }
+      ]
+    },
+    {
+      "title": "Técnicas de Entrenamiento de Redes Neuronales",
+      "score": 0.81,
+      "chunks": [
+        {
+          "content": "La normalización por lotes y el dropout son técnicas de regularización comunes para redes neuronales...",
+          "score": 0.78
+        }
+      ]
+    }
+  ],
+  "timing": 145
+}
+
+// Con reranking - resultados reordenados por relevancia contextual
+{
+  "results": [
+    {
+      "title": "Técnicas de Entrenamiento de Redes Neuronales",
+      "score": 0.89,  // Mejorado por el reranker
+      "chunks": [
+        {
+          "content": "La normalización por lotes y el dropout son técnicas de regularización comunes para redes neuronales...",
+          "score": 0.85
+        }
+      ]
+    },
+    {
+      "title": "Métodos de Optimización de Aprendizaje Profundo",
+      "score": 0.86,  // Ligeramente ajustado
+      "chunks": [
+        {
+          "content": "Varios algoritmos de optimización como Adam, RMSprop y SGD se utilizan en el entrenamiento de redes neuronales...",
+          "score": 0.83
+        }
+      ]
+    }
+  ],
+  "timing": 267  // Aproximadamente 120ms adicionales para reranking
+}
+```
+
+
+<div id="complex-query-reranking">
+  ## Reordenamiento de consultas complejas
+</div>
+
+El Reordenamiento destaca con consultas complejas y de múltiples facetas:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "sustainable machine learning carbon footprint energy efficiency",
+      rerank: true,
+      containerTags: ["research", "sustainability"],
+      limit: 8
+    });
+
+    // El reordenamiento entiende la relación entre:
+    // - Los costos computacionales del aprendizaje automático
+    // - El impacto ambiental del entrenamiento de IA
+    // - Arquitecturas de modelos con eficiencia energética
+    // - Prácticas de computación verde en ML
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="sustainable machine learning carbon footprint energy efficiency",
+        rerank=True,
+        container_tags=["research", "sustainability"],
+        limit=8
+    )
+
+    # El reordenamiento entiende la relación entre:
+    # - Los costos computacionales del aprendizaje automático
+    # - El impacto ambiental del entrenamiento de IA
+    # - Arquitecturas de modelos con eficiencia energética
+    # - Prácticas de computación verde en ML
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "sustainable machine learning carbon footprint energy efficiency",
+        "rerank": true,
+        "containerTags": ["research", "sustainability"],
+        "limit": 8
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Ejemplo de salida:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_green_ai",
+      "title": "IA Verde: Reduciendo la Huella de Carbono del Aprendizaje Automático",
+      "score": 0.94,  // Altamente relevante después del reordenamiento
+      "chunks": [
+        {
+          "content": "Entrenar redes neuronales grandes puede consumir tanta energía como varios automóviles durante su vida útil. Las prácticas de ML sostenible se enfocan en la eficiencia del modelo, la poda y la cuantización para reducir las demandas computacionales...",
+          "score": 0.92,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_efficient_models",
+      "title": "Arquitecturas de Redes Neuronales Energéticamente Eficientes",
+      "score": 0.91,  // Potenciado por fuerte relevancia temática
+      "chunks": [
+        {
+          "content": "MobileNets y EfficientNets están diseñadas específicamente para entornos con restricciones energéticas, logrando alta precisión con una sobrecarga computacional mínima...",
+          "score": 0.88,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 12,
+  "timing": 298
+}
+```
+
+
+<div id="memory-search-reranking">
+  ## Reordenamiento en la búsqueda de memory
+</div>
+
+El Reordenamiento también mejora los resultados de la búsqueda de memory:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const memoryResults = await client.search.memories({
+      q: "explain transformer architecture attention mechanism",
+      rerank: true,
+      containerTag: "ai_notes",
+      threshold: 0.6,
+      limit: 5
+    });
+
+    // El reordenador identifica las memories que mejor explican
+    // la relación entre transformers y el mecanismo de atención
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    memory_results = client.search.memories(
+        q="explain transformer architecture attention mechanism",
+        rerank=True,
+        container_tag="ai_notes",
+        threshold=0.6,
+        limit=5
+    )
+
+    # El reordenador identifica las memories que mejor explican
+    # la relación entre transformers y el mecanismo de atención
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "explain transformer architecture attention mechanism",
+        "rerank": true,
+        "containerTag": "ai_notes",
+        "threshold": 0.6,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Ejemplo de salida:**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_transformer_intro",
+      "memory": "La arquitectura transformer revolucionó el procesamiento de lenguaje natural al reemplazar las capas recurrentes con mecanismos de autoatención. El mecanismo de atención permite al modelo enfocarse en diferentes partes de la secuencia de entrada al procesar cada token, habilitando el procesamiento en paralelo y un mejor modelado de dependencias de largo alcance.",
+      "similarity": 0.93,  // Rerankeado más alto por explicación completa
+      "title": "Descripción General de la Arquitectura Transformer",
+      "metadata": {
+        "topic": "aprendizaje-profundo",
+        "subtopic": "transformers"
+      }
+    },
+    {
+      "id": "mem_attention_detail",
+      "memory": "La autoatención calcula pesos de atención tomando productos punto entre vectores de consulta, clave y valor derivados de los embeddings de entrada. Esto permite que cada posición atienda a todas las posiciones en la capa anterior, capturando relaciones complejas en los datos.",
+      "similarity": 0.91,  // Potenciado por detalle técnico
+      "title": "Detalles del Mecanismo de Autoatención"
+    }
+  ],
+  "total": 8,
+  "timing": 198
+}
+```
+
+
+<div id="domain-specific-reranking">
+  ## Reordenamiento específico del dominio
+</div>
+
+El Reordenamiento entiende relaciones específicas del dominio:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Consulta en el dominio médico
+    const medicalResults = await client.search.documents({
+      q: "diabetes treatment insulin resistance metformin",
+      rerank: true,
+      filters: {
+        AND: [
+          { key: "domain", value: "medical", negate: false }
+        ]
+      },
+      limit: 10
+    });
+
+    // El reordenador entiende relaciones del ámbito médico:
+    // - Tipos de diabetes y tratamientos
+    // - Mecanismos de resistencia a la insulina
+    // - El papel de la metformina en el manejo de la diabetes
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Consulta en el dominio médico
+    medical_results = client.search.documents(
+        q="diabetes treatment insulin resistance metformin",
+        rerank=True,
+        filters={
+            "AND": [
+                {"key": "domain", "value": "medical", "negate": False}
+            ]
+        },
+        limit=10
+    )
+
+    # El reordenador entiende relaciones del ámbito médico:
+    # - Tipos de diabetes y tratamientos
+    # - Mecanismos de resistencia a la insulina
+    # - El papel de la metformina en el manejo de la diabetes
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "diabetes treatment insulin resistance metformin",
+        "rerank": true,
+        "filters": {
+          "AND": [
+            {"key": "domain", "value": "medical", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>

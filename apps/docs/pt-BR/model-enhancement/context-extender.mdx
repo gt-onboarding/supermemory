@@ -1,0 +1,251 @@
+---
+title: "supermemory Infinite Chat"
+description: "Crie aplicativos de chat com contexto ilimitado usando o proxy inteligente do supermemory"
+tag: "BETA"
+---
+
+import GettingAPIKey from '/snippets/pt-BR/getting-api-key.mdx';
+
+supermemory Infinite Chat é uma solução poderosa que oferece memória contextual ilimitada aos seus aplicativos de chat. Ele atua como um proxy transparente à frente do seu provider de LLM atual, gerenciando conversas longas de forma inteligente sem exigir alterações na lógica do seu aplicativo.
+
+<img src="/images/infinite-context.png" alt="Diagrama de Contexto Infinito" className="rounded-lg shadow-lg" />
+
+<Tabs>
+  <Tab title="Principais recursos">
+    <CardGroup cols={2}>
+      <Card title="Contexto ilimitado" icon="infinity" color="#4F46E5">
+        Chega de limites de tokens — as conversas podem se estender indefinidamente
+      </Card>
+
+      <Card title="Zero Latency" icon="bolt" color="#10B981">
+        Proxy transparente com sobrecarga desprezível
+      </Card>
+
+      <Card title="Custo eficiente" icon="coins" color="#F59E0B">
+        Economize até 70% em custos de tokens em conversas longas
+      </Card>
+
+      <Card title="Agnóstico ao provider" icon="plug" color="#6366F1">
+        Funciona com qualquer endpoint compatível com OpenAI
+      </Card>
+    </CardGroup>
+  </Tab>
+</Tabs>
+
+
+<div id="getting-started">
+  ## Primeiros passos
+</div>
+
+Para usar o endpoint do Infinite Chat, você precisa:
+
+<div id="1-get-a-supermemory-api-key">
+  ### 1. Obtenha uma chave da API do Supermemory
+</div>
+
+<GettingAPIKey />
+
+<div id="2-add-supermemory-in-front-of-any-openai-compatible-api-url">
+  ### 2. Adicione supermemory antes de qualquer URL de API **compatível com a OpenAI**
+</div>
+
+<CodeGroup>
+
+```typescript Typescript
+import OpenAI from "openai";
+
+/**
+ * Inicialize o cliente da OpenAI com o proxy do supermemory
+ * @param {string} OPENAI_API_KEY - Sua chave da API da OpenAI
+ * @param {string} SUPERMEMORY_API_KEY - Sua chave da API do supermemory
+ * @returns {OpenAI} - Cliente da OpenAI configurado
+ */
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://api.supermemory.ai/v3/https://api.openai.com/v1",
+  headers: {
+    "x-supermemory-api-key": process.env.SUPERMEMORY_API_KEY,
+    "x-sm-user-id": "Your_users_id"
+  },
+});
+```
+
+```python Python
+import openai
+import os
+
+# Configure o cliente da OpenAI com o proxy do supermemory
+openai.api_base = "https://api.supermemory.ai/v3/https://api.openai.com/v1"
+openai.api_key = os.environ.get("OPENAI_API_KEY")  # Sua chave regular da OpenAI
+openai.default_headers = {
+    "x-supermemory-api-key": os.environ.get("SUPERMEMORY_API_KEY"),  # Sua chave do supermemory
+}
+
+# Crie uma conclusão de chat com contexto ilimitado
+response = openai.ChatCompletion.create(
+  model="gpt-5-nano",
+  messages=[{"role": "user", "content": "Your message here"}]
+)
+```
+
+</CodeGroup>
+
+<div id="how-it-works">
+  ## Como Funciona
+</div>
+
+<Steps>
+  <Step title="Proxy Transparente">
+    Todas as requisições passam pelo supermemory para o provider de LLM escolhido, sem qualquer Latency adicional.
+
+    <img
+      src="/images/transparent-proxy.png"
+      alt="Diagrama de Proxy Transparente"
+      className="my-4 rounded-md shadow"
+    />
+  </Step>
+  <Step title="Segmentação Inteligente em Chunks">
+    Conversas longas são automaticamente divididas em segmentos otimizados usando nosso algoritmo proprietário de segmentação em chunks, que preserva a coerência semântica.
+  </Step>
+  <Step title="Recuperação Inteligente">
+    Quando as conversas excedem os limites de tokens (20k+), o supermemory recupera de forma inteligente o contexto mais relevante de mensagens anteriores.
+  </Step>
+  <Step title="Gerenciamento Automático de Tokens">
+    O sistema equilibra inteligentemente o uso de tokens, garantindo desempenho ideal e minimizando custos.
+  </Step>
+</Steps>
+
+<div id="performance-benefits">
+  ## Benefícios de Performance
+</div>
+
+<Accordion title="Uso Reduzido de Tokens" defaultOpen icon="coins">
+  Economize até 70% em custos de tokens em conversas longas por meio de gerenciamento inteligente de contexto e cache.
+</Accordion>
+
+<Accordion title="Contexto Ilimitado" icon="infinity">
+  Chega de limites de 8k/32k/128k tokens — as conversas podem se estender indefinidamente com o sistema avançado de recuperação do supermemory.
+</Accordion>
+
+<Accordion title="Qualidade de Resposta Aprimorada" icon="sparkles">
+  Uma melhor recuperação de contexto gera respostas mais coerentes mesmo em conversas muito longas, reduzindo alucinações e inconsistências.
+</Accordion>
+
+<Accordion title="Zero Penalidade de Performance" icon="bolt">
+  O proxy adiciona latência desprezível às suas requisições, garantindo tempos de resposta rápidos para seus usuários.
+</Accordion>
+
+<div id="pricing">
+  ## Preços
+</div>
+
+<Tabs>
+  <Tab title="Planos">
+    <div className="mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-bold">Plano Gratuito</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">100k tokens armazenados sem custo</p>
+        </div>
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-bold">Plano Padrão</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">US$ 20/mês de custo fixo após exceder o plano gratuito</p>
+        </div>
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-bold">Por Uso</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Cada conversa inclui 20k tokens gratuitos; depois, US$ 1 por milhão de tokens</p>
+        </div>
+      </div>
+    </div>
+  </Tab>
+  <Tab title="Comparação">
+    <div className="mt-4">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead>
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Recurso
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Gratuito
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Padrão
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          <tr>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              Tokens armazenados
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              100k
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              Ilimitado
+            </td>
+          </tr>
+          <tr>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              Conversas
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              10
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              Ilimitado
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </Tab>
+</Tabs>
+
+<div id="error-handling">
+  ## Tratamento de erros
+</div>
+
+<Note>
+  supermemory foi projetado com confiabilidade como prioridade máxima. Se ocorrerem problemas no pipeline de processamento do supermemory, o sistema fará automaticamente o encaminhamento direto da sua solicitação ao provider de LLM, garantindo zero downtime para suas aplicações.
+</Note>
+
+Cada resposta inclui headers de diagnóstico que fornecem informações sobre o processamento:
+
+| Header                           | Descrição                                                              |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| `x-supermemory-conversation-id`  | Identificador exclusivo da conversa                                    |
+| `x-supermemory-context-modified` | Indica se o supermemory modificou o contexto ("true" ou "false")       |
+| `x-supermemory-tokens-processed` | Número de tokens processados nesta solicitação                         |
+| `x-supermemory-chunks-created`   | Número de novos chunks criados a partir desta conversa                  |
+| `x-supermemory-chunks-deleted`   | Número de chunks removidos (se houver)                                 |
+| `x-supermemory-docs-deleted`     | Número de documents removidos (se houver)                              |
+
+Se ocorrer um erro, um header adicional `x-supermemory-error` será incluído com detalhes sobre o que ocorreu. Sua solicitação ainda será processada pelo provider de LLM subjacente, mesmo que o supermemory encontre um erro.
+
+<div id="rate-limiting">
+  ## Limitação de taxa
+</div>
+
+<Info>
+  Atualmente, não há limites de taxa específicos do supermemory. Suas solicitações estão sujeitas apenas aos limites de taxa do seu provider de LLM subjacente.
+</Info>
+
+<div id="supported-models">
+  ## Modelos compatíveis
+</div>
+
+supermemory funciona com qualquer API compatível com a OpenAI, incluindo:
+
+<CardGroup cols={3}>
+  <Card title="OpenAI" icon="openai">
+    GPT-3.5, GPT-4, GPT-4o
+  </Card>
+  <Card title="Anthropic" icon="user-astronaut">
+    Modelos Claude 3
+  </Card>
+  <Card title="Outros provedores" icon="plug">
+    Qualquer provider com endpoint compatível com a OpenAI
+  </Card>
+</CardGroup>

@@ -1,0 +1,880 @@
+---
+title: Démarrage rapide
+description: Effectuez votre premier appel API à Supermemory — ajoutez et récupérez des memories.
+---
+
+<Tip>
+  **Vous utilisez Vercel AI SDK ?** Consultez l’[intégration AI SDK](/fr/ai-sdk/overview) pour l’implémentation la plus propre avec `@supermemory/tools/ai-sdk`.
+</Tip>
+
+<div id="memory-api">
+  ## Memory API
+</div>
+
+**Étape 1.** Inscrivez-vous sur la Plateforme développeurs de Supermemory ([http://console.supermemory.ai](http://console.supermemory.ai)) pour obtenir une clé d’API. Cliquez sur **API Keys -&gt; Create API Key** pour en générer une.
+
+![create api key](./images/create-api.png)
+
+<Tabs>
+  <Tab title="Python">
+    **Étape 2.** Installer le client Supermemory
+
+    ```python
+    pip install supermemory
+    ```
+
+    **Étape 3.** Exécutez cette commande dans votre terminal pour créer une variable d&#39;environnement avec votre clé d&#39;API :
+
+    ```bash
+    export SUPERMEMORY_API_KEY="VOTRE_CLE_API"
+    ```
+
+    **Étape 4.** Importez le module dans votre fichier Python :
+
+    ```python
+    from supermemory import Supermemory
+    import os
+
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+    ```
+
+    **Étape 5.** Ajoutez votre première memory comme suit :
+
+    ```python
+    # Créer une memory riche sur les applications de l'informatique quantique
+    memory_content = """L'informatique quantique représente un changement de paradigme dans la puissance de calcul, exploitant les phénomènes de mécanique quantique comme la superposition et l'intrication pour résoudre des problèmes insolubles pour les ordinateurs classiques.
+
+
+    Le domaine a émergé des travaux théoriques des années 1980, lorsque le physicien Richard Feynman a proposé que les systèmes quantiques pourraient simuler d'autres systèmes quantiques plus efficacement que les ordinateurs classiques. Cette intuition a mené au développement d'algorithmes quantiques comme l'algorithme de Shor pour la factorisation de grands nombres et l'algorithme de Grover pour les problèmes de recherche non structurée.
+
+
+    Aujourd'hui, les applications de l'informatique quantique couvrent plusieurs domaines : en cryptographie, les ordinateurs quantiques menacent les standards de chiffrement actuels tout en permettant de nouveaux protocoles résistants au quantique ; en découverte de médicaments, ils peuvent simuler les interactions moléculaires avec une précision inégalée ; dans les problèmes d'optimisation comme la logistique et la modélisation financière, ils offrent des accélérations exponentielles pour certaines classes de problèmes.
+
+
+    Les grandes entreprises technologiques comme IBM, Google et Microsoft ont investi des milliards dans la recherche en informatique quantique, tandis que des startups comme Rigetti Computing et IonQ se concentrent sur des approches matérielles spécifiques. La course à l'avantage quantique - démontrer qu'un ordinateur quantique résout un problème plus rapidement que n'importe quel ordinateur classique - est devenue un jalon clé dans le domaine.
+
+
+    Malgré ces promesses, des défis importants demeurent : la décohérence quantique, la correction d'erreurs, et l'augmentation du nombre de qubits tout en maintenant la cohérence. Les chercheurs explorent diverses approches incluant les qubits supraconducteurs, les ions piégés, les qubits topologiques, et les systèmes photoniques, chacun avec différents compromis entre temps de cohérence, fidélité des portes, et évolutivité."""
+
+
+    # Ajouter la memory à Supermemory
+    response = client.memories.add(
+        content=memory_content,
+        container_tag="quantum-computing",
+        metadata={
+            "category": "technology-overview",
+            "topic": "quantum-computing",
+            "complexity": "intermediate",
+            "word_count": len(memory_content.split())
+        }
+    )
+
+
+    print(f"Memory ajoutée avec succès !")
+    print(f"ID de la memory : {response.id}")
+    print(f"Longueur du contenu : {len(memory_content)} caractères")
+    ```
+
+    Exécutez votre code. Le résultat est le suivant :
+
+    ```bash
+    Memory ajoutée avec succès !
+    ID de memory : uLtGU14SBDzfsvefYWbwe7
+    Longueur du contenu : 1 701 caractères
+    ```
+
+    **Étape 6.** Recherchez cette mémoire comme suit :
+
+    ```python
+    results = client.search.memories(q="quelles sont quelques applications de l'informatique quantique ?", limit=3)
+
+
+    print(results)
+    ```
+
+    Le résultat est le suivant :
+
+    ```bash
+    SearchMemoriesResponse(
+        results=[
+            Result(
+                id="Bn1uc1yQdw3Huf8oitruwF",
+                memory="Les applications de l'informatique quantique incluent la cryptographie (menaçant les standards de chiffrement actuels, permettant des protocoles résistants au quantique), la découverte de médicaments (simulation des interactions moléculaires), et les problèmes d'optimisation (logistique, modélisation financière, offrant des accélérations exponentielles).",
+                metadata=None,
+                similarity=0.7920647723809932,
+                updated_at=datetime.datetime(
+                    2025, 8, 24, 5, 41, 55, 87000, tzinfo=datetime.timezone.utc
+                ),
+                context=ResultContext(children=[], parents=[]),
+                documents=None,
+                version=1.0,
+                updatedAt="2025-08-24T05:41:55.087Z",
+                rootMemoryId="Bn1uc1yQdw3Huf8oitruwF",
+            ),
+            Result(
+                id="4aCa4oM8praVBCWdNksjxf",
+                memory="L'informatique quantique représente un changement de paradigme en matière de puissance de calcul, exploitant les phénomènes de mécanique quantique comme la superposition et l'intrication pour résoudre des problèmes insolubles pour les ordinateurs classiques.",
+                metadata=None,
+                similarity=0.7198909950191389,
+                updated_at=datetime.datetime(
+                    2025, 8, 24, 5, 41, 55, 87000, tzinfo=datetime.timezone.utc
+                ),
+                context=ResultContext(children=[], parents=[]),
+                documents=None,
+                version=1.0,
+                updatedAt="2025-08-24T05:41:55.087Z",
+                rootMemoryId="4aCa4oM8praVBCWdNksjxf",
+            ),
+            Result(
+                id="8vzhZhBCuqyrLNXtzBDx7y",
+                memory="IBM, Google et Microsoft ont investi des milliards dans la recherche en informatique quantique.",
+                metadata=None,
+                similarity=0.6960905375426799,
+                updated_at=datetime.datetime(
+                    2025, 8, 24, 5, 41, 55, 87000, tzinfo=datetime.timezone.utc
+                ),
+                context=ResultContext(children=[], parents=[]),
+                documents=None,
+                version=1.0,
+                updatedAt="2025-08-24T05:41:55.087Z",
+                rootMemoryId="8vzhZhBCuqyrLNXtzBDx7y",
+            ),
+        ],
+        timing=214.0,
+        total=3.0,
+    )
+    ```
+
+    Parfait ! Maintenant que vous avez effectué votre première requête, explorez en détail toutes les fonctionnalités de Supermemory et découvrez comment les utiliser dans votre application.
+  </Tab>
+
+  <Tab title="TypeScript">
+    **Étape 2.** Installez la dépendance Supermemory :
+
+    ```bash
+    npm install supermemory
+    ```
+
+    **Étape 3.** Définissez la variable d&#39;environnement :
+
+    ```bash
+    export SUPERMEMORY_API_KEY="votre_clé_api_réelle_ici"
+    ```
+
+    **Étape 4.** Créez un fichier `quickstart.ts` et importez le package :
+
+    ```ts
+    import 'dotenv/config';
+    import Supermemory from 'supermemory';
+
+
+    const client = new Supermemory({
+    apiKey: process.env.SUPERMEMORY_API_KEY});
+    ```
+
+    **Étape 5.** Ajouter une mémoire :
+
+    ```ts
+    const memoryContent = `L'informatique quantique représente un changement de paradigme dans la puissance de calcul, exploitant des phénomènes mécaniques quantiques comme la superposition et l'intrication pour résoudre des problèmes qui sont insolubles pour les ordinateurs classiques.
+
+
+    Le domaine a émergé des travaux théoriques des années 1980, lorsque le physicien Richard Feynman a proposé que les systèmes quantiques pourraient simuler d'autres systèmes quantiques plus efficacement que les ordinateurs classiques. Cette intuition a conduit au développement d'algorithmes quantiques comme l'algorithme de Shor pour factoriser de grands nombres et l'algorithme de Grover pour les problèmes de recherche non structurée.
+
+
+    Aujourd'hui, les applications de l'informatique quantique s'étendent sur plusieurs domaines : en cryptographie, les ordinateurs quantiques menacent les standards de chiffrement actuels tout en permettant de nouveaux protocoles résistants aux quantiques ; en découverte de médicaments, ils peuvent simuler les interactions moléculaires avec une précision sans précédent ; dans les problèmes d'optimisation comme la logistique et la modélisation financière, ils offrent des accélérations exponentielles pour certaines classes de problèmes.
+
+
+    Les grandes entreprises technologiques incluant IBM, Google et Microsoft ont investi des milliards dans la recherche en informatique quantique, tandis que des startups comme Rigetti Computing et IonQ se concentrent sur des approches matérielles spécifiques. La course à l'avantage quantique - démontrer qu'un ordinateur quantique résout un problème plus rapidement que n'importe quel ordinateur classique - est devenue une étape clé dans le domaine.
+
+
+    Malgré les promesses, des défis significatifs demeurent : la décohérence quantique, la correction d'erreurs, et l'augmentation du nombre de qubits tout en maintenant la cohérence. Les chercheurs explorent diverses approches incluant les qubits supraconducteurs, les ions piégés, les qubits topologiques, et les systèmes photoniques, chacun avec différents compromis entre temps de cohérence, fidélité des portes, et évolutivité.`;
+
+
+    async function addMemory() {
+        try {
+            const response = await client.memories.add({
+                content: memoryContent,
+                containerTag: "quantum-computing",
+                metadata: {
+                category: "technology-overview",
+                topic: "quantum-computing",
+                complexity: "intermediate",
+                wordCount: memoryContent.split(' ').length
+                }
+            });
+            console.log("Memory ajoutée avec succès !");
+            console.log(`ID de la memory : ${response.id}`);
+            return response.id
+        } catch (error) {
+            console.error("Erreur lors de l'ajout de la memory :", error);
+            throw error;
+        }
+    }
+    ```
+
+    L&#39;exécution de ce bloc de code produit la sortie suivante :
+
+    ```bash
+    Memory ajoutée avec succès !
+    ID de la memory : adMxzQgSxo37jq6kjpsFMg
+    ```
+
+    **Étape 6.** Recherchez dans votre memory en utilisant le langage naturel :
+
+    ```ts
+    async function searchMemories() {
+        try {
+            const results = await client.search.memories({
+                q: "quelles sont les applications de l'informatique quantique ?",
+                limit: 3
+            });
+
+            console.log('Résultats de recherche :', results);
+
+            return results;
+        } catch (error) {
+            console.error('Erreur lors de la recherche de memories :', error);
+        }
+    }
+    ```
+
+    Le résultat est le suivant :
+
+    ```bash
+    Résultats de recherche: {
+        results: [
+            {
+                id: 'Bn1uc1yQdw3Huf8oitruwF',
+                memory: 'Les applications de l'informatique quantique incluent la cryptographie (menaçant les standards de chiffrement actuels, permettant des protocoles résistants au quantique), la découverte de médicaments (simulation des interactions moléculaires), et les problèmes d'optimisation (logistique, modélisation financière, offrant des accélérations exponentielles).',
+                metadata: null,
+                updatedAt: '2025-08-24T05:41:55.087Z',
+                version: 1,
+                rootMemoryId: 'Bn1uc1yQdw3Huf8oitruwF',
+                similarity: 0.7920647723809932,
+                context: [Object]
+            },
+            {
+                id: '4aCa4oM8praVBCWdNksjxf',
+                memory: 'L'informatique quantique est un changement de paradigme dans la puissance de calcul, exploitant les phénomènes mécaniques quantiques comme la superposition et l'intrication pour résoudre des problèmes insolubles pour les ordinateurs classiques.',
+                metadata: null,
+                updatedAt: '2025-08-24T05:41:55.087Z',
+                version: 1,
+                rootMemoryId: '4aCa4oM8praVBCWdNksjxf',
+                similarity: 0.7198909950191389,
+                context: [Object]
+            },
+            {
+                id: '8vzhZhBCuqyrLNXtzBDx7y',
+                memory: 'IBM, Google et Microsoft ont investi des milliards dans la recherche en informatique quantique.',
+                metadata: null,
+                updatedAt: '2025-08-24T05:41:55.087Z',
+                version: 1,
+                rootMemoryId: '8vzhZhBCuqyrLNXtzBDx7y',
+                similarity: 0.6960905375426799,
+                context: [Object]
+            }
+        ],
+        timing: 216,
+        total: 3
+    }
+    ```
+
+    Comme vous pouvez le voir, Supermemory a automatiquement segmenté la memory principale en parties plus petites et les a retournées. Vous pouvez le visualiser dans le graphique de la console :
+
+    ![vue graphique](./images/graph-view.png)
+
+    Maintenant que vous avez effectué votre première requête, explorez en détail toutes les fonctionnalités de Supermemory et découvrez comment les utiliser dans votre application.
+  </Tab>
+
+  <Tab title="cURL">
+    **Étape 2.** L&#39;URL de base pour les requêtes est la suivante :
+
+    ```bash
+    https://api.supermemory.ai/
+    ```
+
+    **Étape 3.** Définissez la variable d&#39;environnement :
+
+    ```bash
+    export SUPERMEMORY_API_KEY="votre_clé_api"
+    ```
+
+    **Étape 4.** Ajoutez une memory comme suit :
+
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "content": "L'informatique quantique représente un changement de paradigme dans la puissance de calcul, exploitant des phénomènes de mécanique quantique comme la superposition et l'intrication pour résoudre des problèmes insolubles pour les ordinateurs classiques. Le domaine est né des travaux théoriques des années 1980, lorsque le physicien Richard Feynman a proposé que les systèmes quantiques pourraient simuler d'autres systèmes quantiques plus efficacement que les ordinateurs classiques. Cette intuition a mené au développement d'algorithmes quantiques comme l'algorithme de Shor pour la factorisation de grands nombres et l'algorithme de Grover pour les problèmes de recherche non structurée. Aujourd'hui, les applications de l'informatique quantique couvrent plusieurs domaines : en cryptographie, les ordinateurs quantiques menacent les standards de chiffrement actuels tout en permettant de nouveaux protocoles résistants au quantique ; dans la découverte de médicaments, ils peuvent simuler les interactions moléculaires avec une précision inégalée ; dans les problèmes d'optimisation comme la logistique et la modélisation financière, ils offrent des accélérations exponentielles pour certaines classes de problèmes. Les grandes entreprises technologiques comme IBM, Google et Microsoft ont investi des milliards dans la recherche en informatique quantique, tandis que des startups comme Rigetti Computing et IonQ se concentrent sur des approches matérielles spécifiques. La course à la suprématie quantique - démontrer qu'un ordinateur quantique résout un problème plus rapidement que n'importe quel ordinateur classique - est devenue un jalon clé du domaine. Malgré ces promesses, des défis importants subsistent : la décohérence quantique, la correction d'erreurs, et l'augmentation du nombre de qubits tout en maintenant la cohérence. Les chercheurs explorent diverses approches incluant les qubits supraconducteurs, les ions piégés, les qubits topologiques, et les systèmes photoniques, chacun présentant différents compromis entre temps de cohérence, fidélité des portes, et évolutivité.",
+        "containerTag": "quantum-computing",
+        "metadata": {
+          "category": "technology-overview",
+          "topic": "quantum-computing",
+          "complexity": "intermediate",
+          "wordCount": 156
+        }
+      }'
+    ```
+
+    La réponse est la suivante :
+
+    ```json
+    {"id":"D2Ar7Vo7ub83w3PRPZcaP1","status":"en file d'attente"}
+    ```
+
+    **Étape 5.** Recherchez cette memory en utilisant le langage naturel :
+
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "quelles sont les applications de l'informatique quantique ?",
+        "limit": 3
+      }'
+    ```
+
+    Le résultat est le suivant :
+
+    ```json
+    {
+      "results": [
+        {
+          "id": "Bn1uc1yQdw3Huf8oitruwF",
+          "memory": "Les applications de l'informatique quantique incluent la cryptographie (menaçant les standards de chiffrement actuels, permettant des protocoles résistants au quantique), la découverte de médicaments (simulation des interactions moléculaires), et les problèmes d'optimisation (logistique, modélisation financière, offrant des accélérations exponentielles).",
+          "metadata": null,
+          "updatedAt": "2025-08-24T05:41:55.087Z",
+          "version": 1,
+          "rootMemoryId": "Bn1uc1yQdw3Huf8oitruwF",
+          "similarity": 0.7920647723809932,
+          "context": {
+            "parents": [],
+            "children": []
+          }
+        },
+        {
+          "id": "4aCa4oM8praVBCWdNksjxf",
+          "memory": "L'informatique quantique représente un changement de paradigme en matière de puissance de calcul, exploitant les phénomènes de mécanique quantique comme la superposition et l'intrication pour résoudre des problèmes insolubles pour les ordinateurs classiques.",
+          "metadata": null,
+          "updatedAt": "2025-08-24T05:41:55.087Z",
+          "version": 1,
+          "rootMemoryId": "4aCa4oM8praVBCWdNksjxf",
+          "similarity": 0.7198909950191389,
+          "context": {
+            "parents": [],
+            "children": []
+          }
+        },
+        {
+          "id": "8vzhZhBCuqyrLNXtzBDx7y",
+          "memory": "IBM, Google et Microsoft ont investi des milliards dans la recherche en informatique quantique.",
+          "metadata": null,
+          "updatedAt": "2025-08-24T05:41:55.087Z",
+          "version": 1,
+          "rootMemoryId": "8vzhZhBCuqyrLNXtzBDx7y",
+          "similarity": 0.6960905375426799,
+          "context": {
+            "parents": [],
+            "children": []
+          }
+        }
+      ],
+      "timing": 363,
+      "total": 3
+    }
+    ```
+
+    Et voilà ! Bien joué !
+  </Tab>
+</Tabs>
+
+<div id="memory-router">
+  ## Memory Router
+</div>
+
+Découvrez comment ajouter le Memory Router à vos requêtes LLM existantes.
+
+Le Memory Router fonctionne comme un proxy au-dessus des appels LLM. Lorsque les conversations deviennent très longues, il les segmente automatiquement en chunks pour des performances optimales, récupère les informations les plus pertinentes de l’historique et optimise l’utilisation des tokens et les coûts.
+
+Le meilleur, c’est qu’il ne nécessite aucun changement dans la logique de votre application. Voici comment commencer :
+
+**Étape 1.** Inscrivez-vous sur la Plateforme développeurs de [Supermemory](http://console.supermemory.ai) pour obtenir la clé d’API. Cliquez sur **API Keys -&gt; Create API Key** pour en générer une.
+
+**Étape 2.** Récupérez la clé d’API de votre provider LLM
+
+* [OpenAI](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
+* [Gemini](https://ai.google.dev/gemini-api/docs/api-key)
+* [Anthropic](https://docs.anthropic.com/en/api/admin-api/apikeys/get-api-key)
+* [Groq](https://console.groq.com/keys)
+
+**Étape 3.** Ajoutez l’url de Supermemory à l’url d’API compatible OpenAI de votre provider LLM :
+
+<CodeGroup>
+  ```bash OpenAI
+  https://api.supermemory.ai/v3/https://api.openai.com/v1/
+  ```
+
+  ```bash Anthropic
+  https://api.supermemory.ai/v3/https://api.anthropic.com/v1/
+  ```
+
+  ```bash Gemini
+  https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai/
+  ```
+
+  ```bash Groq
+  https://api.supermemory.ai/v3/https://api.groq.com/openai/v1
+  ```
+
+  ```bash Others
+  https://api.supermemory.ai/v3/[openai-api-url-here]
+  ```
+</CodeGroup>
+
+<Tabs>
+  <Tab title="TypeScript">
+    **Étape 4.** Installer les dépendances
+
+    ```bash
+    npm install openai
+    ```
+
+    **Étape 5.** Définissez deux variables d&#39;environnement : une pour Supermemory et une pour votre provider de modèle.
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_api_key_here"
+
+    # export OPENAI_API_KEY/ANTHROPIC_API_KEY/GEMINI_API_KEY/GROQ_API_KEY="api_key_here" (selon votre modèle)
+    ```
+
+    **Étape 6.** Envoyez une requête vers le point de terminaison mis à jour :
+
+    <CodeGroup>
+      ```ts OpenAI
+      import OpenAI from 'openai';
+
+      const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123' // Votre identifiant utilisateur
+      }
+      });
+
+      async function chatWithOpenAI() {
+      try {
+          const response = await client.chat.completions.create({
+          model: 'gpt-5',
+          messages: [
+              { role: 'user', content: 'Bonjour, je m\'appelle Naman. Comment allez-vous ?' }
+          ],
+          max_tokens: 1000,
+          temperature: 0.7
+          });
+
+          console.log('Réponse OpenAI :', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Erreur avec OpenAI :', error);
+      }
+      }
+
+      ```
+
+      ```ts Anthropic
+      import OpenAI from 'openai';
+
+      const anthropicClient = new OpenAI({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123'
+      }
+      });
+
+      async function chatWithClaude() {
+      try {
+          const response = await anthropicClient.chat.completions.create({
+          model: 'claude-3-sonnet-20240229',
+          messages: [
+              { role: 'user', content: 'Bonjour, je m\'appelle Naman. Comment allez-vous ?' }
+          ],
+          max_tokens: 1000
+          });
+
+          console.log('Réponse Claude :', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Erreur avec Claude :', error);
+      }
+      }
+      ```
+
+      ```ts Gemini
+
+      import OpenAI from 'openai';
+
+      const geminiClient = new OpenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123'
+      }
+      });
+
+      async function chatWithGemini() {
+      try {
+          const response = await geminiClient.chat.completions.create({
+          model: 'gemini-pro',
+          messages: [
+              { role: 'user', content: 'Bonjour, je m\'appelle Naman. Comment allez-vous ?' }
+          ],
+          max_tokens: 1000
+          });
+
+          console.log('Réponse Gemini :', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Erreur avec Gemini :', error);
+      }
+      }
+
+      ```
+
+      ```ts Groq
+
+      import OpenAI from 'openai';
+
+      const groqClient = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.groq.com/openai/v1',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123'
+      }
+      });
+
+      async function chatWithGroq() {
+      try {
+          const response = await groqClient.chat.completions.create({
+          model: 'mixtral-8x7b-32768',
+          messages: [
+              { role: 'user', content: 'Bonjour, je m\'appelle Naman. Comment allez-vous ?' }
+          ],
+          max_tokens: 1000
+          });
+
+          console.log('Réponse Groq :', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Erreur avec Groq :', error);
+      }
+      }
+
+
+      ```
+    </CodeGroup>
+
+    Chacun de ces extraits de code modifie l&#39;URL de base en fonction de l&#39;URL d&#39;API compatible OpenAI fournie par les fournisseurs de modèles. Voici quelques-uns des paramètres clés à noter :
+
+    * `apiKey` : la clé d&#39;API de votre provider de modèle
+    * `x-supermemory-api-key` : votre clé d’API Supermemory
+    * `x-sm-user-id` : Limitez la portée des conversations par utilisateur à l’aide d’un id d’utilisateur. Cela activera la memory inter‑conversation, ce qui permettra aux utilisateurs de faire référence à d’autres conversations et d’en extraire des informations.
+
+    De plus, bien que cela ne soit pas illustré dans ce guide de démarrage rapide, vous pouvez également transmettre un en-tête `x-sm-conversation-id`.
+
+    Ensuite, vous n&#39;aurez pas besoin d&#39;envoyer l&#39;intégralité du tableau de messages au LLM en tant qu&#39;historique de conversation. Supermemory s&#39;en chargera.
+
+    Si vous exécutez les blocs de code ci-dessus, vous obtiendrez une sortie de votre LLM comme ceci :
+
+    ```
+    "Bonjour, Naman ! Je ne suis qu'un programme informatique, donc je n'ai pas de sentiments, mais je suis là et prêt à vous aider. Comment puis-je vous aider aujourd'hui ?"
+    ```
+
+    Ensuite, si vous modifiez la requête pour demander « Quel est mon nom ? » à la place, vous obtiendrez la réponse suivante :
+
+    ```
+    Vous vous appelez Naman.
+    ```
+
+    Ainsi, le Memory Router fonctionne !
+  </Tab>
+
+  <Tab title="Python">
+    **Étape 4.** Installez la dépendance Python :
+
+    ```
+    pip install openai
+    ```
+
+    **Étape 5.** Définissez deux variables d&#39;environnement : une pour Supermemory et une pour votre provider de modèle.
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_api_key_here"
+
+    # export OPENAI_API_KEY/ANTHROPIC_API_KEY/GEMINI_API_KEY/GROQ_API_KEY="api_key_here" (selon votre modèle)
+    ```
+
+    **Étape 6.** Envoyez une requête au LLM avec l&#39;URL de base mise à jour et les paramètres :
+
+    <CodeGroup>
+      ```python OpenAI
+      import os
+      from openai import OpenAI
+
+      client = OpenAI(
+          api_key=os.getenv("OPENAI_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_openai():
+          try:
+              response = client.chat.completions.create(
+                  model="gpt-5",
+                  messages=[
+                      {"role": "user", "content": "Bonjour, je m'appelle Naman. Comment allez-vous ?"}
+                  ],
+                  max_tokens=1000,
+                  temperature=0.7
+              )
+
+              print("Réponse OpenAI :", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Erreur avec OpenAI : {error}")
+
+      ```
+
+      ```python Anthropic
+      from openai import OpenAI
+
+      anthropic_client = OpenAI(
+          api_key=os.getenv("ANTHROPIC_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://api.anthropic.com/v1",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_claude():
+          try:
+              response = anthropic_client.chat.completions.create(
+                  model="claude-3-sonnet-20240229",
+                  messages=[
+                      {"role": "user", "content": "Bonjour, je m'appelle Naman. Comment allez-vous ?"}
+                  ],
+                  max_tokens=1000
+              )
+
+              print("Réponse Claude :", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Erreur avec Claude : {error}")
+
+      ```
+
+      ```python Gemini
+      from openai import OpenAI
+
+      gemini_client = OpenAI(
+          api_key=os.getenv("GEMINI_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_gemini():
+          try:
+              response = gemini_client.chat.completions.create(
+                  model="gemini-pro",
+                  messages=[
+                      {"role": "user", "content": "Bonjour, je m'appelle Naman. Comment allez-vous ?"}
+                  ],
+                  max_tokens=1000
+              )
+
+              print("Réponse Gemini :", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Erreur avec Gemini : {error}")
+      ```
+
+      ```python Groq
+      from openai import OpenAI
+
+      groq_client = OpenAI(
+          api_key=os.getenv("GROQ_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://api.groq.com/openai/v1",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_groq():
+          try:
+              response = groq_client.chat.completions.create(
+                  model="mixtral-8x7b-32768",
+                  messages=[
+                      {"role": "user", "content": "Bonjour, je m'appelle Naman. Comment allez-vous ?"}
+                  ],
+                  max_tokens=1000
+              )
+
+              print("Réponse Groq :", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Erreur avec Groq : {error}")
+      ```
+    </CodeGroup>
+
+    Chacun de ces extraits de code modifie l&#39;URL de base en fonction de l&#39;URL d&#39;API compatible OpenAI fournie par les fournisseurs de modèles. Voici quelques-uns des paramètres clés à noter :
+
+    * `api_key`: La clé d&#39;API de votre provider de modèle
+    * `x-supermemory-api-key` : votre clé d’API Supermemory
+    * `x-sm-user-id` : Limitez la portée des conversations par utilisateur à l’aide d’un id d’utilisateur. Cela active la memory inter‑conversation, ce qui permet aux utilisateurs de faire référence à d’autres chats et d’en extraire des informations.
+
+    De plus, bien que cela ne soit pas illustré dans ce guide de démarrage rapide, vous pouvez également transmettre un en-tête `x-sm-conversation-id`.
+
+    Ensuite, vous n&#39;aurez pas besoin d&#39;envoyer l&#39;intégralité du tableau de messages au LLM en tant qu&#39;historique de conversation. Supermemory s&#39;en chargera.
+
+    Si vous exécutez les blocs de code ci-dessus, vous obtiendrez une sortie de votre LLM comme ceci :
+
+    ```
+    "Bonjour, Naman ! Je ne suis qu'un programme informatique, donc je n'ai pas de sentiments, mais je suis là et prêt à vous aider. Comment puis-je vous aider aujourd'hui ?"
+    ```
+
+    Ensuite, si vous modifiez la requête pour demander « Quel est mon nom ? » à la place, vous obtiendrez la réponse suivante :
+
+    ```
+    Vous vous appelez Naman.
+    ```
+
+    Ainsi, le Memory Router fonctionne !
+  </Tab>
+
+  <Tab title="cURL">
+    **Étape 4.** Définissez les variables d’environnement :
+
+    ```bash
+    export SUPERMEMORY_API_KEY="votre_clé_api_supermemory"
+    export OPENAI_API_KEY="votre_clé_api_openai"
+    export ANTHROPIC_API_KEY="votre_clé_api_anthropic"
+    export GEMINI_API_KEY="votre_clé_api_gemini"
+    export GROQ_API_KEY="votre_clé_api_groq"
+    ```
+
+    **Étape 5.** Envoyez une requête au LLM avec l’URL de base mise à jour et les paramètres :
+
+    <CodeGroup>
+      ```bash OpenAI
+      curl https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $OPENAI_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "model": "gpt-5",
+          "messages": [
+          {"role": "user", "content": "Hello my name is Naman. How are you?"}
+          ],
+          "max_tokens": 1000,
+          "temperature": 0.7
+      }'
+      ```
+
+      ```bash Claude
+      curl https://api.supermemory.ai/v3/https://api.anthropic.com/v1/messages \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "model": "claude-3-sonnet-20240229",
+          "messages": [
+          {"role": "user", "content": "Hello my name is Naman. How are you?"}
+          ],
+          "max_tokens": 1000
+      }'
+      ```
+
+      ```bash Gemini
+      curl https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $GEMINI_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "contents": [
+          {
+              "parts": [
+              {"text": "Hello my name is Naman. How are you?"}
+              ]
+          }
+          ],
+          "generationConfig": {
+          "maxOutputTokens": 1000
+          }
+      }'
+      ```
+
+      ```bash Groq
+      curl https://api.supermemory.ai/v3/https://api.groq.com/openai/v1/chat/completions \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $GROQ_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "model": "mixtral-8x7b-32768",
+          "messages": [
+          {"role": "user", "content": "Hello my name is Naman. How are you?"}
+          ],
+          "max_tokens": 1000
+      }'
+      ```
+    </CodeGroup>
+
+    Chacun de ces extraits de code modifie l’URL de base en fonction de l’URL d’API compatible OpenAI fournie par les providers du modèle. Parmi les paramètres clés à noter :
+
+    * **Authorization header** : la clé d’API de votre provider
+    * `x-supermemory-api-key` : votre clé d’API Supermemory
+    * `x-sm-user-id` : restreignez la portée des conversations par utilisateur à l’aide d’un identifiant utilisateur. Cela activera la memory inter‑conversations, ce qui signifie que les utilisateurs peuvent référencer d’autres chats et en extraire des informations.
+
+    De plus, bien que cela ne soit pas montré dans ce guide de démarrage rapide, vous pouvez aussi envoyer un en‑tête `x-sm-conversation-id`.
+
+    Ainsi, vous n’aurez pas à envoyer tout le tableau de messages au LLM comme historique de conversation. Supermemory s’en chargera.
+
+    Si vous exécutez les blocs de code ci‑dessus, vous obtiendrez une sortie de votre LLM de ce type :
+
+    ```
+    "Bonjour, Naman ! Je ne suis qu'un programme informatique, donc je n'ai pas de sentiments, mais je suis là et prêt à vous aider. Comment puis-je vous aider aujourd'hui ?"
+    ```
+
+    Après cela, si vous modifiez la requête pour demander « Quel est mon nom ? », vous obtiendrez la réponse suivante :
+
+    ```
+    Vous vous appelez Naman.
+    ```
+
+    Le Memory Router fonctionne donc !
+  </Tab>
+</Tabs>
+
+Pour aller plus loin, voici des liens vers la documentation des providers de modèles :
+
+* [OpenAI API Reference](https://platform.openai.com/docs/api-reference)
+* [Anthropic Claude API](https://docs.anthropic.com/claude/reference)
+* [Google Gemini API](https://ai.google.dev/docs)
+* [Groq API Documentation](https://console.groq.com/docs)

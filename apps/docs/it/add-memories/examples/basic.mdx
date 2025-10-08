@@ -1,0 +1,290 @@
+---
+title: "Uso di base"
+description: "Esempi semplici per aggiungere contenuti di testo a Supermemory"
+---
+
+Scopri come aggiungere contenuti di testo di base a Supermemory con esempi semplici e pratici.
+
+<div id="add-simple-text">
+  ## Aggiungere testo semplice
+</div>
+
+L’operazione più semplice: aggiungere contenuto di solo testo.
+
+<CodeGroup>
+
+```typescript TypeScript
+const response = await client.memories.add({
+  content: "Artificial intelligence is transforming how we work and live"
+});
+
+console.log(response);
+// Output: { id: "abc123", status: "queued" }
+```
+
+```python Python
+response = client.memories.add(
+    content="Artificial intelligence is transforming how we work and live"
+)
+
+print(response)
+# Output: {"id": "abc123", "status": "queued"}
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Artificial intelligence is transforming how we work and live"
+  }'
+```
+
+</CodeGroup>
+
+<div id="add-with-container-tags">
+  ## Aggiunta con container tag
+</div>
+
+Raggruppa i contenuti correlati usando i container tag.
+
+<CodeGroup>
+
+```typescript TypeScript
+const response = await client.memories.add({
+  content: "Q4 2024 revenue exceeded projections by 15%",
+  containerTag: "financial_reports"
+});
+
+console.log(response.id);
+// Output: xyz789
+```
+
+```python Python
+response = client.memories.add(
+    content="Q4 2024 revenue exceeded projections by 15%",
+    container_tag="financial_reports"
+)
+
+print(response['id'])
+# Output: xyz789
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Q4 2024 revenue exceeded projections by 15%",
+    "containerTag": "financial_reports"
+  }'
+
+# Response: {"id": "xyz789", "status": "queued"}
+```
+
+</CodeGroup>
+
+<div id="add-with-metadata">
+  ## Aggiungi con metadata
+</div>
+
+Allega metadata per migliorare ricerca e filtraggio.
+
+<CodeGroup>
+
+```typescript TypeScript
+await client.memories.add({
+  content: "New onboarding flow reduces drop-off by 30%",
+  containerTag: "product_updates",
+  metadata: {
+    impact: "high",
+    team: "product"
+  }
+});
+```
+
+```python Python
+client.memories.add(
+    content="New onboarding flow reduces drop-off by 30%",
+    container_tag="product_updates",
+    metadata={
+        "impact": "high",
+        "team": "product"
+    }
+)
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "New onboarding flow reduces drop-off by 30%",
+    "containerTag": "product_updates",
+    "metadata": {"impact": "high", "team": "product"}
+  }'
+```
+
+</CodeGroup>
+
+<div id="add-multiple-documents">
+  ## Aggiungere più Documenti
+</div>
+
+Elabora più documenti correlati.
+
+<CodeGroup>
+
+```typescript TypeScript
+const notes = [
+  "Discussione sul redesign dell'API",
+  "Audit di sicurezza il prossimo mese",
+  "Nuova assunzione da lunedì"
+];
+
+const results = await Promise.all(
+  notes.map(note =>
+    client.memories.add({
+      content: note,
+      containerTag: "meeting_2024_01_15"
+    })
+  )
+);
+```
+
+```python Python
+notes = [
+    "Discussione sul redesign dell'API",
+    "Audit di sicurezza il prossimo mese",
+    "Nuova assunzione da lunedì"
+]
+
+for note in notes:
+    client.memories.add(
+        content=note,
+        container_tag="meeting_2024_01_15"
+    )
+```
+
+```bash cURL
+# Aggiungi ogni nota con richieste separate
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Discussione sul redesign dell'\''API", "containerTag": "meeting_2024_01_15"}'
+```
+
+</CodeGroup>
+
+<div id="add-urls">
+  ## Aggiungi URL
+</div>
+
+Elabora automaticamente pagine web, video di YouTube e altri URL.
+
+<CodeGroup>
+
+```typescript TypeScript
+// Pagina web
+await client.memories.add({
+  content: "https://example.com/article",
+  containerTag: "articles"
+});
+
+// Video di YouTube (trascrizione automatica)
+await client.memories.add({
+  content: "https://youtube.com/watch?v=dQw4w9WgXcQ",
+  containerTag: "videos"
+});
+
+// Google Docs
+await client.memories.add({
+  content: "https://docs.google.com/document/d/abc123/edit",
+  containerTag: "docs"
+});
+```
+
+```python Python
+# Pagina web
+client.memories.add(
+    content="https://example.com/article",
+    container_tag="articles"
+)
+
+# Video di YouTube (trascrizione automatica)
+client.memories.add(
+    content="https://youtube.com/watch?v=dQw4w9WgXcQ",
+    container_tag="videos"
+)
+
+# Google Docs
+client.memories.add(
+    content="https://docs.google.com/document/d/abc123/edit",
+    container_tag="docs"
+)
+```
+
+```bash cURL
+# Pagina web
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "https://example.com/article", "containerTag": "articles"}'
+
+# Video di YouTube
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "https://youtube.com/watch?v=dQw4w9WgXcQ", "containerTag": "videos"}'
+```
+
+</CodeGroup>
+
+<div id="add-markdown-content">
+  ## Aggiungere contenuti Markdown
+</div>
+
+Supermemory mantiene la formattazione Markdown.
+
+<CodeGroup>
+
+```typescript TypeScript
+const markdown = `
+# Project Documentation
+
+## Features
+- **Real-time sync**
+- **AI search**
+- **Enterprise security**
+`;
+
+await client.memories.add({
+  content: markdown,
+  containerTag: "docs"
+});
+```
+
+```python Python
+markdown = """
+# Project Documentation
+
+## Features
+- **Real-time sync**
+- **AI search**
+- **Enterprise security**
+"""
+
+client.memories.add(
+    content=markdown,
+    container_tag="docs"
+)
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "# Project Documentation\n\n## Features\n- **Real-time sync**\n- **AI search**", "containerTag": "docs"}'
+```
+
+</CodeGroup>

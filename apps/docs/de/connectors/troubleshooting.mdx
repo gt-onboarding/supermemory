@@ -1,0 +1,220 @@
+---
+title: "Fehlerbehebung für Connectoren"
+description: "Diagnose und Behebung häufiger Probleme mit den Connectors für Google Drive, Notion und OneDrive"
+---
+
+Kurzanleitung zur Behebung häufiger Connector-Probleme bei Authentifizierung, Synchronisierung und Berechtigungen.
+
+<div id="quick-health-check">
+  ## Schneller Systemcheck
+</div>
+
+Prüfen Sie, ob Ihre Integrationen korrekt funktionieren:
+
+<CodeGroup>
+
+```typescript TypeScript
+const connections = await client.connections.list({
+  containerTags: ['user-123']
+});
+
+connections.forEach(conn => {
+  console.log(`${conn.provider}: ${conn.email} - Verbunden seit ${conn.createdAt}`);
+});
+
+// Auf hängengebliebene documents prüfen
+const documents = await client.connections.listDocuments('notion', {
+  containerTags: ['user-123']
+});
+
+const failed = documents.filter(doc => doc.status === 'failed');
+if (failed.length > 0) {
+  console.log(`⚠️ ${failed.length} documents konnten nicht synchronisiert werden`);
+}
+```
+
+```python Python
+connections = client.connections.list(container_tags=['user-123'])
+
+for conn in connections:
+    print(f"{conn.provider}: {conn.email} - Verbunden seit {conn.created_at}")
+
+# Auf hängengebliebene documents prüfen
+documents = client.connections.list_documents(
+    'notion',
+    container_tags=['user-123']
+)
+
+failed = [doc for doc in documents if doc.status == 'failed']
+if failed:
+    print(f"⚠️ {len(failed)} documents konnten nicht synchronisiert werden")
+```
+
+```bash cURL
+# Alle verknüpften Konten auflisten
+curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"]}'
+
+# document-Status prüfen
+curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"], "source": "notion"}'
+```
+
+</CodeGroup>
+
+<div id="common-issues">
+  ## Häufige Probleme
+</div>
+
+<div id="oauth-callback-fails">
+  ### OAuth-Callback schlägt fehl
+</div>
+
+**Problem:** Fehler „Invalid redirect URI“, nachdem der Benutzer Berechtigungen erteilt hat
+
+**Lösung:** Stellen Sie sicher, dass Ihre Redirect-URL GENAU der in Ihrer OAuth-App konfigurierten entspricht:
+
+```typescript
+// korrekt - exakte Übereinstimmung mit OAuth-App-Einstellungen
+const connection = await client.connections.create('notion', {
+  redirectUrl: 'https://yourapp.com/auth/notion/callback',
+  containerTags: ['user-123']
+});
+
+// Falsch - URL stimmt nicht überein
+// redirectUrl: 'https://yourapp.com/callback'
+```
+
+**Prävention:**
+
+* Verwenden Sie HTTPS für Produktions‑URLs
+* Kopieren Sie die genaue url aus den Einstellungen Ihrer OAuth‑App
+* Testen Sie den Flow zuerst in der Entwicklungsumgebung
+
+
+<div id="documents-not-syncing">
+  ### Documents werden nicht synchronisiert
+</div>
+
+**Problem:** Documents bleiben länger als 30 Minuten im status „queued“ oder „extracting“ hängen
+
+**Lösung:** Manuelle Synchronisierung auslösen:
+
+```typescript
+// Synchronisation für hängende Documents erzwingen
+await client.connections.import('notion', {
+  containerTags: ['user-123']
+});
+```
+
+Wenn documents wiederholt fehlschlagen:
+
+* Prüfen, ob Dateien größer als 50 MB sind (kann zu einem Timeout führen)
+* Überprüfen, ob Sie Berechtigungen zum Zugriff auf die documents haben
+* Sicherstellen, dass der Dokumenttyp unterstützt wird
+
+
+<div id="permission-denied-errors">
+  ### Fehler „Zugriff verweigert“
+</div>
+
+**Problem:** Manche documents zeigen „permission denied“ oder werden nicht synchronisiert
+
+**Lösung:** Mit den richtigen Berechtigungen erneut authentifizieren:
+
+```typescript
+// Verknüpftes Konto löschen und neu erstellen
+await client.connections.deleteByProvider('google-drive', {
+  containerTags: ['user-123']
+});
+
+const newConnection = await client.connections.create('google-drive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['user-123']
+});
+
+// Benutzer muss sich erneut authentifizieren
+window.location.href = newConnection.authLink;
+```
+
+
+<div id="sync-takes-too-long">
+  ### Synchronisierung dauert zu lange
+</div>
+
+**Problem:** Hunderte documents benötigen Stunden für die Synchronisierung
+
+**Lösung:** Setzen Sie angemessene Dokumentlimits:
+
+```typescript
+const connection = await client.connections.create('onedrive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['user-123'],
+  documentLimit: 500  // Mit weniger Dokumenten beginnen
+});
+```
+
+
+<div id="provider-specific-issues">
+  ## Providerspezifische Probleme
+</div>
+
+<div id="google-drive">
+  ### Google Drive
+</div>
+
+**Probleme mit geteilten Laufwerken**
+
+Geteilte Laufwerke erfordern besondere Berechtigungen. Achte darauf:
+
+- Der Benutzer hat Zugriff auf das geteilte Laufwerk
+- Die OAuth-App verfügt über den Scope drive.readonly
+- Der Benutzer ist Mitglied des geteilten Laufwerks
+
+<div id="notion">
+  ### Notion
+</div>
+
+**Datenbank wird nicht synchronisiert**
+
+Notion-Datenbanken benötigen eine explizite Freigabe. Wenn Datenbanken nicht synchronisiert werden:
+
+1. Öffne die Einstellungen deines Notion-Workspaces
+2. Suche deine Integration unter „Connections“
+3. Klicke auf die Integration
+4. Wähle die spezifischen Seiten/Datenbanken aus, die geteilt werden sollen
+5. Synchronisiere nach der Zugriffsgewährung erneut
+
+**Workspace-Zugriff**
+
+Für vollständigen Workspace-Zugriff muss ein Workspace-Admin:
+
+1. Die Integration genehmigen
+2. Zugriff auf alle Seiten gewähren
+3. Die Berechtigung „Read content“ aktivieren
+
+<div id="onedrive">
+  ### OneDrive
+</div>
+
+**Geschäfts- vs. Privatkonten**
+
+Geschäftskonten können zusätzliche Einschränkungen aufweisen:
+
+- Administratorzustimmung kann erforderlich sein
+- Einige SharePoint-Websites können eingeschränkt sein
+- Compliance-Richtlinien können bestimmte Dateien blockieren
+
+<div id="best-practices">
+  ## Best Practices
+</div>
+
+1. **Sinnvolle Dokumentgrenzen setzen** - Starten Sie mit 500–1000 documents
+2. **Aussagekräftige Container-Tags verwenden** - Erleichtert das Debugging
+3. **Fehlgeschlagene documents überwachen** - Wöchentlich auf Sync-Probleme prüfen
+4. **Rate Limits robust handhaben** - Exponentielles Backoff implementieren
+5. **OAuth in der Entwicklung testen** - Sicherstellen, dass Redirect-URLs vor dem Produktionsstart funktionieren

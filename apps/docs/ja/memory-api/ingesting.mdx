@@ -1,0 +1,929 @@
+---
+title: "documents とデータの取り込み"
+sidebarTitle: "コンテンツ取り込みガイド"
+description: "テキスト、URL、ファイル、各種コンテンツを Supermemory に取り込むための完全ガイド"
+---
+
+Supermemory は、事実上あらゆる種類のコンテンツを処理できる強力で柔軟な取り込みシステムを提供します。シンプルなテキストメモ、ウェブページ、PDF、画像、あるいは各種プラットフォーム由来の複雑な documents であっても、API がシームレスに処理します。
+
+<div id="understanding-the-mental-model">
+  ## メンタルモデルを理解する
+</div>
+
+API に進む前に、Supermemory がコンテンツをどのように処理するかを理解しておくことが重要です。
+
+<div id="documents-vs-memories">
+  ### documents と メモリー の違い
+</div>
+
+* **documents**: Supermemory に取り込むもの（ファイル、URL、テキスト）はすべて **document** と見なされます
+* **メモリー**: documents は自動的に分割され、検索可能な小さな単位である **メモリー** になります
+
+&quot;Add Memory&quot; エンドポイントを使用すると、実際には **document** を追加しています。Supermemory の役割は、その document を検索・取得に最適な **メモリー** に賢く分割することです。
+
+```
+コンテンツ → ドキュメント → 処理 → 複数の保存メモリ
+     ↓             ↓           ↓            ↓
+   PDFファイル → 保存ドキュメント → チャンク化（分割処理） → 検索可能な保存メモリ
+```
+
+このプロセスは [Supermemory Console](https://console.supermemory.ai) で可視化できます。documents がどのように相互接続されたメモリーへと分割されるかを示すグラフビューを確認できます。
+
+<div id="content-sources">
+  ### コンテンツソース
+</div>
+
+Supermemory は主に次の 3 つの方法でコンテンツを取り込みます:
+
+1. **Direct API**: ファイルのアップロード、または API エンドポイント経由でのコンテンツ送信
+2. **Connectors**: Google Drive、Notion、OneDrive などのプラットフォームとの自動連携（[コネクターについて詳しく](/ja/connectors)）
+3. **URL Processing**: ウェブページ、動画、ソーシャルメディアからの自動抽出
+
+<div id="overview">
+  ## 概要
+</div>
+
+取り込みシステムは、いくつかの主要コンポーネントで構成されています:
+
+* **複数の入力方法**: JSONコンテンツ、ファイルのアップロード、URLの処理
+* **非同期処理**: バックグラウンドワークフローがコンテンツ抽出とチャンク化（分割処理）を実行
+* **自動コンテンツ検出**: さまざまなコンテンツタイプを自動で識別して処理
+* **スペースの整理**: コンテナタグで関連する保存メモリをグループ化し、コンテキスト推論を向上
+* **ステータス追跡**: 処理パイプライン全体でリアルタイムにstatusを更新
+
+<div id="how-it-works">
+  ### 仕組み
+</div>
+
+<Steps>
+  <Step title="Submit Document">
+    コンテンツ（テキスト、ファイル、またはURL）を送信して新規ドキュメントを作成します
+  </Step>
+
+  <Step title="Validation">
+    APIがリクエストを検証し、レート制限やクォータを確認します
+  </Step>
+
+  <Step title="Document Storage">
+    コンテンツはドキュメントとして保存され、処理のためにキューに入ります
+  </Step>
+
+  <Step title="Content Extraction">
+    種別に応じて専用の抽出器がドキュメントを処理します
+  </Step>
+
+  <Step title="Memory Creation">
+    ドキュメントは複数の検索可能なメモリーに賢く分割されます
+  </Step>
+
+  <Step title="Embedding & Indexing">
+    メモリーはベクトル埋め込みに変換され、インデキシングされて検索可能になります
+  </Step>
+</Steps>
+
+<div id="ingestion-endpoints">
+  ## インジェストエンドポイント
+</div>
+
+<div id="add-document-json-content">
+  ### ドキュメントの追加 - JSON コンテンツ
+</div>
+
+documents に処理されるコンテンツを追加するための主要なエンドポイントです。
+
+**エンドポイント:** `POST /v3/documents`
+
+<Note>
+  エンドポイント名とは異なりますが、ここで作成するのは **document** です。Supermemory がこれを自動的に分割し、検索可能な **保存メモリ** に変換します。
+</Note>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "content": "Machine learning is a subset of artificial intelligence that enables computers to learn and make decisions from data without explicit programming.",
+      "containerTags": ["ai-research", "user_123"],
+      "metadata": {
+        "source": "research-notes",
+        "category": "education",
+        "priority": "high"
+      },
+      "customId": "ml-basics-001"
+    }'
+  ```
+
+  ```typescript TypeScript
+  import Supermemory from 'supermemory'
+
+  const client = new Supermemory({
+    apiKey: process.env.SUPERMEMORY_API_KEY
+  })
+
+  async function addContent() {
+      const result = await client.memories.add({
+          content: "Machine learning is a subset of artificial intelligence...",
+          containerTags: ["ai-research"],
+          metadata: {
+            source: "research-notes",
+            category: "education",
+            priority: "high"
+          },
+          customId: "ml-basics-001"
+        })
+
+        console.log(result) // { id: "abc123", status: "queued" }
+  }
+
+   addContent()
+  ```
+
+  ```python Python
+  from supermemory import Supermemory
+  import os
+
+  client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+  result = client.memories.add(
+      content="Machine learning is a subset of artificial intelligence...",
+      container_tags=["ai-research"],
+      metadata={
+          "source": "research-notes",
+          "category": "education",
+          "priority": "high"
+      },
+      custom_id="ml-basics-001"
+  )
+
+  print(result)  # { "id": "abc123", "status": "queued" }
+  ```
+</CodeGroup>
+
+<div id="request-parameters">
+  #### リクエストパラメータ
+</div>
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `content` | string | Yes | ドキュメント化の対象となるコンテンツ。テキスト、URL、またはその他の対応形式 |
+| `containerTag` | string | No | **推奨**: 関連する保存メモリをスペース内でまとめる単一のコンテナタグ。既定値は `"sm_project_default"` |
+| `containerTags` | string[] | No | 旧式の配列形式。パフォーマンス向上のため `containerTag` の使用を推奨 |
+| `metadata` | object | No | 追加のキー・バリューのメタデータ（文字列、数値、ブール値のみ） |
+| `customId` | string | No | このドキュメントの独自識別子（最大255文字） |
+| `raw` | string | No | 処理済みコンテンツと併せて保存する生データ |
+
+<div id="response">
+  #### レスポンス
+</div>
+
+ドキュメントの作成に成功すると、ドキュメントのidと初期の処理statusを含むシンプルな確認応答が返されます。
+
+```json
+{
+  "id": "D2Ar7Vo7ub83w3PRPZcaP1",
+  "status": "queued"
+}
+```
+
+**これは何を意味するか:**
+
+* `id`: ドキュメントの一意の識別子。処理の追跡や後で参照できるよう保存してください
+* `status`: 現在の処理状態。`"queued"` は、保存メモリへの処理待ちであることを意味します
+
+<Note>
+  ドキュメントはバックグラウンドで直ちに処理を開始します。数秒から数分（コンテンツのサイズに依存）で、検索可能な保存メモリにチャンク化されます。
+</Note>
+
+<div id="file-upload-drop-and-process">
+  ### ファイルアップロード: ドロップして処理
+</div>
+
+PDF、画像、または動画がありますか？そのままアップロードすれば、Supermemory が自動で有用なコンテンツを抽出します。
+
+**エンドポイント:** `POST /v3/documents/file`
+
+**これが強力な理由:** PDFからテキストを手作業でコピーしたり、動画を文字起こししたりする必要はありません。ファイルをアップロードするだけで、Supermemory が画像にはOCR、動画には文字起こし、ドキュメントには賢いテキスト抽出を実行します。
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents/file \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -F "file=@document.pdf" \
+    -F "containerTags=research_project"
+
+  # レスポンス:
+  # {
+  #   "id": "Mx7fK9pL2qR5tE8yU4nC7",
+  #   "status": "processing"
+  # }
+  ```
+
+  ```typescript TypeScript
+  import Supermemory from 'supermemory'
+  import fs from 'fs'
+
+  const client = new Supermemory({
+    apiKey: process.env.SUPERMEMORY_API_KEY
+  })
+
+  // 方法1: SDK の uploadFile メソッドを使用 (推奨)
+  const result = await client.memories.uploadFile({
+    file: fs.createReadStream('/path/to/document.pdf'),
+    containerTags: 'research_project'  // 配列ではなく文字列！
+  })
+
+  // 方法2: フォームデータで fetch を使用 (ブラウザ/手動実装向け)
+  const formData = new FormData()
+  formData.append('file', fileInput.files[0])
+  formData.append('containerTags', 'research_project')
+
+  const response = await fetch('https://api.supermemory.ai/v3/documents/file', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.SUPERMEMORY_API_KEY}`
+    },
+    body: formData
+  })
+
+  const result = await response.json()
+  console.log(result)
+  // 出力: { id: "Mx7fK9pL2qR5tE8yU4nC7", status: "processing" }
+  ```
+
+  ```python Python
+  from supermemory import Supermemory
+
+  client = Supermemory(api_key="your_api_key")
+
+  # 方法1: SDK の upload_file メソッドを使用 (推奨)
+  result = client.memories.upload_file(
+      file=open('document.pdf', 'rb'),
+      container_tags='research_project'  # 文字列パラメータ
+  )
+
+  # 方法2: フォームデータで requests を使用
+  import requests
+
+  files = {'file': open('document.pdf', 'rb')}
+  data = {'containerTags': 'research_project'}
+
+  response = requests.post(
+      'https://api.supermemory.ai/v3/documents/file',
+      headers={'Authorization': f'Bearer {api_key}'},
+      files=files,
+      data=data
+  )
+
+  result = response.json()
+  print(result)
+  # 出力: {'id': 'Mx7fK9pL2qR5tE8yU4nC7', 'status': 'processing'}
+  ```
+</CodeGroup>
+
+<div id="supported-file-types">
+  #### 対応ファイル形式
+</div>
+
+<Tabs>
+  <Tab title="Documents">
+    * **PDF**: スキャン済み文書を含むOCR対応での抽出
+    * **Google Docs**: Google Drive API連携経由
+    * **Google Sheets**: スプレッドシートの内容を抽出
+    * **Google Slides**: プレゼンテーションの内容を抽出
+    * **Notion Pages**: ブロック構造を保持したリッチコンテンツ
+    * **OneDrive Documents**: Microsoft Office文書
+  </Tab>
+
+  <Tab title="Media">
+    * **Images**: JPG、PNG、GIF、WebP（OCRでテキスト抽出）
+    * **Videos**: MP4、WebM、AVI（文字起こし対応：YouTube、Vimeo）
+  </Tab>
+
+  <Tab title="Web Content">
+    * **Web Pages**: 公開URLからのインテリジェントなコンテンツ抽出
+    * **Twitter/X Posts**: ツイート内容とメタデータ
+    * **YouTube Videos**: 自動文字起こしとメタデータ
+  </Tab>
+
+  <Tab title="Text Formats">
+    * **Plain Text**: TXT、MD、CSVファイル
+  </Tab>
+</Tabs>
+
+<div id="content-types-processing">
+  ## コンテンツの種類と処理
+</div>
+
+<div id="automatic-detection">
+  ### 自動検出
+</div>
+
+Supermemory は次の基準に基づいてコンテンツタイプを自動的に判別します:
+
+* **URL パターン**: 特定サービス向けのドメインやパスの解析
+* **MIME タイプ**: ヘッダー/メタデータからのファイルタイプの判定
+* **コンテンツ分析**: 構造や形式の解析
+* **ファイル拡張子**: フォールバックとしての識別手段
+
+```typescript
+
+type MemoryType =
+  | 'text'        // プレーンテキストのコンテンツ
+  | 'pdf'         // PDF ドキュメント
+  | 'tweet'       // Twitter/X の投稿
+  | 'google_doc'  // Google ドキュメント
+  | 'google_slide'// Google スライド
+  | 'google_sheet'// Google スプレッドシート
+  | 'image'       // OCR を用いた画像
+  | 'video'       // 文字起こし付きの動画
+  | 'notion_doc'  // Notion ページ
+  | 'webpage'     // ウェブページ
+  | 'onedrive'    // OneDrive ドキュメント
+
+
+
+// 自動検出の例
+const examples = {
+  "https://twitter.com/user/status/123": "tweet",
+  "https://youtube.com/watch?v=abc": "video",
+  "https://docs.google.com/document/d/123": "google_doc",
+  "https://docs.google.com/spreadsheets/d/123": "google_sheet",
+  "https://docs.google.com/presentation/d/123": "google_slide",
+  "https://notion.so/page-123": "notion_doc",
+  "https://example.com": "webpage",
+  "Regular text content": "text",
+  // PDF ファイルをアップロード → "pdf"
+  // 画像ファイルをアップロード → "image"
+  // OneDrive のリンク → "onedrive"
+}
+```
+
+<div id="processing-pipeline">
+  ### 処理パイプライン
+</div>
+
+各コンテンツタイプは、専用の処理パイプラインに従います:
+
+<Accordion title="Text Content" defaultOpen>
+  コンテンツはクレンジング、正規化、チャンク化（分割処理）され、最適に検索・取得できるようにします:
+
+  1. **Queued**: メモリーが処理キューに入る
+  2. **Extracting**: テキストの正規化とクリーニング
+  3. **Chunking**: コンテンツ構造に基づくインテリジェントな分割
+  4. **Embedding**: 検索用のベクトル表現に変換
+  5. **Indexing**: 検索可能なインデックスに追加
+  6. **Done:** メタデータ抽出が完了
+</Accordion>
+
+<Accordion title="Web Content">
+  Webページは高度なコンテンツ抽出を行います:
+
+  1. **Queued:** url が処理のためにキューに入る
+  2. **Extracting**: 適切なヘッダー付きでページ内容を取得し、ナビゲーションやボイラープレートを除去、title、description などを抽出
+  3. **Chunking:** 最適な検索性のためにコンテンツを分割
+  4. **Embedding**: ベクトル表現を生成
+  5. **Indexing**: 検索インデックスに追加
+  6. **Done:** `type: 'webpage'` として処理完了
+</Accordion>
+
+<Accordion title="File Processing">
+  ファイルは専用の抽出器で処理されます:
+
+  1. **Queued**: ファイルが処理のためにキューに入る
+  2. **Content Extraction**: 種別検出とフォーマット別の処理
+  3. **OCR/Transcription**: 画像およびメディアファイル向け
+  4. **Chunking:** 検索可能なセグメントに分割
+  5. **Embedding:** ベクトル表現を作成
+  6. **Indexing:** 検索インデックスに追加
+  7. **Done:** 処理完了
+</Accordion>
+
+<div id="error-handling">
+  ## エラー処理
+</div>
+
+<div id="common-errors">
+  ### よくあるエラー
+</div>
+
+右にスクロールして詳しく確認してください。
+
+<Tabs>
+  <Tab title="認証エラー">
+    ```json
+    // AuthenticationError class
+    {
+      name: "AuthenticationError",
+      status: 401,
+      message: "401 Unauthorized",
+      error: {
+        message: "Invalid API key",
+        type: "authentication_error"
+      }
+    }
+    ```
+
+    **原因:**
+
+    * APIキーが未設定または無効
+    * 認証トークンの有効期限切れ
+    * Authorizationヘッダーの形式が不正
+  </Tab>
+
+  <Tab title="不正なリクエスト (400)">
+    ```json
+    // BadRequestError class
+    {
+      name: "BadRequestError",
+      status: 400,
+      message: "400 Bad Request",
+      error: {
+        message: "Invalid request parameters",
+        details: {
+          content: "Content cannot be empty",
+          customId: "customId exceeds maximum length"
+        }
+      }
+    }
+    ```
+
+    **原因:**
+
+    * 必須フィールドの欠落
+    * パラメータ型が不正
+    * コンテンツが大きすぎる
+    * customId が長すぎる
+    * メタデータ構造が不正
+  </Tab>
+
+  <Tab title="レート制限 (429)">
+    ```json
+    // RateLimitError class
+    {
+      name: "RateLimitError",
+      status: 429,  // NOT 402!
+      message: "429 Too Many Requests",
+      error: {
+        message: "Rate limit exceeded",
+        retry_after: 60
+      }
+    }
+    ```
+
+    **原因:**
+
+    * 月間トークンクォータの超過
+    * レート制限の超過
+    * サブスクリプション上限に到達
+
+    **対処:** 指数バックオフを実装し、レート制限を順守する
+  </Tab>
+
+  <Tab title="Not Found エラー (404)">
+    ```json
+    // NotFoundError class
+    {
+      name: "NotFoundError",
+      status: 404,
+      message: "404 Not Found",
+      error: {
+        message: "Memory not found",
+        resource_id: "invalid_memory_id"
+      }
+    }
+    ```
+
+    原因:
+
+    * メモリーIDが存在しない
+    * メモリーが削除された
+    * エンドポイントのURLが不正
+  </Tab>
+
+  <Tab title="権限不足 (403)">
+    ```json
+    // PermissionDeniedError class
+    {
+      name: "PermissionDeniedError",
+      status: 403,
+      message: "403 Forbidden",
+      error: {
+        message: "Insufficient permissions",
+        required_permission: "memories:write"
+      }
+    }
+    ```
+
+    原因:
+
+    * APIキーに必要な権限がない
+    * 制限されたリソースへのアクセス
+    * アカウントの制限
+  </Tab>
+
+  <Tab title="サーバーエラー (500+)">
+    ```json
+    // InternalServerError class
+    {
+      name: "InternalServerError",
+      status: 500,
+      message: "500 Internal Server Error",
+      error: {
+        message: "Processing failed",
+        details: "Content extraction service unavailable"
+      }
+    }
+    ```
+
+    **原因:**
+
+    * 外部サービスが利用不可
+    * コンテンツ抽出に失敗
+  </Tab>
+
+  <Tab title="ネットワークエラー">
+    ```json
+        // APIConnectionError class - NEW
+      {
+        name: "APIConnectionError",
+        message: "Connection error.",
+        cause: Error // Original network error
+      }
+
+      // APIConnectionTimeoutError class - NEW
+      {
+        name: "APIConnectionTimeoutError",
+        message: "Request timed out."
+      }
+    ```
+
+    原因:
+
+    * ネットワーク接続の問題
+    * DNS解決の失敗
+    * リクエストのタイムアウト
+    * プロキシ／ファイアウォールによるブロック
+  </Tab>
+</Tabs>
+
+<div id="best-practices">
+  ## ベストプラクティス
+</div>
+
+<div id="container-tags-optimize-for-performance">
+  ### コンテナタグ: パフォーマンス最適化
+</div>
+
+クエリ性能を向上させるには、コンテナタグは単一で使用してください。複数タグにも対応していますが、レイテンシーが増加します。
+
+```json
+{
+  "content": "JWT トークンを使用するよう認証フローを更新",
+  "containerTags": "[project_alpha]",
+  "metadata": {
+    "type": "technical_change",
+    "author": "sarah_dev",
+    "impact": "breaking"
+  }
+}
+```
+
+**単一タグ vs 複数タグ**
+
+```javascript
+// ✅ 推奨: 単一のタグでクエリが高速
+{ "containerTags": ["project_alpha"] }
+
+// ⚠️ 許容可だが遅くなる: 複数のタグはレイテンシーを増加させる
+{ "containerTags": ["project_alpha", "auth", "backend"] }
+```
+
+**単一タグのほうが高い性能を発揮する理由:**
+
+* 同一スペース内の保存メモリ同士は効率的に相互参照できる
+* 検索クエリが複数スペースを横断する必要がない
+* 単一スペース内では連携の推定がより高速になる
+
+<div id="custom-ids-deduplication-and-updates">
+  ### カスタムID：重複排除と更新
+</div>
+
+customId は重複を防ぎ、ドキュメントの更新を可能にします。更新方法は2つあります。
+
+**方法 1：customId を指定した POST（アップサート）**
+
+```bash
+# ドキュメントを作成
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "API uses REST endpoints",
+    "customId": "api_docs_v1",
+    "containerTags": ["project_alpha"]
+  }'
+# レスポンス: {"id": "abc123", "status": "queued"}
+
+# 同じドキュメントを更新（同じ customId = upsert）
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "API migrated to GraphQL",
+    "customId": "api_docs_v1",
+    "containerTags": ["project_alpha"]
+  }'
+```
+
+**方法 2: id を指定した PATCH（更新）**
+
+```bash
+curl -X PATCH "https://api.supermemory.ai/v3/documents/abc123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "API は現在、キャッシュ対応の GraphQL を使用しています",
+    "metadata": {"version": 3}
+  }'
+```
+
+**カスタム ID パターン**
+
+```javascript
+// 外部システム同期
+"jira_PROJ_123"
+"confluence_456789"
+"github_issue_987"
+
+// データベースエンティティ
+"user_profile_12345"
+"order_67890"
+
+// バージョン付きコンテンツ
+"meeting_2024_01_15"
+"api_docs_auth"
+"requirements_v3"
+```
+
+**更新時の動作**
+
+* 既存の保存メモリは削除される
+* 更新後のコンテンツから新しい保存メモリが作成される
+* ドキュメントのIDは同一のまま維持される
+
+<div id="rate-limits-quotas">
+  ### レート制限とクオータ
+</div>
+
+**トークン使用量**
+
+```javascript
+"Hello world" // ≈ 2トークン
+"10ページのPDF" // ≈ 2,000〜4,000トークン
+"YouTube動画（10分）" // ≈ 1,500〜3,000トークン
+"Web記事" // ≈ 500〜2,000トークン
+```
+
+**現在の制限**
+
+| 機能 | Free | Starter | Growth |
+|---------|------|-----|------------|
+| メモリートークン/月 | 100,000 | 1,000,000 | 10,000,000 |
+| 検索クエリ/月 | 1,000 | 10,000 | 100,000 |
+
+**制限超過時のレスポンス**
+
+```bash
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer your_api_key" \
+  -d '{"content": "いくつかの内容"}'
+```
+
+レスポンス:
+
+```json
+{"error": "メモリーのトークン制限に達しました", "status": 402}
+```
+
+<div id="batch-upload-of-documents">
+  ## documents のバッチアップロード
+</div>
+
+レート制限とエラーリカバリーを活用して、大量のデータを効率的に処理します。
+
+<div id="implementation-strategy">
+  ### 実装戦略
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory, {
+      BadRequestError,
+      RateLimitError,
+      AuthenticationError
+    } from 'supermemory';
+
+    interface Document {
+      id: string;
+      content: string;
+      title?: string;
+      createdAt?: string;
+      metadata?: Record<string, string | number | boolean>;
+    }
+
+    async function batchIngest(documents: Document[], options = {}) {
+      const {
+        batchSize = 5,
+        delayBetweenBatches = 2000,
+        maxRetries = 3
+      } = options;
+
+      const results = [];
+
+      for (let i = 0; i < documents.length; i += batchSize) {
+        const batch = documents.slice(i, i + batchSize);
+        console.log(`バッチ処理中 ${Math.floor(i/batchSize) + 1}/${Math.ceil(documents.length/batchSize)}`);
+
+        const batchResults = await Promise.allSettled(
+          batch.map(doc => ingestWithRetry(doc, maxRetries))
+        );
+
+        results.push(...batchResults);
+
+        // バッチ間のレート制御
+        if (i + batchSize < documents.length) {
+          await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+        }
+      }
+
+      return results;
+    }
+
+    async function ingestWithRetry(doc: Document, maxRetries: number) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          return await client.memories.add({
+            content: doc.content,
+            customId: doc.id,
+            containerTags: ["batch_import_user_123"], // 修正済み: 配列
+            metadata: {
+              source: "migration",
+              batch_id: generateBatchId(),
+              original_created: doc.createdAt || new Date().toISOString(),
+              title: doc.title || "",
+              ...doc.metadata
+            }
+          });
+        } catch (error) {
+          // 修正済み: 適切なエラー処理
+          if (error instanceof AuthenticationError) {
+            console.error('認証に失敗しました — APIキーを確認してください');
+            throw error; // 認証エラーは再試行しない
+          }
+
+          if (error instanceof BadRequestError) {
+            console.error('ドキュメント形式が不正です:', doc.id);
+            throw error; // バリデーションエラーは再試行しない
+          }
+
+          if (error instanceof RateLimitError) {
+            console.log(`試行 ${attempt} 回目でレート制限に到達、待機時間を延長します...`);
+            const delay = Math.pow(2, attempt) * 2000; // レート制限時はより長い待機
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+
+          if (attempt === maxRetries) throw error;
+
+          // その他のエラーに対する指数バックオフ
+          const delay = Math.pow(2, attempt) * 1000;
+          console.log(`再試行 ${attempt}/${maxRetries}（対象: ${doc.id}）を ${delay}ms 後に実行`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    function generateBatchId(): string {
+      return `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+        import asyncio
+    import time
+    import logging
+    from typing import List, Dict, Any, Optional
+    from supermemory import Supermemory, BadRequestError, RateLimitError
+
+    async def batch_ingest(
+        documents: List[Dict[str, Any]],
+        options: Optional[Dict[str, Any]] = None
+    ):
+        options = options or {}
+        batch_size = options.get('batch_size', 5)  # 修正: 保守的なサイズ
+        delay_between_batches = options.get('delay_between_batches', 2.0)  # 修正: 2秒
+        max_retries = options.get('max_retries', 3)
+
+        results = []
+
+        for i in range(0, len(documents), batch_size):
+            batch = documents[i:i + batch_size]
+            batch_num = i // batch_size + 1
+            total_batches = (len(documents) + batch_size - 1) // batch_size
+
+            print(f"バッチ処理中 {batch_num}/{total_batches}")
+
+            # 適切なエラー処理でバッチを処理
+            tasks = [ingest_with_retry(doc, max_retries) for doc in batch]
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            results.extend(batch_results)
+
+            # バッチ間のレート制限
+            if i + batch_size < len(documents):
+                await asyncio.sleep(delay_between_batches)
+
+        return results
+
+    async def ingest_with_retry(doc: Dict[str, Any], max_retries: int):
+        for attempt in range(1, max_retries + 1):
+            try:
+                return await client.memories.add(
+                    content=doc['content'],
+                    custom_id=doc['id'],
+                    container_tags=["batch_import_user_123"],  # 修正: リスト
+                    metadata={
+                        "source": "migration",
+                        "batch_id": generate_batch_id(),
+                        "original_created": doc.get('created_at', ''),
+                        "title": doc.get('title', ''),
+                        **doc.get('metadata', {})
+                    }
+                )
+            except BadRequestError as e:
+                logging.error(f"無効なドキュメント {doc['id']}: {e}")
+                raise  # 検証エラーは再試行しない
+
+            except RateLimitError as e:
+                logging.warning(f"試行{attempt}回目でレート制限に達しました")
+                delay = 2 ** attempt * 2  # レート制限時は遅延を長くする
+                await asyncio.sleep(delay)
+                continue
+
+            except Exception as error:
+                if attempt == max_retries:
+                    raise error
+
+                # 指数バックオフ
+                delay = 2 ** attempt
+                logging.info(f"{delay}秒後に {doc['id']} の再試行 {attempt}/{max_retries}")
+                await asyncio.sleep(delay)
+
+    def generate_batch_id() -> str:
+        import random
+        import string
+        return f"batch_{int(time.time())}_{random.choices(string.ascii_lowercase, k=8)}"
+    ```
+  </Tab>
+</Tabs>
+
+<div id="best-practices-for-batch-operations">
+  ### バッチ処理のベストプラクティス
+</div>
+
+<Accordion title="Performance Optimization" defaultOpen>
+  * **バッチサイズ**: 一度に 3～5 documents
+  * **ディレイ**: バッチ間を 2～3 秒空けてレート制限を回避
+  * **Promise.allSettled()**: 成功・失敗が混在する結果を処理
+  * **進捗トラッキング**: 長時間実行の処理を監視
+
+  **出力例**
+
+  ```
+  Processing batch 1/50 (documents 1-3)
+  Successfully processed: 2/3 documents
+  Failed: 1/3 documents (BadRequestError: Invalid content)
+  Progress: 3/150 (2.0%) - Next batch in 2s
+  ```
+</Accordion>
+
+<Accordion title="Error Handling">
+  * **特定のエラー種別:** `BadRequestError`、`RateLimitError`、`AuthenticationError` を個別に処理
+  * **リトライなしのロジック**: バリデーションや認証エラーは再試行しない
+  * **レート制限への対応**: レート制限エラーにはより長いバックオフを適用
+  * **ロギング**: 失敗を記録してレビュー・再試行に備える
+</Accordion>
+
+<Accordion title="Memory Management">
+  * **ストリーミング**: 大きなファイルは chunks（ドキュメントセグメント）に分割して処理
+  * **クリーンアップ**: 処理済みバッチをメモリーからクリア
+  * **進捗の永続化**: 中断した移行を再開できるようにする
+</Accordion>
+
+<Note>
+  取り込みを始めますか？今すぐ[APIキーを取得](https://console.supermemory.ai)！
+</Note>

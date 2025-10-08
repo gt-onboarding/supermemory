@@ -1,0 +1,171 @@
+---
+title: "Cómo funciona Supermemory"
+description: "Comprender la arquitectura de grafo de conocimiento que impulsa la memory inteligente"
+icon: "brain"
+---
+
+Supermemory no es solo otro sistema de almacenamiento de documentos. Está diseñado para reflejar cómo funciona realmente la memoria humana: formando conexiones, evolucionando con el tiempo y generando conocimientos a partir del saber acumulado.
+
+![](/images/graph-view.png)
+
+<div id="the-mental-model">
+  ## El modelo mental
+</div>
+
+Los sistemas tradicionales almacenan archivos. Supermemory crea un grafo de conocimiento vivo.
+
+<CardGroup cols={2}>
+  <Card title="Traditional Systems" icon="folder">
+    * Archivos estáticos en carpetas
+    * Sin conexiones entre el contenido
+    * Búsqueda basada en palabras clave
+    * La información permanece congelada
+  </Card>
+
+  <Card title="Supermemory" icon="network">
+    * Grafo de conocimiento dinámico
+    * Relaciones ricas entre memorias
+    * Comprensión semántica
+    * La información evoluciona y se conecta
+  </Card>
+</CardGroup>
+
+<div id="documents-vs-memories">
+  ## Documentos vs memorias
+</div>
+
+Entender esta distinción es fundamental para usar Supermemory de forma efectiva.
+
+<div id="documents-your-raw-input">
+  ### Documentos: tu entrada sin procesar
+</div>
+
+Los documentos son lo que aportas: la materia prima:
+
+* Archivos PDF que subes
+* Páginas web que guardas
+* Texto que pegas
+* Imágenes con texto
+* Videos para transcribir
+
+Piensa en los documentos como libros que le entregas a Supermemory.
+
+<div id="memories-intelligent-knowledge-units">
+  ### Memorias: unidades de conocimiento inteligentes
+</div>
+
+Las memorias son lo que Supermemory crea: la comprensión:
+
+* chunks semánticos con significado
+* Integradas para búsqueda por similaridad
+* Conectadas mediante relaciones
+* Actualizadas dinámicamente con el tiempo
+
+Piensa en las memorias como los insights y conexiones que tu cerebro forma después de leer esos libros.
+
+<Note>
+  **Idea clave**: Cuando subes un PDF de 50 páginas, Supermemory no solo lo almacena: lo divide en cientos de memorias interconectadas, cada una comprendiendo su contexto y sus relaciones con tu otro conocimiento.
+</Note>
+
+<div id="memory-relationships">
+  ## Relaciones de memory
+</div>
+
+![](/images/memories-inferred.png)
+
+El grafo conecta las memorias mediante tres tipos de relaciones:
+
+<div id="updates-information-changes">
+  ### Actualizaciones: cambios de información
+</div>
+
+Cuando nueva información contradice o actualiza el conocimiento existente, Supermemory crea una relación de “actualización”.
+
+<CodeGroup>
+  ```text Original Memory
+  "You work at Supermemory as a content engineer"
+  ```
+
+  ```text New Memory (Updates Original)
+  "You now work at Supermemory as the CMO"
+  ```
+</CodeGroup>
+
+El sistema registra cuál memory es la más reciente con el campo `isLatest`, garantizando que las búsquedas devuelvan información actualizada.
+
+<div id="extends-information-enriches">
+  ### Extiende: la información enriquece
+</div>
+
+Cuando nueva información se agrega al conocimiento existente sin reemplazarlo, Supermemory crea una relación de &quot;extiende&quot;.
+
+Siguiendo con nuestra analogía de &quot;trabajar en supermemory&quot;, una memory sobre en qué trabajas ampliaría la memory sobre tu rol mencionada arriba.
+
+<CodeGroup>
+  ```text Original Memory
+  "You work at Supermemory as the CMO"
+  ```
+
+  ```text New Memory (Extension) - Separate From Previous
+  "Your work consists of ensuring the docs are up to date, making marketing campaigns, SEO, etc."
+  ```
+</CodeGroup>
+
+Ambas memories siguen siendo válidas y se pueden buscar, proporcionando un contexto más rico.
+
+<div id="derives-information-infers">
+  ### Derivaciones: inferencias de información
+</div>
+
+La relación más sofisticada: cuando Supermemory infiere nuevas conexiones a partir de patrones en tu conocimiento.
+
+<CodeGroup>
+  ```text Memory 1
+  "Dhravya is the founder of Supermemory"
+  ```
+
+  ```text Memory 2
+  "Dhravya frequently discusses AI and machine learning innovations"
+  ```
+
+  ```text Derived Memory
+  "Supermemory is likely an AI-focused company"
+  ```
+</CodeGroup>
+
+Estas inferencias ayudan a revelar conocimientos que quizá no hayas expresado explícitamente.
+
+<div id="processing-pipeline">
+  ## Pipeline de procesamiento
+</div>
+
+Entender el pipeline te ayuda a optimizar su uso:
+
+| Etapa | Qué sucede |
+|-------|-------------|
+| **En cola** | Documento en espera de procesamiento |
+| **Extrayendo** | Contenido en extracción |
+| **Segmentación en fragmentos** | Creación de memory chunks |
+| **Embedding** | Generación de vectores |
+| **Indexación** | Construcción de relaciones |
+| **Completado** | Totalmente buscable |
+
+<Note>
+  **Consejo**: Los documentos y los videos más grandes tardan más. Un PDF de 100 páginas puede tardar 1–2 minutos, mientras que un video de 1 hora podría tardar 5–10 minutos.
+</Note>
+
+<div id="next-steps">
+  ## Próximos pasos
+</div>
+
+Ahora que entiendes cómo funciona Supermemory:
+
+<CardGroup cols={2}>
+  <Card title="Add Memories" icon="plus" href="/es/add-memories/overview">
+    Empieza a añadir contenido a tu grafo de conocimiento
+  </Card>
+
+  <Card title="Search Memories" icon="search" href="/es/search/overview">
+    Aprende a consultar tu base de conocimiento de forma eficaz
+  </Card>
+</CardGroup>

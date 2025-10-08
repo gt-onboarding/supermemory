@@ -1,0 +1,251 @@
+---
+title: "supermemory Infinite Chat"
+description: "使用 supermemory 的智能代理构建具有无限上下文的聊天应用"
+tag: "测试版"
+---
+
+import GettingAPIKey from '/snippets/zh/getting-api-key.mdx';
+
+supermemory Infinite Chat 是一款强大的解决方案，可为你的聊天应用提供无限的上下文 memory。它作为你现有的 LLM（大型语言模型）provider 前的透明代理运行，无需更改应用逻辑即可智能管理超长对话。
+
+<img src="/images/infinite-context.png" alt="无限上下文示意图" className="rounded-lg shadow-lg" />
+
+<Tabs>
+  <Tab title="关键功能">
+    <CardGroup cols={2}>
+      <Card title="无限上下文" icon="infinity" color="#4F46E5">
+        告别 token 限制——对话可无限延展
+      </Card>
+
+      <Card title="零 Latency" icon="bolt" color="#10B981">
+        透明代理，额外开销可忽略不计
+      </Card>
+
+      <Card title="成本高效" icon="coins" color="#F59E0B">
+        长对话的 token 成本最高可节省 70%
+      </Card>
+
+      <Card title="与 provider 无关" icon="plug" color="#6366F1">
+        可对接任何兼容 OpenAI 的端点
+      </Card>
+    </CardGroup>
+  </Tab>
+</Tabs>
+
+
+<div id="getting-started">
+  ## 快速开始
+</div>
+
+要使用 Infinite Chat 端点，你需要：
+
+<div id="1-get-a-supermemory-api-key">
+  ### 1. 获取 Supermemory API 密钥
+</div>
+
+<GettingAPIKey />
+
+<div id="2-add-supermemory-in-front-of-any-openai-compatible-api-url">
+  ### 2. 在任何兼容 **OpenAI-Compatible** 的 API URL 前添加 supermemory
+</div>
+
+<CodeGroup>
+
+```typescript Typescript
+import OpenAI from "openai";
+
+/**
+ * 使用 supermemory 代理初始化 OpenAI 客户端
+ * @param {string} OPENAI_API_KEY - 你的 OpenAI API 密钥
+ * @param {string} SUPERMEMORY_API_KEY - 你的 supermemory API 密钥
+ * @returns {OpenAI} - 已配置的 OpenAI 客户端
+ */
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://api.supermemory.ai/v3/https://api.openai.com/v1",
+  headers: {
+    "x-supermemory-api-key": process.env.SUPERMEMORY_API_KEY,
+    "x-sm-user-id": "Your_users_id"
+  },
+});
+```
+
+```python Python
+import openai
+import os
+
+# 使用 supermemory 代理配置 OpenAI 客户端
+openai.api_base = "https://api.supermemory.ai/v3/https://api.openai.com/v1"
+openai.api_key = os.environ.get("OPENAI_API_KEY")  # 你的常规 OpenAI 密钥
+openai.default_headers = {
+    "x-supermemory--api-key": os.environ.get("SUPERMEMORY_API_KEY"),  # 你的 supermemory 密钥
+}
+
+# 创建一个具备无限上下文的聊天补全
+response = openai.ChatCompletion.create(
+  model="gpt-5-nano",
+  messages=[{"role": "user", "content": "Your message here"}]
+)
+```
+
+</CodeGroup>
+
+<div id="how-it-works">
+  ## 工作原理
+</div>
+
+<Steps>
+  <Step title="透明代理">
+    所有请求都会通过 supermemory 透明转发到你选择的 LLM provider，且不会带来额外的延迟开销。
+
+    <img
+      src="/images/transparent-proxy.png"
+      alt="透明代理示意图"
+      className="my-4 rounded-md shadow"
+    />
+  </Step>
+  <Step title="智能内容分块">
+    长对话会使用我们自研的内容分块算法自动拆分为优化的片段，同时保持语义连贯。
+  </Step>
+  <Step title="智能检索">
+    当对话超过 token 限制（20k+）时，supermemory 会智能检索先前消息中最相关的上下文。
+  </Step>
+  <Step title="自动 Token 管理">
+    系统会智能平衡 token 使用，在尽量降低成本的同时确保最佳性能。
+  </Step>
+</Steps>
+
+<div id="performance-benefits">
+  ## 性能优势
+</div>
+
+<Accordion title="降低 Token 使用量" defaultOpen icon="coins">
+  借助智能上下文管理与缓存，长对话的 token 成本最多可节省 70%。
+</Accordion>
+
+<Accordion title="无限上下文" icon="infinity">
+  不再受 8k/32k/128k token 限制——依托 supermemory 的高级检索系统，对话可无限延展。
+</Accordion>
+
+<Accordion title="更高的响应质量" icon="sparkles">
+  更精准的上下文检索即使在超长对话中也能带来更连贯的响应，减少幻觉与不一致。
+</Accordion>
+
+<Accordion title="零性能损耗" icon="bolt">
+  该代理对你的请求增加的 Latency 几乎可以忽略，确保为用户提供快速响应。
+</Accordion>
+
+<div id="pricing">
+  ## 定价
+</div>
+
+<Tabs>
+  <Tab title="方案">
+    <div className="mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-bold">免费版</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">可免费存储 100k tokens</p>
+        </div>
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-bold">标准版</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">超出免费额度后，每月固定 $20</p>
+        </div>
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-bold">按量计费</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">每个会话包含 20k 免费 tokens，之后按每百万 tokens 收费 $1</p>
+        </div>
+      </div>
+    </div>
+  </Tab>
+  <Tab title="对比">
+    <div className="mt-4">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead>
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              功能
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              免费版
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              标准版
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          <tr>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              可存储的 tokens
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              100k
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              不限
+            </td>
+          </tr>
+          <tr>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              会话数量
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              10
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              不限
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </Tab>
+</Tabs>
+
+<div id="error-handling">
+  ## 错误处理
+</div>
+
+<Note>
+  supermemory 以可靠性为首要原则进行设计。若在 supermemory 的处理管道中出现任何问题，系统会自动回退为将你的请求直接转发给 LLM provider，确保你的应用零停机。
+</Note>
+
+每个响应都会附带用于诊断的请求头，提供有关处理过程的信息：
+
+| Header                           | Description                                              |
+| -------------------------------- | -------------------------------------------------------- |
+| `x-supermemory-conversation-id`  | 会话线程的唯一标识符                                     |
+| `x-supermemory-context-modified` | 指示 supermemory 是否修改了上下文（"true" 或 "false"）   |
+| `x-supermemory-tokens-processed` | 此次请求中处理的 token 数量                              |
+| `x-supermemory-chunks-created`   | 本次会话中新创建的 chunk（文档片段）数量                 |
+| `x-supermemory-chunks-deleted`   | 移除的 chunk 数量（如有）                                |
+| `x-supermemory-docs-deleted`     | 移除的 Documents 数量（如有）                            |
+
+如果发生错误，还会包含一个额外的 `x-supermemory-error` 请求头，其中说明出错的详细信息。即使 supermemory 出现错误，你的请求仍会由底层的 LLM provider 正常处理。
+
+<div id="rate-limiting">
+  ## 频率限制
+</div>
+
+<Info>
+  目前，supermemory 本身不设定专门的频率限制。你的请求仅受所使用的底层 LLM provider 的频率限制约束。
+</Info>
+
+<div id="supported-models">
+  ## 支持的模型
+</div>
+
+supermemory 可与任何兼容 OpenAI 的 API 一起使用，包括：
+
+<CardGroup cols={3}>
+  <Card title="OpenAI" icon="openai">
+    GPT-3.5、GPT-4、GPT-4o
+  </Card>
+  <Card title="Anthropic" icon="user-astronaut">
+    Claude 3 系列
+  </Card>
+  <Card title="Other Providers" icon="plug">
+    任何提供 OpenAI 兼容端点的 provider
+  </Card>
+</CardGroup>

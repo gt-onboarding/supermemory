@@ -1,0 +1,270 @@
+---
+title: "Schéma de réponse"
+description: "Structure complète de la réponse pour toutes les API de recherche, avec détails de scoring"
+---
+
+<div id="document-search-response-post-v3search">
+  ## Réponse de recherche de documents (POST `/v3/search`)
+</div>
+
+Réponse de `client.search.documents()` et `client.search.execute()` :
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_abc123",
+      "title": "Fondamentaux de l'apprentissage automatique",
+      "type": "pdf",
+      "score": 0.89,
+      "chunks": [
+        {
+          "content": "L'apprentissage automatique est un sous-ensemble de l'intelligence artificielle...",
+          "score": 0.95,
+          "isRelevant": true
+        }
+      ],
+      "metadata": {
+        "category": "éducation",
+        "author": "Dr. Smith",
+        "difficulty": "débutant"
+      },
+      "createdAt": "2024-01-15T10:30:00Z",
+      "updatedAt": "2024-01-20T14:45:00Z"
+    }
+  ],
+  "timing": 187,
+  "total": 1
+}
+```
+
+
+<div id="document-result-fields">
+  ### Champs de résultat du document
+</div>
+
+<ResponseField name="documentId" type="string">
+  Identifiant unique du document contenant les segments correspondants.
+</ResponseField>
+
+<ResponseField name="title" type="string | null">
+  Titre du document si disponible. Peut être null pour les documents sans titre.
+</ResponseField>
+
+<ResponseField name="type" type="string | null">
+  Type de document (p. ex. « pdf », « text », « webpage », « notion_doc »). Peut être null si non spécifié.
+</ResponseField>
+
+<ResponseField name="score" type="number" range="0-1">
+  **Score de pertinence global du document**. Combine la similarité sémantique, la correspondance de mots-clés et la pertinence des Metadata.
+
+  - **0,9-1,0** : Extrêmement pertinent
+  - **0,7-0,9** : Hautement pertinent
+  - **0,5-0,7** : Modérément pertinent
+  - **0,3-0,5** : Assez pertinent
+  - **0,0-0,3** : Faiblement pertinent
+</ResponseField>
+
+<ResponseField name="chunks" type="Array<Chunk>">
+  Tableau des segments de texte correspondants provenant du document. Chaque segment représente une portion du document qui correspond à votre requête.
+
+  <ResponseField name="chunks[].content" type="string">
+    Le contenu textuel du segment correspondant. Peut inclure du contexte provenant des segments adjacents, sauf si `onlyMatchingChunks=true`.
+  </ResponseField>
+
+  <ResponseField name="chunks[].score" type="number" range="0-1">
+    **Score de similarité spécifique au segment**. Mesure à quel point ce segment correspond à votre requête.
+  </ResponseField>
+
+  <ResponseField name="chunks[].isRelevant" type="boolean">
+    Indique si ce segment a dépassé le `chunkThreshold`. `true` signifie que le segment est au-dessus du threshold, `false` signifie qu’il est inclus uniquement pour fournir du contexte.
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="metadata" type="object | null">
+  Metadata du document sous forme de paires clé-valeur. La structure dépend de ce qui a été stocké avec le document.
+
+  ```json
+  {
+    "category": "tutorial",
+    "language": "python",
+    "difficulty": "intermediate",
+    "tags": "web-development,backend"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Horodatage ISO 8601 indiquant la date de création du document.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  Horodatage ISO 8601 indiquant la dernière mise à jour du document.
+</ResponseField>
+
+<ResponseField name="content" type="string | null" optional>
+  **Contenu intégral du document**. Inclus uniquement lorsque `includeFullDocs=true`. Peut être très volumineux.
+
+  <Warning>
+    Le contenu intégral du document peut rendre les réponses extrêmement volumineuses. À utiliser avec des limites appropriées et uniquement si nécessaire.
+  </Warning>
+</ResponseField>
+
+<ResponseField name="summary" type="string | null" optional>
+  **Résumé du document généré par l’IA**. Inclus uniquement lorsque `includeSummary=true`. Fournit un aperçu concis du document.
+</ResponseField>
+
+<div id="memory-search-response">
+  ## Réponse de recherche de memory
+</div>
+
+Réponse de `client.search.memories()` :
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_xyz789",
+      "memory": "Contenu complet de la mémoire sur les applications de l'informatique quantique...",
+      "similarity": 0.87,
+      "metadata": {
+        "category": "research",
+        "topic": "quantum-computing"
+      },
+      "updatedAt": "2024-01-18T09:15:00Z",
+      "version": 3,
+      "context": {
+        "parents": [
+          {
+            "memory": "Discussion antérieure sur les bases de la théorie quantique...",
+            "relation": "extends",
+            "version": 2,
+            "updatedAt": "2024-01-17T16:30:00Z"
+          }
+        ],
+        "children": [
+          {
+            "memory": "Questions de suivi sur les algorithmes quantiques...",
+            "relation": "derives",
+            "version": 4,
+            "updatedAt": "2024-01-19T11:20:00Z"
+          }
+        ]
+      },
+      "documents": [
+        {
+          "id": "doc_quantum_paper",
+          "title": "Applications de l'informatique quantique",
+          "type": "pdf",
+          "createdAt": "2024-01-10T08:00:00Z"
+        }
+      ]
+    }
+  ],
+  "timing": 156,
+  "total": 1
+}
+```
+
+
+<div id="memory-result-fields">
+  ### Champs des résultats de memory
+</div>
+
+<ResponseField name="id" type="string">
+  Identifiant unique de l’entrée de memory.
+</ResponseField>
+
+<ResponseField name="memory" type="string">
+  **Contenu intégral de la memory**. Contrairement à la recherche de documents qui renvoie des segments, la recherche de memory renvoie le texte complet de la memory.
+</ResponseField>
+
+<ResponseField name="similarity" type="number" range="0-1">
+  **Score de similarité** entre votre requête et cette memory. Des scores plus élevés indiquent de meilleures correspondances.
+
+  - **0.9-1.0**: Extrêmement similaire
+  - **0.8-0.9**: Très similaire
+  - **0.7-0.8**: Similaire
+  - **0.6-0.7**: Plutôt similaire
+  - **0.5-0.6**: Légèrement similaire
+</ResponseField>
+
+<ResponseField name="metadata" type="object | null">
+  Metadata de la memory sous forme de paires clé‑valeur. La structure dépend de ce qui a été stocké avec la memory.
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  Horodatage ISO 8601 de la dernière mise à jour de la memory.
+</ResponseField>
+
+<ResponseField name="version" type="number | null" optional>
+  Numéro de version de cette entrée de memory. Utilisé pour suivre l’évolution et les relations de la memory.
+</ResponseField>
+
+<ResponseField name="context" type="object" optional>
+  **Relations contextuelles de la memory**. Inclus uniquement lorsque `include.relatedMemories=true`.
+
+  <ResponseField name="context.parents" type="Array<ContextMemory>" optional>
+    Tableau de memories parentes dont cette memory est issue ou qu’elle prolonge.
+  </ResponseField>
+
+  <ResponseField name="context.children" type="Array<ContextMemory>" optional>
+    Tableau de memories enfants qui prolongent ou dérivent de cette memory.
+  </ResponseField>
+
+  ### Structure d’une memory contextuelle
+
+  <ResponseField name="memory" type="string">
+    Contenu de la memory associée.
+  </ResponseField>
+
+  <ResponseField name="relation" type="string">
+    Type de relation : "updates", "extends" ou "derives".
+
+    - **updates** : Cette memory met à jour/remplace la memory associée
+    - **extends** : Cette memory s’appuie sur la memory associée
+    - **derives** : Cette memory est dérivée de la memory associée
+  </ResponseField>
+
+  <ResponseField name="version" type="number | null">
+    Distance de version relative :
+    - **Valeurs négatives** pour les parents (-1 = parent direct, -2 = grand‑parent)
+    - **Valeurs positives** pour les enfants (+1 = enfant direct, +2 = petit‑enfant)
+  </ResponseField>
+
+  <ResponseField name="updatedAt" type="string">
+    Date de dernière mise à jour de la memory associée.
+  </ResponseField>
+
+  <ResponseField name="metadata" type="object | null" optional>
+    Metadata de la memory associée.
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="documents" type="Array<Document>" optional>
+  **Documents associés**. Inclus uniquement lorsque `include.documents=true`.
+
+  <ResponseField name="documents[].id" type="string">
+    Identifiant du document.
+  </ResponseField>
+
+  <ResponseField name="documents[].title" type="string">
+    Titre du document.
+  </ResponseField>
+
+  <ResponseField name="documents[].type" type="string">
+    Type de document.
+  </ResponseField>
+
+  <ResponseField name="documents[].metadata" type="object">
+    Metadata du document.
+  </ResponseField>
+
+  <ResponseField name="documents[].createdAt" type="string">
+    Horodatage de création du document.
+  </ResponseField>
+
+  <ResponseField name="documents[].updatedAt" type="string">
+    Horodatage de mise à jour du document.
+  </ResponseField>
+</ResponseField>

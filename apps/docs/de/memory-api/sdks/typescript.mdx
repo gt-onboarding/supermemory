@@ -1,0 +1,437 @@
+---
+title: 'TypeScript SDK'
+sidebarTitle: "TypeScript"
+description: 'Lerne, wie du supermemory mit TypeScript verwendest'
+---
+
+<div id="installation">
+  ## Installation
+</div>
+
+```sh
+npm install supermemory
+```
+
+
+<div id="usage">
+  ## Verwendung
+</div>
+
+```js
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // Dies ist die Standardeinstellung und kann weggelassen werden
+});
+
+async function main() {
+  const response = await client.search.execute({ q: 'documents related to python' });
+
+  console.debug(response.results);
+}
+
+main();
+```
+
+
+### Request- &amp; Response-Typen
+
+Diese Bibliothek enthält TypeScript-Definitionen für alle Request-Parameter und Response-Felder. Sie können diese wie folgt importieren und verwenden:
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // Dies ist der Standard und kann weggelassen werden
+});
+
+async function main() {
+  const params: supermemory.MemoryAddParams = {
+    content: 'Dies ist ein ausführlicher Artikel über Konzepte des maschinellen Lernens...',
+  };
+  const response: supermemory.MemoryAddResponse = await client.memories.add(params);
+}
+
+main();
+```
+
+Die Dokumentation zu jeder Methode, jedem Request-Parameter und jedem Response-Feld ist in Docstrings verfügbar und wird in den meisten modernen Editoren beim Darüberfahren mit der Maus angezeigt.
+
+
+<div id="file-uploads">
+  ## Datei-Uploads
+</div>
+
+Anfrageparameter, die Datei-Uploads entsprechen, können in vielen verschiedenen Formen übergeben werden:
+
+* `File` (oder ein Objekt mit derselben Struktur)
+* eine `fetch`-`Response` (oder ein Objekt mit derselben Struktur)
+* ein `fs.ReadStream`
+* der Rückgabewert unseres `toFile`-Helpers
+
+```ts
+import fs from 'fs';
+import supermemory, { toFile } from 'supermemory';
+
+const client = new supermemory();
+
+// Falls Sie Zugriff auf Node `fs` haben, empfehlen wir die Verwendung von `fs.createReadStream()`:
+await client.memories.uploadFile({ file: fs.createReadStream('/path/to/file') });
+
+// Oder falls Sie die Web-`File`-API verwenden, können Sie eine `File`-Instanz übergeben:
+await client.memories.uploadFile({ file: new File(['my bytes'], 'file') });
+
+// Sie können auch eine `fetch`-`Response` übergeben:
+await client.memories.uploadFile({ file: await fetch('https://somesite/file') });
+
+// Falls keine der oben genannten Optionen geeignet ist, können Sie unseren `toFile`-Helfer verwenden:
+await client.memories.uploadFile({ file: await toFile(Buffer.from('my bytes'), 'file') });
+await client.memories.uploadFile({ file: await toFile(new Uint8Array([0, 1, 2]), 'file') });
+```
+
+
+<div id="handling-errors">
+  ## Fehlerbehandlung
+</div>
+
+Wenn die Bibliothek keine Verbindung zur API herstellen kann
+oder die API einen nicht erfolgreichen Statuscode zurückgibt (d. h. eine 4xx- oder 5xx-Antwort),
+wird eine Unterklasse von `APIError` ausgelöst:
+
+```ts
+async function main() {
+  const response = await client.memories
+    .add({ content: 'Dies ist ein ausführlicher Artikel über Konzepte des maschinellen Lernens...' })
+    .catch(async (err) => {
+      if (err instanceof supermemory.APIError) {
+        console.debug(err.status); // 400
+        console.debug(err.name); // BadRequestError
+        console.debug(err.headers); // {server: 'nginx', ...}
+      } else {
+        throw err;
+      }
+    });
+}
+
+main();
+```
+
+Fehlercodes lauten wie folgt:
+
+| Statuscode | Fehlertyp                   |
+| ---------- | --------------------------- |
+| 400        | `BadRequestError`           |
+| 401        | `AuthenticationError`       |
+| 403        | `PermissionDeniedError`     |
+| 404        | `NotFoundError`             |
+| 422        | `UnprocessableEntityError`  |
+| 429        | `RateLimitError`            |
+| &gt;=500    | `InternalServerError`       |
+| N/A        | `APIConnectionError`        |
+
+
+<div id="retries">
+  ### Wiederholungen
+</div>
+
+Bestimmte Fehler werden standardmäßig automatisch zweimal mit einem kurzen exponentiellen Backoff erneut versucht.
+Verbindungsfehler (z. B. aufgrund eines Netzwerkproblems), 408 Request Timeout, 409 Conflict,
+429 Rate Limit sowie interne Fehler ab &gt;=500 werden standardmäßig alle erneut versucht.
+
+Sie können die Option `maxRetries` verwenden, um dies zu konfigurieren oder zu deaktivieren:
+
+```js
+// Standardkonfiguration für alle Anfragen:
+const client = new supermemory({
+  maxRetries: 0, // Standard ist 2
+});
+
+// Oder pro Anfrage konfigurieren:
+await client.memories.add({ content: 'Dies ist ein ausführlicher Artikel über Konzepte des maschinellen Lernens...' }, {
+  maxRetries: 5,
+});
+```
+
+
+<div id="timeouts">
+  ### Timeouts
+</div>
+
+Anfragen werden standardmäßig nach 1 Minute abgebrochen. Sie können dies über die Option `timeout` konfigurieren:
+
+```ts
+// Standard-Timeout für alle Anfragen konfigurieren:
+const client = new supermemory({
+  timeout: 20 * 1000, // 20 Sekunden (Standard ist 1 Minute)
+});
+
+// Pro Anfrage überschreiben:
+await client.memories.add({ content: 'Dies ist ein ausführlicher Artikel über Konzepte des maschinellen Lernens...' }, {
+  timeout: 5 * 1000,
+});
+```
+
+Bei einem Timeout wird ein `APIConnectionTimeoutError` ausgelöst.
+
+Beachte, dass zeitüberschreitende Anfragen [standardmäßig zweimal erneut versucht werden](#retries).
+
+
+<div id="advanced-usage">
+  ## Erweiterte Verwendung
+</div>
+
+<div id="accessing-raw-response-data-eg-headers">
+  ### Zugriff auf rohe Response-Daten (z. B. Headers)
+</div>
+
+Die „rohe“ `Response`, die von `fetch()` zurückgegeben wird, kann über die Methode `.asResponse()` auf dem Typ `APIPromise` abgerufen werden, den alle Methoden zurückgeben.
+Diese Methode liefert ein Ergebnis, sobald die Headers einer erfolgreichen Antwort empfangen wurden, und liest den Antwort-Body nicht, sodass Sie eigene Parsing- oder Streaming-Logik implementieren können.
+
+Sie können auch die Methode `.withResponse()` verwenden, um die rohe `Response` zusammen mit den bereits geparsten Daten zu erhalten.
+Im Gegensatz zu `.asResponse()` liest diese Methode den Body und liefert erst ein Ergebnis, sobald er geparst wurde.
+
+```ts
+const client = new supermemory();
+
+const response = await client.memories
+  .add({ content: 'Dies ist ein ausführlicher Artikel über Konzepte des maschinellen Lernens...' })
+  .asResponse();
+console.debug(response.headers.get('X-My-Header'));
+console.debug(response.statusText); // Zugriff auf das zugrundeliegende Response-Objekt
+
+const { data: response, response: raw } = await client.memories
+  .add({ content: 'Dies ist ein ausführlicher Artikel über Konzepte des maschinellen Lernens...' })
+  .withResponse();
+console.debug(raw.headers.get('X-My-Header'));
+console.debug(response.id);
+```
+
+
+<div id="logging">
+  ### Logging
+</div>
+
+<Warning>
+Alle Log-Meldungen dienen ausschließlich dem Debugging. Format und Inhalt der Log-Meldungen können sich zwischen Releases ändern.
+</Warning>
+
+<div id="log-levels">
+  #### Logstufen
+</div>
+
+Die Logstufe kann auf zwei Arten konfiguriert werden:
+
+1. Über die Umgebungsvariable `SUPERMEMORY_LOG`
+2. Über die Client-Option `logLevel` (überschreibt die Umgebungsvariable, falls gesetzt)
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  logLevel: 'debug', // Alle Log-Meldungen anzeigen
+});
+```
+
+Verfügbare Log-Levels, von am ausführlichsten bis am wenigsten ausführlich:
+
+* `'debug'` - Debugmeldungen, Info, Warnungen und Fehler anzeigen
+* `'info'` - Infomeldungen, Warnungen und Fehler anzeigen
+* `'warn'` - Warnungen und Fehler anzeigen (Standard)
+* `'error'` - Nur Fehler anzeigen
+* `'off'` - Jegliches Logging deaktivieren
+
+Auf dem Level `'debug'` werden alle HTTP-Anfragen und -Antworten protokolliert, einschließlich Headern und Bodies.
+Einige Authentifizierungs-Header werden geschwärzt, aber sensible Daten in Anfrage- und Antwort-Bodies
+können dennoch sichtbar sein.
+
+
+<div id="custom-logger">
+  #### Benutzerdefinierter Logger
+</div>
+
+Standardmäßig schreibt diese Bibliothek in `globalThis.console`. Sie können auch einen benutzerdefinierten Logger verwenden.
+Die meisten Logging‑Bibliotheken werden unterstützt, darunter [pino](https://www.npmjs.com/package/pino), [winston](https://www.npmjs.com/package/winston), [bunyan](https://www.npmjs.com/package/bunyan), [consola](https://www.npmjs.com/package/consola), [signale](https://www.npmjs.com/package/signale) und [@std/log](https://jsr.io/@std/log). Wenn Ihr Logger nicht funktioniert, öffnen Sie bitte ein Issue.
+
+Wenn Sie einen benutzerdefinierten Logger bereitstellen, steuert die Option `logLevel` weiterhin, welche Meldungen ausgegeben werden; Meldungen
+unterhalb der konfigurierten Stufe werden nicht an Ihren Logger gesendet.
+
+```ts
+import supermemory from 'supermemory';
+import pino from 'pino';
+
+const logger = pino();
+
+const client = new supermemory({
+  logger: logger.child({ name: 'supermemory' }),
+  logLevel: 'debug', // Alle Nachrichten an pino senden, damit pino sie filtern kann
+});
+```
+
+
+<div id="making-customundocumented-requests">
+  ### Eigene/undokumentierte Anfragen stellen
+</div>
+
+Diese Bibliothek ist mit Typen versehen und ermöglicht einen bequemen Zugriff auf die dokumentierte API. Wenn Sie auf undokumentierte Endpunkte, Parameter oder Response-Eigenschaften zugreifen müssen, können Sie die Bibliothek dennoch verwenden.
+
+<div id="undocumented-endpoints">
+  #### Undokumentierte Endpunkte
+</div>
+
+Um Anfragen an undokumentierte Endpunkte zu stellen, können Sie `client.get`, `client.post` und andere HTTP-Methoden verwenden.
+Optionen des Clients, wie etwa Wiederholungen, werden bei diesen Anfragen berücksichtigt.
+
+```ts
+await client.post('/irgendein/pfad', {
+  body: { some_prop: 'foo' },
+  query: { some_query_arg: 'bar' },
+});
+```
+
+
+<div id="undocumented-request-params">
+  #### Undokumentierte Request-Parameter
+</div>
+
+Um Requests mit undokumentierten Parametern zu senden, kannst du beim undokumentierten Parameter `// @ts-expect-error` verwenden. Diese Bibliothek prüft zur Laufzeit nicht, ob der Request dem Typ entspricht, daher werden alle zusätzlichen Werte, die du sendest, unverändert weitergeleitet.
+
+```ts
+client.foo.create({
+  foo: 'meine_param',
+  bar: 12,
+  // @ts-expect-error baz ist noch nicht öffentlich
+  baz: 'undokumentierte Option',
+});
+```
+
+Für Anfragen mit dem Verb `GET` stehen zusätzliche Parameter in der Query, alle anderen Anfragen senden den
+zusätzlichen Parameter im Body.
+
+Wenn Sie ein zusätzliches Argument ausdrücklich senden möchten, können Sie dies über die Request-Optionen `query`, `body` und `headers` tun.
+
+
+<div id="undocumented-response-properties">
+  #### Undokumentierte Antwort-Eigenschaften
+</div>
+
+Um auf undokumentierte Antwort-Eigenschaften zuzugreifen, können Sie das Response-Objekt mit `// @ts-expect-error` versehen oder das Response-Objekt in den erforderlichen Typ casten. Wie bei den Request-Parametern validieren wir keine zusätzlichen Eigenschaften und entfernen auch keine aus der Antwort der API.
+
+<div id="customizing-the-fetch-client">
+  ### Anpassen des Fetch-Clients
+</div>
+
+Standardmäßig erwartet diese Bibliothek, dass eine globale `fetch`-Funktion vorhanden ist.
+
+Wenn du eine andere `fetch`-Funktion verwenden möchtest, kannst du entweder die globale Funktion per Polyfill bereitstellen:
+
+```ts
+import fetch from 'my-fetch';
+
+globalThis.fetch = fetch;
+```
+
+Oder an den Client weitergeben:
+
+```ts
+import supermemory from 'supermemory';
+import fetch from 'my-fetch';
+
+const client = new supermemory({ fetch });
+```
+
+
+<div id="fetch-options">
+  ### Fetch-Optionen
+</div>
+
+Wenn Sie benutzerdefinierte `fetch`-Optionen festlegen möchten, ohne die `fetch`-Funktion zu überschreiben, können Sie beim Instanziieren des Clients oder beim Senden einer Anfrage ein `fetchOptions`-Objekt angeben. (Anfragespezifische Optionen überschreiben Client-Optionen.)
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  fetchOptions: {
+    // `RequestInit`-Optionen
+  },
+});
+```
+
+
+<div id="configuring-proxies">
+  #### Proxys konfigurieren
+</div>
+
+Um das Verhalten des Proxys zu ändern, können Sie eigene `fetchOptions` angeben, die laufzeitspezifische Proxy-Optionen zu Anfragen hinzufügen:
+
+```ts
+import supermemory from 'supermemory';
+import * as undici from 'undici';
+
+const proxyAgent = new undici.ProxyAgent('http://localhost:8888');
+const client = new supermemory({
+  fetchOptions: {
+    dispatcher: proxyAgent,
+  },
+});
+```
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  fetchOptions: {
+    proxy: 'http://localhost:8888',
+  },
+});
+```
+
+```ts
+import supermemory from 'npm:supermemory';
+
+const httpClient = Deno.createHttpClient({ proxy: { url: 'http://localhost:8888' } });
+const client = new supermemory({
+  fetchOptions: {
+    client: httpClient,
+  },
+});
+```
+
+
+<div id="frequently-asked-questions">
+  ## Häufig gestellte Fragen
+</div>
+
+<div id="semantic-versioning">
+  ## Semantische Versionierung
+</div>
+
+Dieses Paket folgt im Allgemeinen den [SemVer](https://semver.org/spec/v2.0.0.html)-Konventionen, allerdings können bestimmte rückwärtsinkompatible Änderungen als Minor-Versionen veröffentlicht werden:
+
+1. Änderungen, die nur statische Typen betreffen und das Laufzeitverhalten nicht verändern.
+2. Änderungen an Bibliotheksinterna, die zwar technisch öffentlich sind, aber nicht für die externe Nutzung vorgesehen oder dokumentiert sind. _(Bitte eröffne ein GitHub-Issue, wenn du dich auf solche Interna verlässt.)_
+3. Änderungen, von denen wir nicht erwarten, dass sie in der Praxis die überwiegende Mehrheit der Nutzer beeinflussen.
+
+Wir nehmen Abwärtskompatibilität ernst und arbeiten hart daran, ein reibungsloses Upgrade-Erlebnis sicherzustellen.
+
+Wir freuen uns über dein Feedback; eröffne gern ein [Issue](https://www.github.com/supermemoryai/sdk-ts/issues) mit Fragen, Bugs oder Vorschlägen.
+
+<div id="requirements">
+  ## Anforderungen
+</div>
+
+TypeScript >= 4.9 wird unterstützt.
+
+Die folgenden Laufzeitumgebungen werden unterstützt:
+
+- Webbrowser (aktuelle Versionen von Chrome, Firefox, Safari, Edge und weiteren)
+- Node.js 20 LTS oder höher (Versionen, die nicht das Lebensende erreicht haben, siehe [non-EOL](https://endoflife.date/nodejs)).
+- Deno v1.28.0 oder höher.
+- Bun 1.0 oder höher.
+- Cloudflare Workers.
+- Vercel Edge Runtime.
+- Jest 28 oder höher mit der „node“-Umgebung („jsdom“ wird derzeit nicht unterstützt).
+- Nitro v2.6 oder höher.
+
+Beachten Sie, dass React Native derzeit nicht unterstützt wird.
+
+Wenn Sie an anderen Laufzeitumgebungen interessiert sind, eröffnen Sie bitte ein Issue auf GitHub oder stimmen Sie für ein bestehendes.

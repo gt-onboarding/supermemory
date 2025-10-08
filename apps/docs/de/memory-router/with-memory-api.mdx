@@ -1,0 +1,130 @@
+---
+title: "Verwendung mit der Memory API"
+description: "Kombinieren Sie den Memory Router mit der Memory API für maximale Kontrolle"
+sidebarTitle: "Verwendung mit der Memory API"
+---
+
+Der Memory Router und die Memory API greifen auf denselben Speicherpool zu. Wenn Sie denselben `user_id` verwenden, werden Speicher‑Einträge automatisch zwischen beiden Systemen gemeinsam genutzt.
+
+<div id="how-they-work-together">
+  ## Wie sie zusammenarbeiten
+</div>
+
+<Note>
+**Zentrale Erkenntnis**: Router und API greifen bei identischen `user_id`-Werten auf dieselben Speicher-Einträge zu. Das ermöglicht leistungsstarke hybride Implementierungen.
+</Note>
+
+<div id="shared-memory-pool">
+  ### Gemeinsamer Speicher-Pool
+</div>
+
+```python
+# Über die API erstellter Speicher
+from supermemory import Client
+
+api_client = Client(api_key="YOUR_SUPERMEMORY_KEY")
+
+# Speicher über die API hinzufügen
+api_client.memories.add({
+    "content": "Der Nutzer bevorzugt Python gegenüber JavaScript für die Backend-Entwicklung",
+    "user_id": "user123"
+})
+
+# Später in Ihrer Chat-Anwendung mit dem Router
+from openai import OpenAI
+
+router_client = OpenAI(
+    api_key="YOUR_OPENAI_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+    default_headers={
+        "x-supermemory-api-key": "YOUR_SUPERMEMORY_KEY",
+        "x-sm-user-id": "user123"  # Gleiche user_id
+    }
+)
+
+# Der Router hat automatisch Zugriff auf den per API erstellten Speicher
+response = router_client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "Welche Sprache sollte ich für mein neues Backend verwenden?"}]
+)
+# Die Antwort berücksichtigt die Python-Präferenz
+```
+
+
+<div id="pre-load-context-via-api">
+  ## Kontext vorab per API laden
+</div>
+
+Verwenden Sie die API, um documents und Kontext vor Gesprächen hinzuzufügen:
+
+```python
+# Schritt 1: Dokumente des Nutzers über die API laden
+api_client.memories.add({
+    "content": "https://company.com/product-docs.pdf",
+    "user_id": "support_agent_123",
+    "metadata": {"type": "product_documentation"}
+})
+
+# Schritt 2: Support-Agent verwendet Chat mit dem Router
+router_client = OpenAI(
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+    default_headers={"x-sm-user-id": "support_agent_123"}
+)
+
+# Der Agent hat automatisch Zugriff auf die Produktdokumentation
+response = router_client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "Wie funktioniert das Enterprise-Pricing?"}]
+)
+```
+
+
+<div id="best-practices">
+  ## Best Practices
+</div>
+
+<div id="1-consistent-user-ids">
+  ### 1. Einheitliche Benutzer-IDs
+</div>
+
+Verwenden Sie in beiden Systemen stets dasselbe `user_id`-Format:
+
+```python
+# ✅ Gut – konsistente user_id
+api_client.memories.add({"user_id": "user_123"})
+router_headers = {"x-sm-user-id": "user_123"}
+
+# ❌ Schlecht – inkonsistente user_id
+api_client.memories.add({"user_id": "user-123"})
+router_headers = {"x-sm-user-id": "user_123"}  # Anderes Format!
+```
+
+
+<div id="2-use-container-tags-for-organization">
+  ### 2. Container-Tags zur Strukturierung verwenden
+</div>
+
+```python
+# API: Speicher‑Einträge mit Tags hinzufügen
+api_client.memories.add({
+    "content": "Umsatzbericht Q3",
+    "user_id": "analyst_1",
+    "containerTag": "financial_reports"
+})
+
+# Router: Speicher‑Einträge werden automatisch organisiert
+# Der Router ruft intelligent aus den richtigen Containern ab
+```
+
+
+<div id="3-leverage-each-systems-strengths">
+  ### 3. Die Stärken jedes Systems nutzen
+</div>
+
+| Anwendungsfall | Beste Wahl | Warum |
+|----------|------------|-----|
+| Chat‑Unterhaltungen | Router | Automatisches Kontext-Management |
+| Dokument-Upload | API | Stapelverarbeitung, benutzerdefinierte IDs |
+| Suche & Filter | API | Erweiterte Abfragemöglichkeiten |
+| Schnelle Prototypen | Router | Keine Codeänderungen erforderlich |
+| Speicherverwaltung | API | Vollständige CRUD-Operationen |

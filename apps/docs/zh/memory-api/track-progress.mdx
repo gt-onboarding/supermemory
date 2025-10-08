@@ -1,0 +1,299 @@
+---
+title: "跟踪处理状态"
+description: "实时监控文档处理状态"
+icon: "activity"
+---
+
+沿着处理管道跟踪你的 Documents，以提供更佳的用户体验并妥善处理边缘情况。
+
+<div id="processing-pipeline">
+  ## 处理流水线
+</div>
+
+![将 Documents 转换为记忆存储的流程](/images/pipeline.png)
+
+各阶段的作用如下：
+
+- **Queued**: Document 已排队，等待处理
+- **Extracting**: 正在提取内容（图像进行光学字符识别（OCR），视频进行转录）
+- **Chunking**: 将内容分块为更易检索的最佳片段
+- **Embedding**: 将每个分块转换为向量表示
+- **Indexing**: 将向量写入搜索索引
+- **Done**: Document 已全部处理完毕并可被检索
+
+<Note>
+处理时间因内容类型而异。纯文本可在数秒内完成处理，而 10 分钟的视频可能需要 2–3 分钟。
+</Note>
+
+<div id="processing-documents">
+  ## 处理 Documents
+</div>
+
+监控你账户中所有正在处理的 Documents。
+
+`GET /v3/documents/processing`
+
+<CodeGroup>
+
+```typescript
+// 直接调用 API（非 SDK）
+const response = await fetch('https://api.supermemory.ai/v3/documents/processing', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const processing = await response.json();
+console.log(`${processing.documents.length} 个 Documents 正在处理`);
+```
+
+```python
+# 直接调用 API（非 SDK）
+import requests
+
+response = requests.get(
+    'https://api.supermemory.ai/v3/documents/processing',
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+processing = response.json()
+print(f"{len(processing['documents'])} 个 Documents 正在处理")
+```
+
+```bash
+curl -X GET "https://api.supermemory.ai/v3/documents/processing" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### 响应格式
+</div>
+
+```json
+{
+  "documents": [
+    {
+      "id": "doc_abc123",
+      "status": "extracting",
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:15Z",
+      "container_tags": ["research"],
+      "metadata": {
+        "source": "upload",
+        "filename": "report.pdf"
+      }
+    },
+    {
+      "id": "doc_def456",
+      "status": "chunking",
+      "created_at": "2024-01-15T10:29:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "container_tags": ["articles"],
+      "metadata": {
+        "source": "url",
+        "url": "https://example.com/article"
+      }
+    }
+  ],
+  "total": 2
+}
+```
+
+
+<div id="individual-documents">
+  ## 单个 Documents
+</div>
+
+跟踪特定文档的处理状态。
+
+`GET /v3/documents/{id}`
+
+<CodeGroup>
+
+```typescript
+const memory = await client.memories.get("doc_abc123");
+
+console.log(`Status: ${memory.status}`);
+
+// 轮询直到完成
+while (memory.status !== 'done') {
+  await new Promise(r => setTimeout(r, 2000));
+  memory = await client.memories.get("doc_abc123");
+  console.log(`Status: ${memory.status}`);
+}
+```
+
+```python
+memory = client.memories.get("doc_abc123")
+
+print(f"Status: {memory['status']}")
+
+# 轮询直到完成
+import time
+while memory['status'] != 'done':
+    time.sleep(2)
+    memory = client.memories.get("doc_abc123")
+    print(f"Status: {memory['status']}")
+```
+
+```bash
+curl -X GET "https://api.supermemory.ai/v3/documents/doc_abc123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### 响应格式
+</div>
+
+```json
+{
+  "id": "doc_abc123",
+  "status": "done",
+  "content": "原始内容…",
+  "container_tags": ["research"],
+  "metadata": {
+    "source": "upload",
+    "filename": "report.pdf"
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:31:00Z"
+}
+```
+
+
+<div id="status-values">
+  ## 状态值
+</div>
+
+| 状态 | 说明 | 典型时长 |
+|--------|-------------|------------------|
+| `queued` | 等待处理 | < 5 秒 |
+| `extracting` | 从源提取内容 | 5–30 秒 |
+| `chunking` | 拆分为可搜索的内容分块 | 5–15 秒 |
+| `embedding` | 创建向量表示 | 10–30 秒 |
+| `indexing` | 添加到搜索索引 | 5–10 秒 |
+| `done` | 已全部处理且可搜索 | - |
+| `failed` | 处理失败 | - |
+
+<div id="polling-best-practices">
+  ## 轮询最佳实践
+</div>
+
+在轮询获取 status 更新时：
+
+```typescript
+async function waitForProcessing(documentId: string, maxWaitMs = 300000) {
+  const startTime = Date.now();
+  const pollInterval = 2000; // 2 秒
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const doc = await client.memories.get(documentId);
+
+    if (doc.status === 'done') {
+      return doc;
+    }
+
+    if (doc.status === 'failed') {
+      throw new Error(`处理 ${documentId} 失败`);
+    }
+
+    await new Promise(r => setTimeout(r, pollInterval));
+  }
+
+  throw new Error(`等待 ${documentId} 超时`);
+}
+```
+
+
+<div id="batch-processing">
+  ## 批处理
+</div>
+
+在处理多个 Documents 时，高效跟踪其状态：
+
+```typescript
+async function trackBatch(documentIds: string[]) {
+  const statuses = new Map();
+
+  // 初始检查
+  for (const id of documentIds) {
+    const doc = await client.memories.get(id);
+    statuses.set(id, doc.status);
+  }
+
+  // 轮询，直到全部完成
+  while ([...statuses.values()].some(s => s !== 'done' && s !== 'failed')) {
+    await new Promise(r => setTimeout(r, 5000)); // 批处理的 5 秒轮询间隔
+
+    for (const id of documentIds) {
+      if (statuses.get(id) !== 'done' && statuses.get(id) !== 'failed') {
+        const doc = await client.memories.get(id);
+        statuses.set(id, doc.status);
+      }
+    }
+
+    // 输出进度
+    const done = [...statuses.values()].filter(s => s === 'done').length;
+    console.log(`进度：${done}/${documentIds.length} 已完成`)
+  }
+
+  return statuses;
+}
+```
+
+
+<div id="error-handling">
+  ## 错误处理
+</div>
+
+优雅地处理处理过程中的失败：
+
+```typescript
+async function addWithRetry(content: string, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const { id } = await client.memories.add({ content });
+
+    try {
+      const result = await waitForProcessing(id);
+      return result;
+    } catch (error) {
+      console.error(`第 ${attempt} 次尝试失败：`, error);
+
+      if (attempt === maxRetries) {
+        throw error;
+      }
+
+      // 指数退避（Exponential backoff）
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
+  }
+}
+```
+
+
+<div id="processing-times-by-content-type">
+  ## 按内容类型的处理时间
+</div>
+
+Documents：几乎即时创建（200-500ms）
+
+memory：Supermemory 基于语义分析和上下文理解构建 memory 图谱。
+
+| 内容类型 | memory 处理时间 | 备注 |
+|--------------|------------------------|-------|
+| 纯文本 | 5-10 秒 | 速度最快 |
+| Markdown | 5-10 秒 | 与纯文本相近 |
+| PDF（< 10 页） | 15-30 秒 | 视需要进行光学字符识别（OCR） |
+| PDF（> 100 页） | 1-3 分钟 | 取决于复杂度 |
+| 图片 | 10-20 秒 | OCR 处理 |
+| YouTube 视频 | 每 10 分钟视频需 1-2 分钟 | 需要转录 |
+| 网页 | 10-20 秒 | 内容抽取 |
+| Google Docs | 10-15 秒 | 通过 API 抽取 |
+
+<Note>
+**专业提示**：使用处理 status 端点向用户提供实时反馈，尤其是在处理较大的 Documents 或批量上传时。
+</Note>

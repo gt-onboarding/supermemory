@@ -1,0 +1,235 @@
+---
+title: "メモリ追加の概要"
+description: "テキスト、ファイル、URL から Supermemory にコンテンツを追加する"
+sidebarTitle: "概要"
+---
+
+テキスト、ファイル、URL、画像、動画など、あらゆる種類のコンテンツを Supermemory に追加できます。追加された内容は自動で処理され、検索可能なメモリとなってインテリジェントなナレッジグラフを構成します。
+
+<div id="quick-start">
+  ## クイックスタート
+</div>
+
+<CodeGroup>
+  ```typescript TypeScript
+  // テキストを追加
+  const result = await client.memories.add({
+    content: "Machine learning enables computers to learn from data",
+    containerTag: "ai-research",
+    metadata: { priority: "high" }
+  });
+
+  console.log(result);
+  // 出力: { id: "abc123", status: "queued" }
+  ```
+
+  ```python Python
+  # テキストを追加
+  result = client.memories.add(
+      content="Machine learning enables computers to learn from data",
+      container_tags=["ai-research"],
+      metadata={"priority": "high"}
+  )
+
+  print(result)
+  # 出力: {"id": "abc123", "status": "queued"}
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "content": "Machine learning enables computers to learn from data",
+      "containerTag": "ai-research",
+      "metadata": {"priority": "high"}
+    }'
+
+  # レスポンス: {"id": "abc123", "status": "queued"}
+  ```
+</CodeGroup>
+
+<div id="key-concepts">
+  ## 主要な概念
+</div>
+
+<Note>
+  **Supermemory を初めて利用しますか？** [Supermemory の仕組み](/ja/how-it-works)を読んで、ナレッジグラフのアーキテクチャと、Documents とメモリの違いを理解しましょう。
+</Note>
+
+<div id="quick-overview">
+  ### クイック概要
+</div>
+
+* **Documents**: アップロードする元コンテンツ（PDF、url、テキスト）
+* **メモリ**: 関連付けとともに自動生成される検索可能な chunk（チャンク）
+* **コンテナタグ**: 関連するコンテンツをグループ化して文脈を強化
+* **Metadata**: フィルタリングのための追加情報
+
+<div id="content-sources">
+  ### コンテンツソース
+</div>
+
+コンテンツは次の3つの方法で追加できます：
+
+1. **テキストを直接送信**: API 経由でテキストコンテンツを直接送信
+2. **ファイルをアップロード**: PDF、画像、動画をアップロードして抽出
+3. **URL の処理**: ウェブページや各種プラットフォームから自動抽出
+
+<div id="endpoints">
+  ## エンドポイント
+</div>
+
+<Warning>
+  注意: これらのエンドポイントはDocumentsを追加します。メモリはSupermemoryによって推論されます。
+</Warning>
+
+<div id="add-content">
+  ### コンテンツの追加
+</div>
+
+`POST /v3/documents`
+
+テキスト、URL、またはサポートされている任意の形式を追加します。
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.add({
+    content: "Your content here",
+    containerTag: "project"
+  });
+  ```
+
+  ```python Python
+  client.memories.add(
+    content="Your content here",
+    container_tags=["project"]
+  )
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"content": "Your content here", "containerTag": "project"}'
+  ```
+</CodeGroup>
+
+<div id="upload-file">
+  ### ファイルのアップロード
+</div>
+
+`POST /v3/documents/file`
+
+処理用にファイルを直接アップロードします。
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.uploadFile({
+    file: fileStream,
+    containerTag: "project"
+  });
+  ```
+
+  ```python Python
+  client.memories.upload_file(
+    file=open('file.pdf', 'rb'),
+    container_tags='project'
+  )
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -F "file=@document.pdf" \
+    -F "containerTags=project"
+  ```
+</CodeGroup>
+
+<div id="update-memory">
+  ### メモリを更新
+</div>
+
+`PATCH /v3/documents/{id}`
+
+既存のDocumentsの内容を更新します。
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.update("doc_id", {
+    content: "Updated content"
+  });
+  ```
+
+  ```python Python
+  client.memories.update("doc_id", {
+    "content": "Updated content"
+  })
+  ```
+
+  ```bash cURL
+  curl -X PATCH "https://api.supermemory.ai/v3/documents/doc_id" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"content": "Updated content"}'
+  ```
+</CodeGroup>
+
+<div id="supported-content-types">
+  ## サポートされるコンテンツタイプ
+</div>
+
+<div id="documents">
+  ### Documents
+</div>
+
+* OCR対応のPDF
+* Google Docs、Sheets、Slides
+* Notionのページ
+* Microsoft Officeのファイル
+
+<div id="media">
+  ### メディア
+</div>
+
+* 画像（JPG、PNG、GIF、WebP、OCR対応）
+
+<div id="web-content">
+  ### Webコンテンツ
+</div>
+
+* X（旧Twitter）の投稿
+* 字幕付きのYouTube動画
+
+<div id="text-formats">
+  ### テキスト形式
+</div>
+
+* プレーンテキスト
+* Markdown
+* CSVファイル
+
+<Note> [connectors guide](/ja/connectors/overview) を参照して、Google Drive、Notion、OneDrive を接続し、ファイルをリアルタイムに同期する方法を確認してください。 </Note>
+
+<div id="response-format">
+  ## レスポンスの形式
+</div>
+
+```json
+{
+  "id": "D2Ar7Vo7ub83w3PRPZcaP1",
+  "status": "queued"
+}
+```
+
+* **`id`**: 一意のドキュメントの識別子
+* **`status`**: 処理ステータス（`queued`、`processing`、`done`）
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+* [処理ステータスを追跡](/ja/api/track-progress) - ドキュメント処理を監視
+* [メモリを検索](/ja/search/overview) - コンテンツを検索
+* [memories を一覧表示](/ja/list-memories/overview) - 保存されたメモリを閲覧
+* [更新と削除](/ja/update-delete-memories/overview) - メモリを管理

@@ -1,0 +1,291 @@
+---
+title: "Alojamiento propio"
+description: "Implementa tu propia instancia de la API de supermemory en Cloudflare Workers"
+---
+
+<Warning>
+Esta guía está dirigida únicamente a clientes empresariales que hayan optado específicamente por el alojamiento propio como parte de su plan empresarial. Si estás en un plan estándar, utiliza nuestra API alojada en [console.supermemory.ai](https://console.supermemory.ai).
+</Warning>
+
+<div id="prerequisites">
+  ## Requisitos previos
+</div>
+
+Antes de comenzar, necesitarás reunir varias claves de API y configurar cuentas con distintos servicios. Esta guía integral te explicará cómo obtener cada componente necesario.
+
+<div id="enterprise-deployment-package">
+  ### Paquete de implementación para empresas
+</div>
+
+Tu paquete de implementación para empresas es proporcionado por el equipo de supermemory y contiene:
+
+- Tu Host ID único (`NEXT_PUBLIC_HOST_ID`)
+- El paquete (bundle) de JavaScript compilado
+- El script de implementación
+
+Contacta a tu representante de supermemory para empresas para recibir tu paquete de implementación.
+
+<div id="cloudflare">
+  ### Cloudflare
+</div>
+
+<div id="create-account">
+  #### Crear cuenta
+</div>
+
+1. Ve a [cloudflare.com](https://dash.cloudflare.com/sign-up) y crea una cuenta
+3. Tu **Account ID** es la cadena larga y aleatoria en la barra de direcciones (URL)
+
+<div id="create-api-token">
+  #### Crear token de API
+</div>
+
+1. Ve a [Cloudflare API Tokens](https://dash.cloudflare.com/?to=/:account/api-tokens)
+2. Haz clic en **"Create Token"**
+3. Usa la plantilla **"Custom token"**
+4. Configura el token con estos permisos:
+   - **Account:AI Gateway:Edit**
+   - **Account:Hyperdrive:Edit**
+   - **Account:Workers KV Storage:Edit**
+   - **Account:Workers R2 Storage:Edit**
+7. Haz clic en **"Continue to summary"** → **"Create Token"**
+8. **Importante**: Copia y guarda el token de forma segura de inmediato (no se mostrará nuevamente)
+
+<div id="enable-workers">
+  #### Habilitar Workers
+</div>
+
+1. En tu panel de Cloudflare, ve a **Workers & Pages**
+2. Si se te solicita, acepta los Términos del servicio de Workers
+3. Elige un subdominio para tus Workers (p. ej., `yourcompany.workers.dev`)
+
+Tus `CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_API_TOKEN` ya están listos.
+
+<div id="database">
+  ### Base de datos
+</div>
+
+Deberás proporcionar una cadena de conexión de PostgreSQL mediante la variable de entorno `DATABASE_URL`.
+
+La base de datos debe:
+
+* Compatibilidad con la **extensión pgvector** para operaciones vectoriales
+* Ser accesible desde Cloudflare Workers
+* Admitir conexiones SSL
+* Permitir conexiones desde los rangos de IP de Cloudflare
+
+Tu cadena de conexión debe seguir este formato:
+
+```
+postgresql://usuario:contraseña@host:puerto/base_de_datos
+```
+
+
+<div id="llm-providers">
+  ### Proveedores de LLM
+</div>
+
+<div id="openai">
+  #### OpenAI
+</div>
+
+1. Ve a [platform.openai.com](https://platform.openai.com)
+2. Inicia sesión o crea una cuenta
+3. Ve a **API Keys** en la barra lateral izquierda
+4. Haz clic en **"Create new secret key"**
+5. Asigna un nombre a tu clave (p. ej., "supermemory Self-Hosted")
+6. Copia la clave y guárdala de forma segura
+7. Añade la información de facturación si aún no lo has hecho
+
+<div id="anthropic">
+  #### Anthropic
+</div>
+
+1. Ve a [console.anthropic.com](https://console.anthropic.com)
+2. Crea una cuenta y completa la verificación
+3. Ve a **API Keys**
+4. Haz clic en **"Create Key"**
+5. Asigna un nombre a tu clave y cópiala de forma segura
+
+<div id="gemini">
+  #### Gemini
+</div>
+
+1. Ve a [Google AI Studio](https://aistudio.google.com)
+2. Inicia sesión con tu cuenta de Google
+3. Haz clic en **"Get API key"** → **"Create API key"**
+4. Selecciona un proyecto existente de Google Cloud o crea uno nuevo
+5. Copia tu clave de API
+
+<div id="groq">
+  #### Groq
+</div>
+
+1. Ve a [console.groq.com](https://console.groq.com)
+2. Crea una cuenta
+3. Ve a **API Keys**
+4. Haz clic en **"Create API Key"**
+5. Asigna un nombre a tu clave y cópiala
+
+{/* TODO: Add OAuth documentation */}
+
+{/* ### Authentication Providers
+#### GitHub OAuth (Optional)
+
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Click **"New OAuth App"**
+3. Fill in the application details:
+   - **Application name**: Your app name
+   - **Homepage URL**: Your API domain (e.g., `https://api.yourdomain.com`)
+   - **Authorization callback URL**: `https://api.yourdomain.com/api/auth/callback/github`
+4. Click **"Register application"**
+5. Note the **Client ID** and generate a **Client Secret**
+6. Use these for `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET`
+
+#### Google OAuth (Optional)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project or select an existing one
+3. Enable the **Google+ API**
+4. Go to **Credentials** → **Create Credentials** → **OAuth client ID**
+5. Choose **Web application**
+6. Add your domain to **Authorized JavaScript origins**
+7. Add `https://api.yourdomain.com/api/auth/callback/google` to **Authorized redirect URIs**
+8. Copy the **Client ID** and **Client secret**
+9. Use these for `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` */}
+
+<div id="email-service-setup">
+  ### Configuración del servicio de correo
+</div>
+
+<div id="resend">
+  #### Resend
+</div>
+
+1. Ve a [resend.com](https://resend.com) y crea una cuenta
+2. Ve a **API Keys**
+3. Haz clic en **"Create API Key"**
+4. Asigna un nombre a tu clave (p. ej., "supermemory Production")
+5. Copia la clave para `RESEND_API_KEY`
+6. Verifica tu dominio de envío en la sección **Domains**
+
+<div id="connectors-optional">
+  ### Conectores (opcional)
+</div>
+
+<div id="google-drive">
+  #### Google Drive
+</div>
+
+1. Ve a [Google Cloud Console](https://console.cloud.google.com)
+2. Crea o selecciona un proyecto
+3. Habilita la **Google Drive API**
+4. Ve a **Credentials** → **Create Credentials** → **OAuth client ID**
+5. Configura la pantalla de consentimiento de OAuth si es necesario
+6. Elige **Web application**
+7. Añade URIs de redirección autorizadas para tu dominio
+8. Copia `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`
+
+<div id="microsoft-onedrive">
+  #### Microsoft OneDrive
+</div>
+
+1. Ve a [Azure Portal](https://portal.azure.com)
+2. Navega a **Microsoft Entra ID** → **App registrations**
+3. Haz clic en **New registration**
+4. Asigna un nombre a tu aplicación y configura el URI de redirección
+5. Ve a **Certificates & secrets** → **New client secret**
+6. Copia el **Application (client) ID** y el **Client secret**
+7. Úsalos en `MICROSOFT_CLIENT_ID` y `MICROSOFT_CLIENT_SECRET`
+
+<div id="notion">
+  #### Notion
+</div>
+
+1. Ve a [Notion Developers](https://developers.notion.com)
+2. Haz clic en **“Create new integration”**
+3. Completa los detalles de la integración
+4. Copia el **Internal Integration Token**
+5. Configura OAuth si es necesario para las integraciones de usuario
+6. Úsalo en `NOTION_CLIENT_ID` y `NOTION_CLIENT_SECRET`
+
+---
+
+<div id="setup-deployment-files">
+  ## Configurar los archivos de despliegue
+</div>
+
+Extrae el paquete de despliegue proporcionado por el equipo de supermemory en el directorio de tu preferencia:
+
+```bash
+# Extrae el paquete de implementación
+$ unzip supermemory-enterprise-deployment.zip
+$ cd supermemory-deployment
+```
+
+***
+
+
+<div id="configure-environment-variables">
+  ## Configurar variables de entorno
+</div>
+
+El script de implementación lee **todas** las variables de entorno de tu shell en tiempo de ejecución. Incluimos un archivo de ejemplo que enumera el conjunto completo admitido por el worker.
+
+```bash
+# Copia la plantilla y empieza a editar
+$ cp packages/alchemy/env.example .env
+
+# Abre el archivo en tu editor preferido y completa los campos faltantes
+$ $EDITOR .env
+```
+
+A continuación, una referencia rápida.\
+Los valores marcados como **Requeridos** son obligatorios para un despliegue correcto; deja en blanco los opcionales si no necesitas la función relacionada.
+
+| Nombre | ¿Requerido? | Descripción |
+|------|-----------|-------------|
+| `NODE_ENV` | ✅ | `development`, `staging` o `production`. |
+| `NEXT_PUBLIC_HOST_ID` | ✅ | Tu Host ID único proporcionado por el equipo de Supermemory. |
+| `BETTER_AUTH_SECRET` | ✅ | Cadena aleatoria de 32 bytes: ejecuta `openssl rand -base64 32`. |
+| `BETTER_AUTH_URL` | ✅ | URL base pública para la API (sin `/` final). Ejemplo: `https://api.example.com`. |
+| `DATABASE_URL` | ✅ | Cadena de conexión de Postgres (p. ej., `postgres://user:pass@host:5432/db`). |
+| `CLOUDFLARE_ACCOUNT_ID` | ✅ | Tu id de cuenta de Cloudflare. |
+| `CLOUDFLARE_API_TOKEN` | ✅ | Token creado en *Prerequisites*. |
+| `OPENAI_API_KEY` | ✅ | Clave de [platform.openai.com](https://platform.openai.com). |
+| `RESEND_API_KEY` | ✅ | Clave del proveedor de correo si planeas enviar e-mails. |
+| `ANTHROPIC_API_KEY` |  | Necesaria para usar modelos Claude. |
+| `GEMINI_API_KEY` |  | Clave para modelos Google Gemini. |
+| `GROQ_API_KEY` |  | Clave para modelos Groq. |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` |  | Habilita el inicio de sesión con GitHub OAuth. |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` |  | Habilita el inicio de sesión con Google OAuth. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` |  | Necesario para el conector de Google Drive. |
+| `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` |  | Necesario para el conector de OneDrive. |
+| `NOTION_CLIENT_ID` / `NOTION_CLIENT_SECRET` |  | Necesario para el conector de Notion. |
+| `CLOUDFLARE_AI_GATEWAY_NAME` / `CLOUDFLARE_AI_GATEWAY_TOKEN` |  | Solo si quieres enrutar solicitudes a través de un AI Gateway. |
+| `SENTRY_DSN` |  | Si usas Sentry para la notificación de errores. |
+
+***
+
+
+<div id="deploy">
+  ## Implementación
+</div>
+
+Con tu archivo `.env` listo, ejecuta el script de implementación:
+
+```bash
+# Ejecuta el script de despliegue incluido en tu paquete
+$ bun ./deploy.ts
+```
+
+***
+
+
+<div id="updating-your-deployment">
+  ## Actualizar tu despliegue
+</div>
+
+Para actualizar tu despliegue de supermemory, sigue el mismo proceso que el despliegue inicial descrito en la sección **Deploy** de arriba. Puedes reutilizar tu archivo `.env` y agregar o eliminar cualquier nueva variable de entorno según sea necesario.
+
+---

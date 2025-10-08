@@ -1,0 +1,31 @@
+---
+title: 'Connector-Übersicht'
+sidebarTitle: 'Übersicht'
+description: 'Externe verknüpfte Konten wie Google Drive, Notion und OneDrive mit supermemory synchronisieren'
+---
+
+supermemory kann externe verknüpfte Konten wie Google Drive, Notion und OneDrive synchronisieren – weitere folgen in Kürze.
+
+<div id="the-flow">
+  ### Der Ablauf
+</div>
+
+1. Sende eine `POST`-Anfrage an `/v3/connections/{provider}`
+2. supermemory gibt einen `authLink` zurück, zu dem du die Nutzer weiterleiten kannst
+3. Der Nutzer wird zur Anmeldeseite des provider weitergeleitet
+4. Der Nutzer wird zurück zur `redirectUrl` deiner App weitergeleitet
+
+![Connectors Flow](/images/connectors-flow.png)
+
+<div id="sync-frequency">
+  ## Synchronisierungshäufigkeit
+</div>
+
+supermemory synchronisiert documents:
+
+- **Ein document wird geändert oder erstellt (Webhook empfangen)**
+    - Beachten Sie, dass nicht alle provider per Webhook synchronisiert werden (sofortige Synchronisierung, wo verfügbar)
+    - `Google-Drive`- und `Notion`-documents werden sofort synchronisiert
+- Alle **vier Stunden**
+- Bei **manueller Synchronisierung** (API-Aufruf)
+    - Sie können `/v3/connections/{provider}/sync` aufrufen, um documents manuell zu synchronisieren

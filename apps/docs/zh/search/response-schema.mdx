@@ -1,0 +1,269 @@
+---
+title: "响应架构"
+description: "适用于所有搜索端点的完整响应结构，含评分细节"
+---
+
+<div id="document-search-response-post-v3search">
+  ## Documents 搜索响应（POST `/v3/search`）
+</div>
+
+`client.search.documents()` 和 `client.search.execute()` 的响应：
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_abc123",
+      "title": "机器学习基础",
+      "type": "pdf",
+      "score": 0.89,
+      "chunks": [
+        {
+          "content": "机器学习是人工智能的一个子集...",
+          "score": 0.95,
+          "isRelevant": true
+        }
+      ],
+      "metadata": {
+        "category": "教育",
+        "author": "史密斯博士",
+        "difficulty": "入门级"
+      },
+      "createdAt": "2024-01-15T10:30:00Z",
+      "updatedAt": "2024-01-20T14:45:00Z"
+    }
+  ],
+  "timing": 187,
+  "total": 1
+}
+```
+
+
+<div id="document-result-fields">
+  ### 文档结果字段
+</div>
+
+<ResponseField name="documentId" type="string">
+  包含匹配 chunk（文档片段）的文档的唯一标识符。
+</ResponseField>
+
+<ResponseField name="title" type="string | null">
+  文档标题（如有）。对于没有标题的文档可能为 null。
+</ResponseField>
+
+<ResponseField name="type" type="string | null">
+  文档类型（例如："pdf"、"text"、"webpage"、"notion_doc"）。如果未指定，可能为 null。
+</ResponseField>
+
+<ResponseField name="score" type="number" range="0-1">
+  **文档整体相关性 score**。综合语义相似性、关键词匹配和 Metadata 相关性。
+
+  - **0.9-1.0**: 极其相关
+  - **0.7-0.9**: 高度相关
+  - **0.5-0.7**: 中度相关
+  - **0.3-0.5**: 略有相关
+  - **0.0-0.3**: 边际相关
+</ResponseField>
+
+<ResponseField name="chunks" type="Array<Chunk>">
+  来自该文档的匹配文本 chunk（文档片段）数组。每个 chunk 表示与你的查询匹配的文档部分。
+  <ResponseField name="chunks[].content" type="string">
+    匹配 chunk 的实际文本内容。除非 `onlyMatchingChunks=true`，否则可能包含来自相邻 chunk 的上下文。
+  </ResponseField>
+
+  <ResponseField name="chunks[].score" type="number" range="0-1">
+    **chunk 级相似性 score**。表示该特定 chunk 与你的查询的匹配程度。
+  </ResponseField>
+
+  <ResponseField name="chunks[].isRelevant" type="boolean">
+    该 chunk 是否通过了 `chunkThreshold`。`true` 表示该 chunk 高于阈值，`false` 表示仅为提供上下文而包含。
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="metadata" type="object | null">
+  文档的 Metadata（键值对）。结构取决于文档存储时携带的内容。
+
+  ```json
+  {
+    "category": "tutorial",
+    "language": "python",
+    "difficulty": "intermediate",
+    "tags": "web-development,backend"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  文档创建时的 ISO 8601 时间戳。
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  文档最后更新时的 ISO 8601 时间戳。
+</ResponseField>
+
+<ResponseField name="content" type="string | null" optional>
+  **完整文档内容**。仅当 `includeFullDocs=true` 时返回。可能非常大。
+
+  <Warning>
+    完整文档内容可能使响应非常庞大。仅在必要时使用，并配合合适的 limit。
+  </Warning>
+</ResponseField>
+
+<ResponseField name="summary" type="string | null" optional>
+  **AI 生成的文档摘要**。仅当 `includeSummary=true` 时返回。提供对文档的简要概览。
+</ResponseField>
+
+<div id="memory-search-response">
+  ## memory 搜索响应
+</div>
+
+来自 `client.search.memories()` 的响应：
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_xyz789",
+      "memory": "关于量子计算应用的完整memory内容...",
+      "similarity": 0.87,
+      "metadata": {
+        "category": "research",
+        "topic": "quantum-computing"
+      },
+      "updatedAt": "2024-01-18T09:15:00Z",
+      "version": 3,
+      "context": {
+        "parents": [
+          {
+            "memory": "关于量子理论基础的早期讨论...",
+            "relation": "extends",
+            "version": 2,
+            "updatedAt": "2024-01-17T16:30:00Z"
+          }
+        ],
+        "children": [
+          {
+            "memory": "关于量子算法的后续问题...",
+            "relation": "derives",
+            "version": 4,
+            "updatedAt": "2024-01-19T11:20:00Z"
+          }
+        ]
+      },
+      "documents": [
+        {
+          "id": "doc_quantum_paper",
+          "title": "量子计算应用",
+          "type": "pdf",
+          "createdAt": "2024-01-10T08:00:00Z"
+        }
+      ]
+    }
+  ],
+  "timing": 156,
+  "total": 1
+}
+```
+
+
+<div id="memory-result-fields">
+  ### memory 结果字段
+</div>
+
+<ResponseField name="id" type="string">
+  该 memory 条目的唯一标识符。
+</ResponseField>
+
+<ResponseField name="memory" type="string">
+  <strong>完整的 memory 内容</strong>。区别于返回 chunk（文档片段）的文档搜索，memory 搜索会返回完整的 memory 文本。
+</ResponseField>
+
+<ResponseField name="similarity" type="number" range="0-1">
+  查询与该 memory 之间的<strong>相似性 score</strong>。分数越高，匹配度越高。
+
+  - <strong>0.9-1.0</strong>：极其相似
+  - <strong>0.8-0.9</strong>：非常相似
+  - <strong>0.7-0.8</strong>：相似
+  - <strong>0.6-0.7</strong>：较为相似
+  - <strong>0.5-0.6</strong>：略微相似
+</ResponseField>
+
+<ResponseField name="metadata" type="object | null">
+  memory 的 Metadata（键值对）。结构取决于与该 memory 一同存储的内容。
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  该 memory 最近一次更新时的 ISO 8601 时间戳。
+</ResponseField>
+
+<ResponseField name="version" type="number | null" optional>
+  此 memory 条目的版本号。用于跟踪 memory 的演化与关联关系。
+</ResponseField>
+
+<ResponseField name="context" type="object" optional>
+  <strong>上下文 memory 关系</strong>。仅当 `include.relatedMemories=true` 时返回。
+
+  <ResponseField name="context.parents" type="Array<ContextMemory>" optional>
+    该 memory 所扩展或派生自的父级 memory 数组。
+  </ResponseField>
+
+  <ResponseField name="context.children" type="Array<ContextMemory>" optional>
+    从该 memory 扩展或派生出的子级 memory 数组。
+  </ResponseField>
+
+  ### 上下文 memory 结构
+
+  <ResponseField name="memory" type="string">
+    关联 memory 的内容。
+  </ResponseField>
+
+  <ResponseField name="relation" type="string">
+    关系类型：`"updates"`、`"extends"` 或 `"derives"`。
+
+    - <strong>updates</strong>：此 memory 更新/替换关联的 memory
+    - <strong>extends</strong>：此 memory 在关联 memory 基础上进行扩展
+    - <strong>derives</strong>：此 memory 派生自关联的 memory
+  </ResponseField>
+
+  <ResponseField name="version" type="number | null">
+    相对版本距离：
+    - <strong>负值</strong> 表示父级（-1 = 直接父级，-2 = 上上级）
+    - <strong>正值</strong> 表示子级（+1 = 直接子级，+2 = 下下级）
+  </ResponseField>
+
+  <ResponseField name="updatedAt" type="string">
+    关联 memory 最近一次更新的时间。
+  </ResponseField>
+
+  <ResponseField name="metadata" type="object | null" optional>
+    关联 memory 的 Metadata。
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="documents" type="Array<Document>" optional>
+  <strong>关联的 Documents</strong>。仅当 `include.documents=true` 时返回。
+
+  <ResponseField name="documents[].id" type="string">
+    Document 标识符。
+  </ResponseField>
+
+  <ResponseField name="documents[].title" type="string">
+    Document 标题。
+  </ResponseField>
+
+  <ResponseField name="documents[].type" type="string">
+    Document 类型。
+  </ResponseField>
+
+  <ResponseField name="documents[].metadata" type="object">
+    Document 的 Metadata。
+  </ResponseField>
+
+  <ResponseField name="documents[].createdAt" type="string">
+    Document 创建时间戳。
+  </ResponseField>
+
+  <ResponseField name="documents[].updatedAt" type="string">
+    Document 更新时间戳。
+  </ResponseField>
+</ResponseField>

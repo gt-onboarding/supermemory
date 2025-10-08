@@ -1,0 +1,220 @@
+---
+title: "コネクタのトラブルシューティング"
+description: "Google Drive、Notion、OneDrive のコネクタでよくある問題を診断して解決する"
+---
+
+認証、同期、権限に関するコネクタの一般的な問題を解決するためのクイックガイドです。
+
+<div id="quick-health-check">
+  ## クイックヘルスチェック
+</div>
+
+連携（コネクタ）が正しく動作しているか確認します：
+
+<CodeGroup>
+
+```typescript TypeScript
+const connections = await client.connections.list({
+  containerTags: ['user-123']
+});
+
+connections.forEach(conn => {
+  console.log(`${conn.provider}: ${conn.email} - Connected ${conn.createdAt}`);
+});
+
+// 同期が滞っているdocumentsをチェック
+const documents = await client.connections.listDocuments('notion', {
+  containerTags: ['user-123']
+});
+
+const failed = documents.filter(doc => doc.status === 'failed');
+if (failed.length > 0) {
+  console.log(`⚠️ ${failed.length} documents failed to sync`);
+}
+```
+
+```python Python
+connections = client.connections.list(container_tags=['user-123'])
+
+for conn in connections:
+    print(f"{conn.provider}: {conn.email} - Connected {conn.created_at}")
+
+# 同期が滞っているdocumentsをチェック
+documents = client.connections.list_documents(
+    'notion',
+    container_tags=['user-123']
+)
+
+failed = [doc for doc in documents if doc.status == 'failed']
+if failed:
+    print(f"⚠️ {len(failed)} documents failed to sync")
+```
+
+```bash cURL
+# すべての連携を一覧表示
+curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"]}'
+
+# documents の status を確認
+curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"], "source": "notion"}'
+```
+
+</CodeGroup>
+
+<div id="common-issues">
+  ## よくある課題
+</div>
+
+<div id="oauth-callback-fails">
+  ### OAuth コールバックが失敗する
+</div>
+
+**問題:** ユーザーが権限を許可した後に「Invalid redirect URI」エラーが表示される
+
+**解決策:** リダイレクト URL が、OAuth アプリで設定されている内容と完全に一致していることを必ず確認してください:
+
+```typescript
+// 正しい - OAuthアプリ設定と完全一致
+const connection = await client.connections.create('notion', {
+  redirectUrl: 'https://yourapp.com/auth/notion/callback',
+  containerTags: ['user-123']
+});
+
+// 間違い - URLが一致しない
+// redirectUrl: 'https://yourapp.com/callback'
+```
+
+**予防策:**
+
+* 本番環境のURLはHTTPSを使用する
+* OAuthアプリの設定から正確なurlをコピーする
+* まず開発環境でフローをテストする
+
+
+<div id="documents-not-syncing">
+  ### documents が同期されない
+</div>
+
+**問題:** 30分以上「queued」または「extracting」status のまま進行しない
+
+**解決策:** 手動で同期を実行する：
+
+```typescript
+// スタックしたdocumentsの強制同期
+await client.connections.import('notion', {
+  containerTags: ['user-123']
+});
+```
+
+documents が継続的に失敗する場合:
+
+* ファイルが 50MB を超えていないか確認する（タイムアウトの可能性あり）
+* documents にアクセスする権限があるか確認する
+* 対応しているドキュメントタイプか確認する
+
+
+<div id="permission-denied-errors">
+  ### 権限拒否エラー
+</div>
+
+**問題:** 一部のdocumentsで「permission denied」と表示される、または同期されない
+
+**解決策:** 適切な権限を付与して再認証する:
+
+```typescript
+// 連携を削除して再作成
+await client.connections.deleteByProvider('google-drive', {
+  containerTags: ['user-123']
+});
+
+const newConnection = await client.connections.create('google-drive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['user-123']
+});
+
+// ユーザーは再認証が必要
+window.location.href = newConnection.authLink;
+```
+
+
+<div id="sync-takes-too-long">
+  ### 同期に時間がかかりすぎる
+</div>
+
+**問題:** 数百件のdocumentsの同期に数時間かかる
+
+**解決策:** 適切なドキュメントの上限値を設定する:
+
+```typescript
+const connection = await client.connections.create('onedrive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['user-123'],
+  documentLimit: 500  // より少ない数のdocumentsから開始
+});
+```
+
+
+<div id="provider-specific-issues">
+  ## プロバイダ特有の問題
+</div>
+
+<div id="google-drive">
+  ### Google Drive
+</div>
+
+**共有ドライブに関する問題**
+
+共有ドライブには特別な権限が必要です。次の点を確認してください:
+
+- ユーザーが共有ドライブへアクセスできること
+- OAuth アプリに drive.readonly スコープが付与されていること
+- ユーザーが共有ドライブのメンバーであること
+
+<div id="notion">
+  ### Notion
+</div>
+
+**データベースが同期されない**
+
+Notion のデータベースには明示的な許可が必要です。データベースが同期されない場合は：
+
+1. Notion のワークスペース設定を開く
+2. 「Connections」で自分の連携を見つける
+3. その連携をクリックする
+4. 共有するページ／データベースを選択する
+5. アクセスを付与したら再同期する
+
+**ワークスペースへのアクセス**
+
+ワークスペース全体にアクセスするには、ワークスペース管理者が次を行う必要があります：
+
+1. 連携を承認する
+2. すべてのページへのアクセスを付与する
+3. 「Read content」権限を有効にする
+
+<div id="onedrive">
+  ### OneDrive
+</div>
+
+**Business アカウントと Personal アカウントの違い**
+
+Business アカウントには追加の制限が設けられている場合があります:
+
+- 管理者の同意が必要となる場合がある
+- 一部の SharePoint サイトへのアクセスが制限されている場合がある
+- コンプライアンスポリシーにより特定のファイルがブロックされる場合がある
+
+<div id="best-practices">
+  ## ベストプラクティス
+</div>
+
+1. **適切な documents の上限を設定する** - まずは 500～1000 documents から始める
+2. **説明的なコンテナタグを使用する** - デバッグが容易になる
+3. **失敗した documents を監視する** - 週に一度、同期の問題を確認する
+4. **レート制限を適切に処理する** - 指数バックオフを実装する
+5. **開発環境で OAuth をテストする** - 本番前にリダイレクト url が正しく動作することを確認する

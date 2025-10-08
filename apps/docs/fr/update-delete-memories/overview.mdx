@@ -1,0 +1,532 @@
+---
+title: "Mettre à jour et supprimer des memories"
+description: "Mettre à jour et supprimer des memories en toute sécurité avec des stratégies d’upsert et l’idempotence"
+icon: "delete"
+---
+
+Choisissez entre des mises à jour directes, des upserts idempotents, des suppressions unitaires et de puissantes opérations par lot.
+
+<div id="direct-updates">
+  ## Mises à jour directes
+</div>
+
+Mettez à jour des memories existantes par leur ID lorsque vous connaissez la memory précise que vous souhaitez modifier. Les modifications déclenchent un retraitement à travers l’ensemble du pipeline.
+
+<CodeGroup>
+
+```typescript Typescript
+import Supermemory from 'supermemory';
+
+const client = new Supermemory({
+  apiKey: process.env.SUPERMEMORY_API_KEY!
+});
+
+// Update by memory ID
+const updated = await client.memories.update('memory_id_123', {
+  content: 'Updated content here',
+  metadata: { version: 2, updated: true }
+});
+
+console.log(updated.status); // "queued" for reprocessing
+console.log(updated.id); // "memory_id_123"
+```
+
+```python Python
+from supermemory import Supermemory
+import os
+
+client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+# Update by memory ID
+updated = client.memories.update(
+    'memory_id_123',
+    content='Updated content here',
+    metadata={'version': 2, 'updated': True}
+)
+
+print(f"Status: {updated.status}")  # "queued" for reprocessing
+print(f"ID: {updated.id}")  # "memory_id_123"
+```
+
+```bash cURL
+curl -X PATCH "https://api.supermemory.ai/v3/documents/memory_id_123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Updated content here",
+    "metadata": {"version": 2, "updated": true}
+  }'
+```
+
+</CodeGroup>
+
+<div id="upserts-using-customid">
+  ## Upserts avec customId
+</div>
+
+Utilisez `customId` pour des opérations idempotentes : avec le même `customId`, `add()` met à jour une memory existante au lieu de créer des doublons.
+
+<CodeGroup>
+
+```typescript Typescript
+import Supermemory from 'supermemory';
+
+const client = new Supermemory({
+  apiKey: process.env.SUPERMEMORY_API_KEY!
+});
+
+const customId = 'user-note-001';
+
+// Premier appel : crée la memory
+const created = await client.memories.add({
+  content: 'Initial content',
+  customId: customId,
+  metadata: { version: 1 }
+});
+
+console.log('Memory créée :', created.id);
+
+// Second appel avec le même customId : met à jour l’existante
+const updated = await client.memories.add({
+  content: 'Updated content',
+  customId: customId,         // Même customId = upsert
+  metadata: { version: 2 }
+});
+```
+
+```python Python
+from supermemory import Supermemory
+import os
+
+client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+custom_id = 'user-note-001'
+
+# Premier appel : crée la memory
+created = client.memories.add(
+    content='Initial content',
+    custom_id=custom_id,
+    metadata={'version': 1}
+)
+
+print(f'Memory créée : {created.id}')
+
+# Second appel avec le même customId : met à jour l’existante
+updated = client.memories.add(
+    content='Updated content',
+    custom_id=custom_id,     # Même customId = upsert
+    metadata={'version': 2}
+)
+
+print(f'Memory mise à jour : {updated.id}')
+print(f'Même memory ? {created.id == updated.id}')  # True
+```
+
+```bash cURL
+# Premier appel - crée la memory
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Initial content",
+    "customId": "user-note-001",
+    "metadata": {"version": 1}
+  }'
+
+# Réponse : {"id": "mem_abc123", "status": "queued", "customId": "user-note-001"}
+
+# Second appel - met à jour l’existante (même customId)
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: "application/json" \
+  -d '{
+    "content": "Updated content",
+    "customId": "user-note-001",
+    "metadata": {"version": 2}
+  }'
+
+# Réponse : {"id": "mem_abc123", "status": "queued", "customId": "user-note-001"}
+# Remarque : même ID renvoyé — la memory a été mise à jour, pas recréée
+```
+
+</CodeGroup>
+
+<Note>
+Le `customId` permet l’idempotence sur tous les endpoints. Le `memoryId` ne prend pas en charge l’idempotence, seul le `customId` le permet.
+</Note>
+
+<div id="single-delete">
+  ## Suppression individuelle
+</div>
+
+Supprimez des memories individuelles par leur ID. Il s’agit d’une suppression définitive sans possibilité de récupération.
+
+<CodeGroup>
+
+```typescript Typescript
+// Suppression définitive - supprime la memory de façon permanente
+await client.memories.delete('memory_id_123');
+console.log('Memory supprimée avec succès');
+```
+
+```python Python
+# Suppression définitive - supprime la memory de façon permanente
+client.memories.delete('memory_id_123')
+print('Memory supprimée avec succès')
+
+# Gestion des erreurs pour la suppression individuelle
+try:
+    client.memories.delete('memory_id_123')
+    print('Suppression réussie')
+except NotFoundError:
+    print('Memory introuvable ou déjà supprimée')
+except AuthenticationError:
+    print('Échec de l’authentification')
+except Exception as e:
+    print(f'Échec de la suppression : {e}')
+```
+
+```bash cURL
+curl -X DELETE "https://api.supermemory.ai/v3/documents/memory_id_123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+# Réponse : 204 No Content (succès)
+# Réponse : 404 Not Found (la memory n’existe pas)
+```
+
+</CodeGroup>
+
+<div id="bulk-delete-by-ids">
+  ## Suppression en lot par ID
+</div>
+
+Supprimez plusieurs memories en une seule fois en fournissant un tableau d’ID de memory. Maximum de 100 ID par requête.
+
+<CodeGroup>
+
+```typescript Typescript
+// Suppression en lot par ID de memory
+const result = await client.memories.bulkDelete({
+  ids: [
+    'memory_id_1',
+    'memory_id_2',
+    'memory_id_3',
+    'non_existent_id'  // Ceci sera signalé dans errors
+  ]
+});
+
+console.log('Résultat de la suppression en lot :', result);
+// Sortie : {
+//   success: true,
+//   deletedCount: 3,
+//   errors: [
+//     { id: "non_existent_id", error: "Memory not found" }
+//   ]
+// }
+```
+
+```python Python
+# Suppression en lot par ID de memory
+result = client.memories.bulk_delete(
+    ids=[
+        'memory_id_1',
+        'memory_id_2',
+        'memory_id_3',
+        'non_existent_id'  # Ceci sera signalé dans errors
+    ]
+)
+
+print(f'Résultat de la suppression en lot : {result}')
+# Sortie : {
+#   'success': True,
+#   'deletedCount': 3,
+#   'errors': [
+#     {'id': 'non_existent_id', 'error': 'Memory not found'}
+#   ]
+# }
+```
+
+```bash cURL
+curl -X DELETE "https://api.supermemory.ai/v3/documents/bulk" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ids": [
+      "memory_id_1",
+      "memory_id_2",
+      "memory_id_3",
+      "non_existent_id"
+    ]
+  }'
+
+# Réponse : {
+#   "success": true,
+#   "deletedCount": 3,
+#   "errors": [
+#     {"id": "non_existent_id", "error": "Memory not found"}
+#   ]
+# }
+```
+
+</CodeGroup>
+
+<div id="bulk-delete-by-container-tags">
+  ## Suppression en masse par étiquettes de conteneur
+</div>
+
+Supprimez toutes les memories associées à des étiquettes de conteneur spécifiques. Utile pour nettoyer des projets entiers ou des données utilisateur.
+
+<CodeGroup>
+
+```typescript Typescript
+// Supprimer toutes les memories dans des étiquettes de conteneur spécifiques
+const result = await client.memories.bulkDelete({
+  containerTags: ['user-123', 'project-old', 'archived-content']
+});
+
+console.log('Résultat de la suppression en masse par étiquettes :', result);
+// Sortie : {
+//   success: true,
+//   deletedCount: 45,
+//   containerTags: ["user-123", "project-old", "archived-content"]
+// }
+```
+
+```python Python
+# Supprimer toutes les memories dans des étiquettes de conteneur spécifiques
+result = client.memories.bulk_delete(
+    container_tags=['user-123', 'project-old', 'archived-content']
+)
+
+print(f"Résultat de la suppression en masse par étiquettes : {result}")
+# Sortie : {
+#   'success': True,
+#   'deletedCount': 45,
+#   'containerTags': ['user-123', 'project-old', 'archived-content']
+# }
+```
+
+```bash cURL
+curl -X DELETE "https://api.supermemory.ai/v3/documents/bulk" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "containerTags": ["user-123", "project-old", "archived-content"]
+  }'
+
+# Réponse : {
+#   "success": true,
+#   "deletedCount": 45,
+#   "containerTags": ["user-123", "project-old", "archived-content"]
+# }
+```
+
+</CodeGroup>
+
+<div id="advanced-patterns">
+  ## Schémas avancés
+</div>
+
+<div id="soft-delete-implementation">
+  ### Implémentation de la suppression logique
+</div>
+
+Pour les applications nécessitant des pistes d’audit ou des mécanismes de récupération, implémentez un modèle de suppression logique à l’aide des metadata :
+
+<CodeGroup>
+
+```typescript Typescript
+// Modèle de suppression logique utilisant les metadata
+await client.memories.update('memory_id', {
+  metadata: {
+    deleted: true,
+    deletedAt: new Date().toISOString(),
+    deletedBy: 'user_123'
+  }
+});
+
+// Exclure les memories supprimées des recherches
+const activeMemories = await client.memories.list({
+  filters: JSON.stringify({
+    AND: [
+      { key: "deleted", value: "true", negate: true }
+    ]
+  })
+});
+
+console.log('Memories actives :', activeMemories.results.length);
+```
+
+```python Python
+from datetime import datetime
+import json
+
+# Modèle de suppression logique utilisant les metadata
+client.memories.update('memory_id', {
+    'metadata': {
+        'deleted': True,
+        'deletedAt': datetime.now().isoformat(),
+        'deletedBy': 'user_123'
+    }
+})
+
+# Exclure les memories supprimées des résultats
+active_memories = client.memories.list(
+    filters=json.dumps({
+        "AND": [
+            {"key": "deleted", "value": "true", "negate": True}
+        ]
+    })
+)
+
+print(f'Memories actives: {len(active_memories.results)}')
+```
+
+```bash cURL
+# Suppression logique via les metadata
+curl -X PATCH "https://api.supermemory.ai/v3/documents/memory_id" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "metadata": {
+      "deleted": true,
+      "deletedAt": "2024-01-15T10:30:00Z",
+      "deletedBy": "user_123"
+    }
+  }'
+
+# Réponse : {"id": "memory_id", "status": "queued"}
+```
+
+</CodeGroup>
+
+<div id="batch-processing-for-large-operations">
+  ### Traitement par lots pour les opérations de grande envergure
+</div>
+
+<CodeGroup>
+
+```typescript Typescript
+// Supprimer en toute sécurité un grand nombre de memory par lots
+async function batchDeleteMemories(memoryIds: string[], batchSize = 100) {
+  const results = [];
+
+  for (let i = 0; i < memoryIds.length; i += batchSize) {
+    const batch = memoryIds.slice(i, i + batchSize);
+
+    console.log(`Traitement du lot ${Math.floor(i/batchSize) + 1} sur ${Math.ceil(memoryIds.length/batchSize)}`);
+
+    try {
+      const result = await client.memories.bulkDelete({ ids: batch });
+      results.push(result);
+
+      // Courte pause entre les lots pour éviter la limitation de débit
+      if (i + batchSize < memoryIds.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    } catch (error) {
+      console.error(`Échec du lot ${Math.floor(i/batchSize) + 1} :`, error);
+      results.push({ success: false, error: error.message, batch });
+    }
+  }
+
+  // Agréger les résultats
+  const totalDeleted = results
+    .filter(r => r.success)
+    .reduce((sum, r) => sum + (r.deletedCount || 0), 0);
+
+  console.log(`Total supprimé : ${totalDeleted} sur ${memoryIds.length}`);
+  return { totalDeleted, results };
+}
+```
+
+```python Python
+import time
+import math
+
+def batch_delete_memories(memory_ids, batch_size=100):
+    """Supprimer en toute sécurité un grand nombre de memory par lots"""
+    results = []
+
+    for i in range(0, len(memory_ids), batch_size):
+        batch = memory_ids[i:i + batch_size]
+        batch_num = i // batch_size + 1
+        total_batches = math.ceil(len(memory_ids) / batch_size)
+
+        print(f'Traitement du lot {batch_num} sur {total_batches}')
+
+        try:
+            result = client.memories.bulk_delete(ids=batch)
+            results.append(result)
+
+            # Courte pause entre les lots pour éviter la limitation de débit
+            if i + batch_size < len(memory_ids):
+                time.sleep(1)
+        except Exception as error:
+            print(f'Échec du lot {batch_num} : {error}')
+            results.append({'success': False, 'error': str(error), 'batch': batch})
+
+    # Agréger les résultats
+    total_deleted = sum(
+        r.get('deletedCount', 0) for r in results if r.get('success')
+    )
+
+    print(f'Total supprimé : {total_deleted} sur {len(memory_ids)}')
+    return {'totalDeleted': total_deleted, 'results': results}
+```
+
+```bash cURL
+# Exemple de script de traitement par lots
+#!/bin/bash
+
+MEMORY_IDS=("id1" "id2" "id3")  # Votre tableau d’ID de memory
+BATCH_SIZE=100
+TOTAL_DELETED=0
+
+# Traitement par lots
+for ((i=0; i<${#MEMORY_IDS[@]}; i+=BATCH_SIZE)); do
+    batch=("${MEMORY_IDS[@]:i:BATCH_SIZE}")
+    batch_json=$(printf '%s\n' "${batch[@]}" | jq -R . | jq -s .)
+
+    echo "Traitement du lot $((i/BATCH_SIZE + 1))"
+
+    response=$(curl -s -X DELETE \
+      "https://api.supermemory.ai/v3/documents/bulk" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d "{\"ids\": $batch_json}")
+
+    deleted_count=$(echo "$response" | jq -r '.deletedCount // 0')
+    TOTAL_DELETED=$((TOTAL_DELETED + deleted_count))
+
+    echo "Lot supprimé : $deleted_count memory"
+    sleep 1  # Protection contre la limitation de débit
+done
+
+echo "Total supprimé : $TOTAL_DELETED memory"
+```
+
+</CodeGroup>
+
+<div id="best-practices">
+  ## Bonnes pratiques
+</div>
+
+<div id="update-operations">
+  ### Opérations de mise à jour
+</div>
+
+1. **Utilisez customId pour des mises à jour idempotentes** - Évite les memory en double et permet des réessais en toute sécurité
+2. **Surveillez le status de traitement** - Les mises à jour déclenchent un pipeline de retraitement complet
+3. **Gérez la metadata avec soin** - Les mises à jour remplacent les clés de metadata spécifiées
+4. **Mettez en place une gestion des erreurs appropriée** - Une memory peut être supprimée entre deux opérations
+
+<div id="delete-operations">
+  ### Opérations de suppression
+</div>
+
+1. **La suppression définitive est irréversible** - Aucun mécanisme de restauration n’existe
+2. **Utilisez efficacement les suppressions en lot** - Maximum 100 id par requête de suppression en lot
+3. **Envisagez un modèle de suppression logique (soft delete)** - Utilisez des indicateurs de Metadata pour permettre une restauration
+4. **Traitez les opérations volumineuses par lots** - Évitez le rate limiting grâce à un bon découpage en lots
+5. **Nettoyez l’état de l’application** - Mettez à jour votre interface/cache après les suppressions

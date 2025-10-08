@@ -1,0 +1,458 @@
+---
+title: "Connecteur Google Drive"
+description: "Connectez Google Drive pour synchroniser des documents avec votre base de connaissances Supermemory"
+icon: "google-drive"
+---
+
+Connectez Google Drive pour synchroniser des documents avec votre base de connaissances Supermemory, avec authentification OAuth et prise en charge des applications personnalisées.
+
+<div id="quick-setup">
+  ## Mise en route rapide
+</div>
+
+<div id="1-create-google-drive-connection">
+  ### 1. Créer une intégration Google Drive
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const connection = await client.connections.create('google-drive', {
+      redirectUrl: 'https://yourapp.com/auth/google-drive/callback',
+      containerTags: ['user-123', 'gdrive-sync'],
+      documentLimit: 3000,
+      metadata: {
+        source: 'google-drive',
+        department: 'engineering'
+      }
+    });
+
+    // Rediriger l’utilisateur vers Google OAuth
+    window.location.href = connection.authLink;
+    console.log('Expiration de l’authentification dans :', connection.expiresIn);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    connection = client.connections.create(
+        'google-drive',
+        redirect_url='https://yourapp.com/auth/google-drive/callback',
+        container_tags=['user-123', 'gdrive-sync'],
+        document_limit=3000,
+        metadata={
+            'source': 'google-drive',
+            'department': 'engineering'
+        }
+    )
+
+    # Rediriger l’utilisateur vers Google OAuth
+    print(f'Redirection vers : {connection.auth_link}')
+    print(f'Expiration dans : {connection.expires_in}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/connections/google-drive" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "redirectUrl": "https://yourapp.com/auth/google-drive/callback",
+        "containerTags": ["user-123", "gdrive-sync"],
+        "documentLimit": 3000,
+        "metadata": {
+          "source": "google-drive",
+          "department": "engineering"
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="2-handle-oauth-callback">
+  ### 2. Gérer le callback OAuth
+</div>
+
+Après que l’utilisateur a accordé les autorisations, Google redirige vers votre url de callback. L’intégration est automatiquement établie.
+
+<div id="3-check-connection-status">
+  ### 3. Vérifier l’état de l’intégration
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Récupérer les détails de l’intégration
+    const connection = await client.connections.getByTags('google-drive', {
+      containerTags: ['user-123', 'gdrive-sync']
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Récupérer les détails de l’intégration
+    connection = client.connections.get_by_tags(
+        'google-drive',
+        container_tags=['user-123', 'gdrive-sync']
+    )
+
+    # Lister les documents synchronisés
+    documents = client.connections.list_documents(
+        'google-drive',
+        container_tags=['user-123', 'gdrive-sync']
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Récupérer les intégrations par provider et étiquettes
+    curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "gdrive-sync"],
+        "provider": "google-drive"
+      }'
+
+    # Lister les documents synchronisés
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "gdrive-sync"],
+        "source": "google-drive"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="supported-document-types">
+  ## Types de documents pris en charge
+</div>
+
+Selon les définitions de types de l’API, les documents Google Drive sont identifiés par les types suivants :
+
+- `google_doc` - Google Docs
+- `google_slide` - Google Slides
+- `google_sheet` - Google Sheets
+
+<div id="connection-management">
+  ## Gestion des intégrations
+</div>
+
+<div id="list-all-connections">
+  ### Lister toutes les intégrations
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Lister toutes les intégrations pour des container tags spécifiques
+    const connections = await client.connections.list({
+      containerTags: ['user-123']
+    });
+
+    connections.forEach(conn => {
+      console.log(`Fournisseur : ${conn.provider}`);
+      console.log(`ID : ${conn.id}`);
+      console.log(`Email : ${conn.email}`);
+      console.log(`Créée le : ${conn.createdAt}`);
+      console.log(`Limite de documents : ${conn.documentLimit}`);
+      console.log('---');
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Lister toutes les intégrations pour des container tags spécifiques
+    connections = client.connections.list(
+        container_tags=['user-123']
+    )
+
+    for conn in connections:
+        print(f'Fournisseur : {conn.provider}')
+        print(f'ID : {conn.id}')
+        print(f'Email : {conn.email}')
+        print(f'Créée le : {conn.created_at}')
+        print(f'Limite de documents : {conn.document_limit}')
+        print('---')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Lister toutes les intégrations pour des container tags spécifiques
+    curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123"]
+      }'
+
+    # Exemple de réponse :
+    # [
+    #   {
+    #     "id": "conn_gd123",
+    #     "provider": "google-drive",
+    #     "email": "user@example.com",
+    #     "createdAt": "2024-01-15T10:30:00.000Z",
+    #     "documentLimit": 3000
+    #   }
+    # ]
+    ```
+  </Tab>
+</Tabs>
+
+<div id="delete-connection">
+  ### Supprimer une intégration
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Supprimer par ID d’intégration
+    const result = await client.connections.deleteByID('connection_id_123');
+    console.log('Intégration supprimée :', result.id);
+
+    // Supprimer par provider et par container tags
+    const providerResult = await client.connections.deleteByProvider('google-drive', {
+      containerTags: ['user-123']
+    });
+    console.log('Intégration du provider supprimée :', providerResult.id);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Supprimer par ID d’intégration
+    result = client.connections.delete_by_id('connection_id_123')
+    print(f'Intégration supprimée : {result.id}')
+
+    # Supprimer par provider et par container tags
+    provider_result = client.connections.delete_by_provider(
+        'google-drive',
+        container_tags=['user-123']
+    )
+    print(f'Intégration du provider supprimée : {provider_result.id}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Supprimer par ID d’intégration
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+    # Réponse : {"id": "connection_id_123", "provider": "google-drive"}
+
+    # Supprimer par provider et par container tags
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/google-drive" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123"]
+      }'
+
+    # Réponse : {"id": "conn_gd123", "provider": "google-drive"}
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+La suppression d’une intégration :
+- Arrête toutes les synchronisations futures depuis Google Drive
+- Révoque l’autorisation OAuth
+- Conserve les documents déjà synchronisés dans Supermemory (ils ne seront pas supprimés)
+</Note>
+
+<div id="manual-sync">
+  ### Synchronisation manuelle
+</div>
+
+Lancer une synchronisation manuelle :
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Lancer la synchronisation pour les intégrations Google Drive
+    await client.connections.import('google-drive');
+
+    // Lancer la synchronisation pour des container tags spécifiques
+    await client.connections.import('google-drive', {
+      containerTags: ['user-123']
+    });
+
+    console.log('Synchronisation manuelle démarrée');
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Lancer la synchronisation pour les intégrations Google Drive
+    client.connections.import_('google-drive')
+
+    # Lancer la synchronisation pour des container tags spécifiques
+    client.connections.import_(
+        'google-drive',
+        container_tags=['user-123']
+    )
+
+    print('Synchronisation manuelle démarrée')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Lancer la synchronisation pour toutes les intégrations Google Drive
+    curl -X POST "https://api.supermemory.ai/v3/connections/google-drive/import" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+    # Lancer la synchronisation pour des container tags spécifiques
+    curl -X POST "https://api.supermemory.ai/v3/connections/google-drive/import" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123"]
+      }'
+
+    # Réponse : {"message": "Synchronisation manuelle démarrée", "provider": "google-drive"}
+    ```
+  </Tab>
+</Tabs>
+
+<div id="advanced-configuration">
+  ## Configuration avancée
+</div>
+
+<div id="custom-oauth-application">
+  ### Application OAuth personnalisée
+</div>
+
+Configurez votre propre application Google OAuth à l’aide de l’API de configuration :
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Met à jour la configuration de l’organisation avec votre application Google OAuth
+    await client.settings.update({
+      googleDriveCustomKeyEnabled: true,
+      googleDriveClientId: 'your-google-client-id.googleusercontent.com',
+      googleDriveClientSecret: 'your-google-client-secret'
+    });
+
+    // Récupère la configuration actuelle
+    const settings = await client.settings.get();
+    console.log('Clé personnalisée Google Drive activée :', settings.googleDriveCustomKeyEnabled);
+    console.log('ID client configuré :', !!settings.googleDriveClientId);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Met à jour la configuration de l’organisation avec votre application Google OAuth
+    client.settings.update(
+        google_drive_custom_key_enabled=True,
+        google_drive_client_id='your-google-client-id.googleusercontent.com',
+        google_drive_client_secret='your-google-client-secret'
+    )
+
+    # Récupère la configuration actuelle
+    settings = client.settings.get()
+    print(f'Clé personnalisée Google Drive activée : {settings.google_drive_custom_key_enabled}')
+    print(f'ID client configuré : {bool(settings.google_drive_client_id)}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Met à jour la configuration de l’organisation
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "googleDriveCustomKeyEnabled": true,
+        "googleDriveClientId": "your-google-client-id.googleusercontent.com",
+        "googleDriveClientSecret": "your-google-client-secret"
+      }'
+
+    # Récupère la configuration actuelle
+    curl -X GET "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+    ```
+  </Tab>
+</Tabs>
+
+<div id="document-filtering">
+  ### Filtrage des documents
+</div>
+
+Configurez le filtrage à l’aide de l’API des paramètres :
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    await client.settings.update({
+      shouldLLMFilter: true,
+      filterPrompt: "Only sync important business documents",
+      includeItems: {
+        // Your include patterns
+      },
+      excludeItems: {
+        // Your exclude patterns
+      }
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    client.settings.update(
+        should_llm_filter=True,
+        filter_prompt="Only sync important business documents",
+        include_items={
+            # Your include patterns
+        },
+        exclude_items={
+            # Your exclude patterns
+        }
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Configure document filtering
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "filterPrompt": "Only sync important business documents",
+        "includeItems": {
+          "patterns": ["*.pdf", "*.docx"],
+          "folders": ["Important Documents", "Projects"]
+        },
+        "excludeItems": {
+          "patterns": ["*.tmp", "*.backup"],
+          "folders": ["Archive", "Trash"]
+        }
+      }'
+
+    # Response: {
+    #   "shouldLLMFilter": true,
+    #   "filterPrompt": "Only sync important business documents",
+    #   "includeItems": {...},
+    #   "excludeItems": {...}
+    # }
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+**Notes importantes :**
+- Les jetons OAuth peuvent expirer : vérifiez le champ `expiresAt`
+- Le traitement des documents est asynchrone
+- Utilisez des balises de conteneur de façon cohérente pour le filtrage
+- Surveillez le statut des documents pour détecter les synchronisations échouées
+</Warning>

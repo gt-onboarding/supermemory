@@ -1,0 +1,31 @@
+---
+title: 'コネクタ概要'
+sidebarTitle: '概要'
+description: 'Google Drive、Notion、OneDrive などの外部連携を supermemory と同期'
+---
+
+supermemory は、Google Drive、Notion、OneDrive などの外部連携と同期できます。まもなくさらに対応が追加されます。
+
+<div id="the-flow">
+  ### フロー
+</div>
+
+1. `/v3/connections/{provider}` に `POST` リクエストを送信する
+2. supermemory から、ユーザーをリダイレクトするための `authLink` が返される
+3. ユーザーはプロバイダのログインページにリダイレクトされる
+4. 認証後、ユーザーはあなたのアプリの `redirectUrl` にリダイレクトされる
+
+![Connectors Flow](/images/connectors-flow.png)
+
+<div id="sync-frequency">
+  ## 同期頻度
+</div>
+
+supermemory は documents を次のタイミングで同期します:
+
+- **document が更新または作成されたとき（Webhook 受信時）**
+    - すべてのプロバイダが webhook で同期されるわけではありません（現時点では即時同期の対象外のものがあります）
+    - `Google-Drive` と `Notion` の documents は即時に同期されます
+- **4 時間**ごと
+- **手動同期**（API 呼び出し）時
+    - documents を手動で同期するには、`/v3/connections/{provider}/sync` を呼び出します

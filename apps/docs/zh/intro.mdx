@@ -1,0 +1,71 @@
+---
+title: "概览 — 什么是 Supermemory？"
+sidebarTitle: "概览"
+description: "通过三种集成方式为你的 LLM（大型语言模型）添加长期 memory：AI SDK（人工智能软件开发工具包）、Memory API，或 Memory Router。"
+---
+
+Supermemory 为你的 LLM（大型语言模型）提供长期 memory。它不再只是无状态的文本生成，而是能够从你的文件、聊天和工具中检索并回忆正确的事实，让响应始终一致、具备上下文且更个性化。
+
+<div id="how-does-it-work-at-a-glance">
+  ## 它如何工作？（一目了然）
+</div>
+
+![](/images/overview-image.png)
+
+* 你将文本、文件和聊天内容发送给 Supermemory。
+* Supermemory 会[智能建立索引](/zh/how-it-works)，并在实体（如用户、文档、项目、组织）之上构建语义理解图谱。
+* 在查询时，我们仅提取最相关的上下文并传递给你的模型。
+
+我们提供三种方式将 memory 添加到你的 LLM（大型语言模型）中：
+
+<div id="memory-api-full-control">
+  ### Memory API — 完全掌控
+</div>
+
+* 写入文本、文件与聊天（支持多模态）；搜索与筛选；结果重排序。
+* 仿照人类大脑的工作机制，具备智能遗忘、衰减、近期效应、上下文重写等能力。
+* 提供适用于 Node 与 Python 的 API（应用程序编程接口）与 SDK（软件开发工具包）；面向生产环境的可扩展性而设计。
+
+<Info>
+  你可以在此处查看 Memory API 的完整 API 文档：[here](/zh/api-reference/manage-memories/add-memory)。
+</Info>
+
+<div id="ai-sdk">
+  ### AI SDK（人工智能软件开发工具包）
+</div>
+
+* 通过 `@supermemory/tools/ai-sdk` 与 Vercel AI SDK 原生集成
+* 为智能体提供的 Memory Tools，或用于自动提供上下文的 Infinite Chat
+* 兼容 streamText、generateText 以及所有 AI SDK 功能
+
+```typescript
+import { streamText } from "ai"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const result = await streamText({
+  model: anthropic("claude-3"),
+  tools: supermemoryTools("YOUR_KEY")
+})
+```
+
+<Info>
+  对于使用 Vercel AI SDK 的新项目，建议采用 AI SDK。Router 更适合现有的**聊天应用**，而 Memory API 则作为具备精细化控制的**完整 memory 数据库**更为合适。
+</Info>
+
+<div id="memory-router-drop-in-proxy-with-minimal-code">
+  ### Memory Router — 即插即用代理，代码改动最少
+</div>
+
+* 保留你现有的 LLM（大型语言模型）客户端；只需在基础 url 后追加 `api.supermemory.ai/v3/`。
+* 自动分块与 token 管理，贴合你的上下文窗口。
+* 在现有 LLM 请求之上仅带来极小的延迟。
+
+<Note>
+  在使用相同用户 id 时，这三种方式共享**同一 memory 池**。你可以按需灵活混用。
+</Note>
+
+<div id="next-steps">
+  ## 下一步
+</div>
+
+前往 [**Router vs API**](/zh/routervsapi) 指南，了解二者的技术差异，并通过一个简单的 4 个问题流程选择最适合你的方案。

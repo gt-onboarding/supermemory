@@ -1,0 +1,495 @@
+---
+title: "Memories 検索 (/v4/search)"
+description: "チャットボットと会話型 AI に最小レイテンシーで最適化された検索"
+---
+
+Memories 検索（`POST /v4/search`）は、リアルタイムのインタラクション向けに最小レイテンシーの検索を提供します。このエンドポイントは詳細な制御より速度を優先し、チャットボット、Q&A システム、即時の応答が求められるあらゆるアプリケーションに最適です。
+
+<div id="basic-search">
+  ## 基本的な検索
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const results = await client.search.memories({
+      q: "machine learning applications",
+      limit: 5
+    });
+
+    console.log(results)
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    results = client.search.memories(
+        q="machine learning applications",
+        limit=5
+    )
+
+    console.log(results)
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning applications",
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**出力例:**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_ml_apps_2024",
+      "memory": "機械学習アプリケーションは、ヘルスケア（診断画像、創薬）、金融（不正検知、アルゴリズム取引）、自動運転車（コンピュータビジョン、経路計画）、自然言語処理（チャットボット、翻訳サービス）など、数多くの業界にわたって展開されています。",
+      "similarity": 0.92,
+      "title": "機械学習の業界応用",
+      "type": "text",
+      "metadata": {
+        "topic": "machine-learning",
+        "industry": "technology",
+        "created": "2024-01-10"
+      }
+    },
+    {
+      "id": "mem_ml_healthcare",
+      "memory": "ヘルスケア分野において、機械学習は医療画像解析による早期疾患検出、個別化治療推奨、分子挙動予測による創薬加速を可能にします。",
+      "similarity": 0.89,
+      "title": "ヘルスケアにおけるML",
+      "type": "text"
+    }
+  ],
+  "total": 8,
+  "timing": 87
+}
+```
+
+
+<div id="container-tag-filtering">
+  ## コンテナタグでのフィルタリング
+</div>
+
+ユーザー、プロジェクト、または組織ごとにフィルタリング:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "project updates",
+      containerTag: "user_123",  // 注意: 複数形ではなく単数
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="project updates",
+        container_tag="user_123",  # 注意: 複数形ではなく単数
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "project updates",
+        "containerTag": "user_123",
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="threshold-control">
+  ## threshold の調整
+</div>
+
+類似度の threshold を使って結果の品質を最適化します:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "artificial intelligence research",
+      threshold: 0.7,  // 値が高いほど件数は少なく、より類似した結果のみ
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="artificial intelligence research",
+        threshold=0.7,  # 値が高いほど件数は少なく、より類似した結果のみ
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "artificial intelligence research",
+        "threshold": 0.7,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="reranking">
+  ## Reranking
+</div>
+
+セカンダリのランキングで結果の品質を向上:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "quantum computing breakthrough",
+      rerank: true,  // 関連性が向上、レイテンシーがわずかに増加
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="quantum computing breakthrough",
+        rerank=True,  # 関連性が向上、レイテンシーがわずかに増加
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "quantum computing breakthrough",
+        "rerank": true,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="query-rewriting">
+  ## クエリ リライト
+</div>
+
+自動クエリ拡張で検索精度を向上させる:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "How do neural networks learn?",
+      rewriteQuery: true,  // +400msのレイテンシーだが結果が向上
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="How do neural networks learn?",
+        rewrite_query=True,  # +400msのレイテンシーだが結果が向上
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "How do neural networks learn?",
+        "rewriteQuery": true,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="include-related-content">
+  ## 関連コンテンツを含める
+</div>
+
+documents、関連する保存メモリ、要約を含めます:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "machine learning trends",
+      include: {
+        documents: true,        // 参照元のdocumentsを含める
+        relatedMemories: true,  // 関連するメモリーエントリを含める
+        summaries: true         // メモリーの要約を含める
+      },
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="machine learning trends",
+        include={
+            "documents": True,        # 参照元のdocumentsを含める
+            "relatedMemories": True,  # 関連するメモリーエントリを含める
+            "summaries": True         # メモリーの要約を含める
+        },
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning trends",
+        "include": {
+          "documents": true,
+          "relatedMemories": true,
+          "summaries": true
+        },
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="metadata-filtering">
+  ## メタデータフィルタリング
+</div>
+
+保存メモリ検索向けのシンプルなメタデータフィルタリング:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "research findings",
+      filters: {
+        AND: [
+          { key: "category", value: "science", negate: false },
+          { key: "status", value: "published", negate: false }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="research findings",
+        filters={
+            "AND": [
+                {"key": "category", "value": "science", "negate": False},
+                {"key": "status", "value": "published", "negate": False}
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "research findings",
+        "filters": {
+          "AND": [
+            {"key": "category", "value": "science", "negate": false},
+            {"key": "status", "value": "published", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="chatbot-example">
+  ## チャットボットの例
+</div>
+
+会話型AI向けの最適な設定:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // チャットボット応答向けに最適化
+    const results = await client.search.memories({
+      q: userMessage,
+      containerTag: userId,
+      threshold: 0.6,     // 関連性のバランス良好
+      rerank: false,      // 速度重視でスキップ
+      rewriteQuery: false, // 速度重視でスキップ
+      limit: 3            // 少数だが関連度の高い結果
+    });
+
+    // チャット向けの迅速な応答用コンテキスト
+    const context = results.results
+      .map(r => r.memory)
+      .join('\n\n');
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # チャットボット応答向けに最適化
+    results = client.search.memories(
+        q=user_message,
+        container_tag=user_id,
+        threshold=0.6,     # 関連性のバランス良好
+        rerank=False,      # 速度重視でスキップ
+        rewrite_query=False, # 速度重視でスキップ
+        limit=3            # 少数だが関連度の高い結果
+    )
+
+    # チャット向けの迅速な応答用コンテキスト
+    context = '\n\n'.join([r.memory for r in results.results])
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # チャットボット応答向けに最適化
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "user question here",
+        "containerTag": "user_123",
+        "threshold": 0.6,
+        "rerank": false,
+        "rewriteQuery": false,
+        "limit": 3
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="complete-memories-search-example">
+  ## メモリー検索の総合例
+</div>
+
+包括的な結果を得るために機能を組み合わせる:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.memories({
+      q: "machine learning model performance",
+      containerTag: "research_team",
+      filters: {
+        AND: [
+          { key: "topic", value: "ai", negate: false }
+        ]
+      },
+      threshold: 0.7,
+      rerank: true,
+      rewriteQuery: false, // 速度重視のためスキップ
+      include: {
+        documents: true,
+        relatedMemories: false,
+        summaries: true
+      },
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.memories(
+        q="machine learning model performance",
+        container_tag="research_team",
+        filters={
+            "AND": [
+                {"key": "topic", "value": "ai", "negate": False}
+            ]
+        },
+        threshold=0.7,
+        rerank=True,
+        rewrite_query=False,  # 速度重視のためスキップ
+        include={
+            "documents": True,
+            "relatedMemories": False,
+            "summaries": True
+        },
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning model performance",
+        "containerTag": "research_team",
+        "filters": {
+          "AND": [
+            {"key": "topic", "value": "ai", "negate": false}
+          ]
+        },
+        "threshold": 0.7,
+        "rerank": true,
+        "rewriteQuery": false,
+        "include": {
+          "documents": true,
+          "relatedMemories": false,
+          "summaries": true
+        },
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="comon-use-cases">
+  ## 一般的なユースケース
+</div>
+
+- **Chatbots**: コンテナタグを指定し、低い threshold での基本的な検索
+- **Q&A Systems**: 関連性向上のために リエランキング を追加
+- **Knowledge Retrieval**: documents と要約を含める
+- **Real-time Search**: 速度最優先のため書き換えと Reranking をスキップ

@@ -1,0 +1,214 @@
+---
+title: "文件上传"
+description: "将 PDF、图片和其他文件上传到 Supermemory"
+---
+
+将文件直接上传至 Supermemory，系统将自动提取并处理内容。
+
+<div id="upload-a-pdf">
+  ## 上传 PDF
+</div>
+
+使用光学字符识别（OCR）从 PDF 中提取文本。
+
+<CodeGroup>
+
+```typescript TypeScript
+const file = fs.createReadStream('document.pdf');
+
+const response = await client.memories.uploadFile({
+  file: file,
+  containerTags: 'documents'
+});
+
+console.log(response.id);
+// 输出: pdf_123
+```
+
+```python Python
+with open('document.pdf', 'rb') as file:
+    response = client.memories.upload_file(
+        file=file,
+        container_tags='documents'
+    )
+
+print(response['id'])
+# 输出: pdf_123
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "containerTags=documents"
+
+# 响应: {"id": "pdf_123", "status": "processing"}
+```
+
+</CodeGroup>
+
+<div id="upload-images-with-ocr">
+  ## 使用光学字符识别（OCR）上传图片
+</div>
+
+从图片中提取文本。
+
+<CodeGroup>
+
+```typescript TypeScript
+const image = fs.createReadStream('screenshot.png');
+
+await client.memories.uploadFile({
+  file: image,
+  containerTags: 'images'
+});
+```
+
+```python Python
+with open('screenshot.png', 'rb') as file:
+    client.memories.upload_file(
+        file=file,
+        container_tags='images'
+    )
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@screenshot.png" \
+  -F "containerTags=images"
+```
+
+</CodeGroup>
+
+<div id="browser-file-upload">
+  ## 浏览器文件上传
+</div>
+
+在浏览器中处理文件上传。
+
+<CodeGroup>
+
+```javascript JavaScript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('containerTags', 'uploads');
+
+const response = await fetch('https://api.supermemory.ai/v3/documents/file', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`
+  },
+  body: formData
+});
+
+const result = await response.json();
+console.log(result.id);
+```
+
+```typescript React
+function handleUpload(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('containerTags', 'uploads');
+
+  return fetch('https://api.supermemory.ai/v3/documents/file', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}` },
+    body: formData
+  });
+}
+```
+
+```bash cURL
+# 浏览器上传使用 FormData，与文件上传方式相同
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "containerTags=uploads"
+```
+
+</CodeGroup>
+
+<div id="upload-multiple-files">
+  ## 批量上传多个文件
+</div>
+
+带速率限制的批量上传。
+
+<CodeGroup>
+
+```typescript TypeScript
+for (const file of files) {
+  const stream = fs.createReadStream(file);
+
+  await client.memories.uploadFile({
+    file: stream,
+    containerTags: 'batch'
+  });
+
+  // 速率限制
+  await new Promise(r => setTimeout(r, 1000));
+}
+```
+
+```python Python
+import time
+
+for file_path in files:
+    with open(file_path, 'rb') as file:
+        client.memories.upload_file(
+            file=file,
+            container_tags='batch'
+        )
+
+    time.sleep(1)  # 速率限制
+```
+
+```bash cURL
+# 逐个上传文件并添加延迟
+for file in *.pdf; do
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -F "file=@$file" \
+    -F "containerTags=batch"
+
+  sleep 1  # 速率限制
+done
+```
+
+</CodeGroup>
+
+<div id="supported-file-types">
+  ## 支持的文件类型
+</div>
+
+<div id="documents">
+  ### Documents
+</div>
+
+| 格式 | 扩展名 | 处理方式 |
+|--------|------------|------------|
+| PDF | .pdf | 文本提取；针对扫描页执行光学字符识别（OCR） |
+| Microsoft Word | .doc, .docx | 提取完整文本与格式 |
+| 纯文本 | .txt, .md | 直接处理文本 |
+| CSV | .csv | 提取结构化数据 |
+
+<div id="images">
+  ### 图片
+</div>
+
+| 格式 | 扩展名 | 处理方式 |
+|--------|------------|------------|
+| JPEG | .jpg, .jpeg | 光学字符识别（OCR）文本提取 |
+| PNG | .png | 光学字符识别（OCR）文本提取 |
+| GIF | .gif | 静态图像的光学字符识别（OCR） |
+| WebP | .webp | 光学字符识别（OCR）文本提取 |
+
+<div id="size-limits">
+  ### 大小限制
+</div>
+
+- **最大文件大小**：50MB
+- **建议大小**：小于 10MB，可获得最佳处理效果
+- **大文件**：处理时间可能更长

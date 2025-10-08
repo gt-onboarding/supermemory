@@ -1,0 +1,250 @@
+---
+title: "検索パラメータ"
+description: "すべての検索パラメータとその影響の完全なリファレンス"
+---
+
+3つの検索エンドポイント（ドキュメント検索、メモリー検索、実行検索）に関するパラメータの完全なリファレンスです。
+
+<div id="common-parameters">
+  ## 共通パラメーター
+</div>
+
+これらのパラメーターは、すべての検索エンドポイントで利用できます:
+
+<ParamField query="q" type="string" required>
+  **検索クエリ文字列**
+
+  検索したいテキスト。自然文、キーワード、または質問を指定できます。
+
+  ```typescript
+  q: "machine learning neural networks"
+  q: "What are the applications of quantum computing?"
+  q: "python tutorial beginner"
+  ```
+</ParamField>
+
+<ParamField query="limit" type="number" default="10">
+  **返す結果の最大数**
+
+  返却される結果数を制御します。limit を大きくすると、応答時間とレスポンスサイズが増加します。
+
+  ```typescript
+  limit: 5    // 高速で要点を押さえた結果
+  limit: 20   // 網羅的な結果
+  limit: 100  // 推奨最大値
+  ```
+</ParamField>
+
+<ParamField query="containerTags" type="Array<string>">
+  **コンテナタグでフィルタリング**
+
+  結果を絞り込むための組織化用タグ。**配列の完全一致**を使用します—同じ順序で全タグが一致する必要があります。
+
+  ```typescript
+  containerTags: ["user_123"]                    // 単一タグ
+  containerTags: ["user_123", "project_ai"]      // 複数タグ（完全一致）
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **SQL 風構造によるメタデータフィルタリング**
+
+  メタデータフィールドでの絞り込みに AND/OR ロジックを含む JSON 文字列を使用します。メモリー一覧の filters と同じ構造です。
+
+  ```typescript
+  filters: JSON.stringify({
+    AND: [
+      { key: "category", value: "tutorial", negate: false },
+      { key: "difficulty", value: "beginner", negate: false }
+    ]
+  })
+  ```
+
+  <Note>
+    完全な構文と例は [Metadata Filtering Guide](/ja/search/filtering) を参照してください。
+  </Note>
+</ParamField>
+
+<ParamField query="rerank" type="boolean" default="false">
+  **関連性向上のために結果を再スコアリング**
+
+  結果の品質を高める二次ランキングアルゴリズムを適用します。~100-200ms のレイテンシーが追加されますが、精度が向上します。
+
+  ```typescript
+  rerank: true   // 精度向上、やや遅い
+  rerank: false  // 高速、標準的な精度
+  ```
+</ParamField>
+
+<ParamField query="rewriteQuery" type="boolean" default="false">
+  **クエリを拡張・改善**
+
+  クエリを書き換えて、より関連性の高い結果を見つけます。略語やドメイン固有の用語で特に有効です。**約 400ms のレイテンシーが追加**されます。
+
+  ```typescript
+  // クエリ リライトの例:
+  "ML" → "machine learning artificial intelligence"
+  "JS" → "JavaScript programming language"
+  "API" → "application programming interface REST"
+  ```
+
+  <Warning>
+    クエリ リライトはレイテンシーを大きく増加させます。速度より検索品質が重要な場合にのみ使用してください。
+  </Warning>
+</ParamField>
+
+<div id="document-search-parameters-post-v3search">
+  ## ドキュメント検索パラメータ (POST `/v3/search`)
+</div>
+
+これらのパラメータは `client.search.documents()` に特有です:
+
+<ParamField query="chunkThreshold" type="number" range="0-1" default="0.5">
+  **チャンク選択の感度**
+
+  結果に含めるテキストチャンクを制御します:
+
+  * **0.0** = 低感度（より多くのチャンク、より多くの結果）
+  * **1.0** = 高感度（より少ないチャンク、より高品質）
+
+  ```typescript
+  chunkThreshold: 0.2   // 広く検索し、多数のチャンクを返す
+  chunkThreshold: 0.8   // 精密に検索し、関連チャンクのみ返す
+  ```
+</ParamField>
+
+<ParamField query="documentThreshold" type="number" range="0-1" default="0.5">
+  **ドキュメント選択の感度**
+
+  検索対象として考慮するドキュメントを制御します:
+
+  * **0.0** = より多くのドキュメントを検索（網羅的）
+  * **1.0** = 高い関連性のドキュメントのみを検索（絞り込み）
+
+  ```typescript
+  documentThreshold: 0.1   // 網を広くかける
+  documentThreshold: 0.9   // 非常に関連性の高いドキュメントのみ
+  ```
+</ParamField>
+
+<ParamField query="docId" type="string">
+  **特定のドキュメント内を検索**
+
+  検索を単一ドキュメント内のチャンクに限定します。大規模なドキュメント内の内容を探すのに有用です。
+
+  ```typescript
+  docId: "doc_abc123"  // このドキュメントのみを検索
+  ```
+</ParamField>
+
+<ParamField query="onlyMatchingChunks" type="boolean" default="false">
+  **一致するチャンクのみを返す**
+
+  既定では、Supermemory は文脈のために周辺チャンクも含めます。正確に一致するテキストのみが必要な場合は `true` に設定します。
+
+  ```typescript
+  onlyMatchingChunks: false  // 文脈チャンクを含める（デフォルト）
+  onlyMatchingChunks: true   // 一致するチャンクのみ
+  ```
+
+  <Note>
+    文脈チャンクは LLM（大規模言語モデル）が全体の意味を理解するのに役立ちます。厳密なテキスト抽出が必要な場合のみ無効にしてください。
+  </Note>
+</ParamField>
+
+<ParamField query="includeFullDocs" type="boolean" default="false">
+  **ドキュメント全文を含める**
+
+  各結果にドキュメントの全文を追加します。完全な文脈が必要なチャットボットに有用です。
+
+  ```typescript
+  includeFullDocs: true   // レスポンスにドキュメント全文を含める
+  includeFullDocs: false  // チャンクとメタデータのみ
+  ```
+
+  <Warning>
+    ドキュメント全文を含めるとレスポンスが非常に大きくなる可能性があります。必要に応じて節度を持って使用し、適切な制限を設けてください。
+  </Warning>
+</ParamField>
+
+<ParamField query="includeSummary" type="boolean" default="false">
+  **ドキュメント要約を含める**
+
+  結果に AI 生成のドキュメント要約を追加します。チャンクと全文の中間的な選択肢として有効です。
+
+  ```typescript
+  includeSummary: true   // ドキュメント要約を含める
+  includeSummary: false  // 要約なし
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **SQL 風のクエリでメタデータをフィルタリング**
+
+  ```typescript
+
+  // 代わりにこちらを使用:
+  filters: JSON.stringify({
+    OR: [
+      { key: "category", value: "technology", negate: false },
+      { key: "category", value: "science", negate: false }
+    ]
+  })
+  ```
+</ParamField>
+
+<div id="memory-search-parameters-post-v4search">
+  ## メモリー検索パラメータ (POST `/v4/search`)
+</div>
+
+これらのパラメータは `client.search.memories()` に特有です:
+
+<ParamField query="threshold" type="number" range="0-1" default="0.5">
+  **メモリー選択の感度**
+
+  類似度に基づいて返却するメモリーを制御します:
+
+  * **0.0** = より多くのメモリーを返す（広範な検索）
+  * **1.0** = 類似性が高いメモリーのみ返す（精密な検索）
+
+  ```typescript
+  threshold: 0.3   // より広いメモリー検索
+  threshold: 0.8   // 非常に類似したメモリーのみ
+  ```
+</ParamField>
+
+<ParamField query="containerTag" type="string">
+  **単一のコンテナタグでフィルタ**
+
+  注意: メモリー検索では `containerTag`（単数）を使用し、documents 検索では `containerTags`（複数の配列）を使用します。
+
+  ```typescript
+  containerTag: "user_123"  // メモリー検索用の単一タグ
+  ```
+</ParamField>
+
+<ParamField query="include" type="object">
+  **追加データの含め方を制御**
+
+  メモリー結果に同梱するコンテキスト情報を指定するオブジェクト。
+
+  <ParamField query="include.documents" type="boolean" default="false">
+    各メモリーに関連する documents を含める
+  </ParamField>
+
+  <ParamField query="include.relatedMemories" type="boolean" default="false">
+    親メモリーと子メモリーを含める（文脈関係）
+  </ParamField>
+
+  <ParamField query="include.summaries" type="boolean" default="false">
+    メモリーの要約を含める
+  </ParamField>
+
+  ```typescript
+  include: {
+    documents: true,        // 関連する documents を表示
+    relatedMemories: true,  // 親子関係のメモリーを表示
+    summaries: true         // 要約を含める
+  }
+  ```
+</ParamField>

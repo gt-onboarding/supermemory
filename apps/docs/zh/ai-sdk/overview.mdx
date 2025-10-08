@@ -1,0 +1,90 @@
+---
+title: "AI SDK 集成"
+description: "将 Supermemory 与 Vercel AI SDK 搭配使用，实现无缝 memory 管理"
+sidebarTitle: "概览"
+---
+
+Supermemory 的 AI SDK 通过两种方式与 Vercel 的 AI SDK 实现原生集成：用于代理式交互的 **Memory Tools**，以及用于自动化上下文管理的 **Infinite Chat**。
+
+<Card title="npm 上的 Supermemory 工具" icon="npm" href="https://www.npmjs.com/package/@supermemory/tools">
+  前往 npm 页面了解更多详情
+</Card>
+
+<div id="installation">
+  ## 安装
+</div>
+
+```bash
+npm install @supermemory/tools
+```
+
+<div id="memory-tools">
+  ## Memory Tools
+</div>
+
+通过搜索、添加和获取等操作，为 AI 代理加入 memory 功能。
+
+```typescript
+import { streamText } from "ai"
+import { createAnthropic } from "@ai-sdk/anthropic"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const anthropic = createAnthropic({
+  apiKey: "YOUR_ANTHROPIC_KEY"
+})
+
+const result = await streamText({
+  model: anthropic("claude-3-sonnet"),
+  prompt: "记住我的名字是 Alice",
+  tools: supermemoryTools("YOUR_SUPERMEMORY_KEY")
+})
+```
+
+<div id="infinite-chat">
+  ## Infinite Chat
+</div>
+
+为聊天应用提供自动化的 memory 管理，支持无限上下文。
+
+```typescript
+import { streamText } from "ai"
+
+const infiniteChat = createAnthropic({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+
+const result = await streamText({
+  model: infiniteChat("claude-3-sonnet"),
+  messages: [
+    { role: "user", content: "我叫什么名字？" }
+  ]
+})
+```
+
+<div id="when-to-use">
+  ## 何时使用
+</div>
+
+| 方法 | 使用场景 |
+|----------|----------|
+| Memory Tools | 需要显式 memory 控制的 AI 代理 |
+| Infinite Chat | 具备自动上下文的聊天应用 |
+
+<div id="next-steps">
+  ## 下一步
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Memory Tools" icon="wrench" href="/zh/ai-sdk/memory-tools">
+    基于 Agent 的 memory 管理
+  </Card>
+
+  <Card title="Infinite Chat" icon="infinity" href="/zh/ai-sdk/infinite-chat">
+    自动上下文管理
+  </Card>
+</CardGroup>

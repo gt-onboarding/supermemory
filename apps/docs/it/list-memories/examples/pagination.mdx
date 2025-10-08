@@ -1,0 +1,114 @@
+---
+title: "Paginazione"
+description: "Gestisci ampie raccolte di memory con la paginazione"
+---
+
+Gestisci in modo efficiente ampie raccolte di memory utilizzando la paginazione per elaborare i dati in chunk gestibili.
+
+<div id="basic-pagination">
+  ## Paginazione di base
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Prima pagina
+    const page1 = await client.memories.list({
+      limit: 20,
+      page: 1
+    });
+
+    // Pagina successiva
+    const page2 = await client.memories.list({
+      limit: 20,
+      page: 2
+    });
+
+    console.log(`Pagina 1: ${page1.memories.length} memories`);
+    console.log(`Pagina 2: ${page2.memories.length} memories`);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Prima pagina
+    page1 = client.memories.list(limit=20, page=1)
+
+    # Pagina successiva
+    page2 = client.memories.list(limit=20, page=2)
+
+    print(f"Pagina 1: {len(page1.memories)} memories")
+    print(f"Pagina 2: {len(page2.memories)} memories")
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Prima pagina
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 20, "page": 1}'
+
+    # Pagina successiva
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 20, "page": 2}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="loop-through-pages">
+  ## Iterare tra le pagine
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    let currentPage = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await client.memories.list({
+        page: currentPage,
+        limit: 50
+      });
+
+      console.log(`Pagina ${currentPage}: ${response.memories.length} memories`);
+
+      hasMore = currentPage < response.pagination.totalPages;
+      currentPage++;
+    }
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    current_page = 1
+    has_more = True
+
+    while has_more:
+        response = client.memories.list(page=current_page, limit=50)
+
+        print(f"Pagina {current_page}: {len(response.memories)} memories")
+
+        has_more = current_page < response.pagination.total_pages
+        current_page += 1
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Paginazione manuale con loop bash
+    for page in {1..5}; do
+      echo "=== Pagina $page ==="
+      curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+        -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{\"page\": $page, \"limit\": 20}" | \
+        jq '.memories | length'
+    done
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  Usa valori di `limit` più elevati (50–100) per la paginazione per ridurre il numero di chiamate all’API necessarie.
+</Info>

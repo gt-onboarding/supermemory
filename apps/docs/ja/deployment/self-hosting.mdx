@@ -1,0 +1,291 @@
+---
+title: "セルフホスティング"
+description: "Cloudflare Workers 上で supermemory API の独自インスタンスをデプロイする"
+---
+
+<Warning>
+このガイドは、エンタープライズプランでセルフホスティングを選択されたエンタープライズのお客様のみを対象としています。標準プランをご利用の方は、[console.supermemory.ai](https://console.supermemory.ai) のホスト型 API をご利用ください。
+</Warning>
+
+<div id="prerequisites">
+  ## 前提条件
+</div>
+
+開始する前に、複数のAPIキーを用意し、各種サービスのアカウントを設定しておく必要があります。本ガイドでは、必要な各コンポーネントの入手方法を順を追って解説します。
+
+<div id="enterprise-deployment-package">
+  ### エンタープライズ向けデプロイパッケージ
+</div>
+
+エンタープライズ向けデプロイパッケージは supermemory チームから提供され、以下が含まれます:
+
+- 貴社専用のホスト ID (`NEXT_PUBLIC_HOST_ID`)
+- コンパイル済みの JavaScript バンドル
+- デプロイ用スクリプト
+
+デプロイパッケージの受領については、supermemory のエンタープライズ担当者までお問い合わせください。
+
+<div id="cloudflare">
+  ### Cloudflare
+</div>
+
+<div id="create-account">
+  #### アカウントを作成
+</div>
+
+1. [cloudflare.com](https://dash.cloudflare.com/sign-up) にアクセスして、アカウントを作成します
+3. **Account ID** は、アドレスバーに表示される長いランダムな文字列です
+
+<div id="create-api-token">
+  #### API トークンを作成
+</div>
+
+1. [Cloudflare API Tokens](https://dash.cloudflare.com/?to=/:account/api-tokens) に移動します
+2. **"Create Token"** をクリックします
+3. **"Custom token"** テンプレートを使用します
+4. 次の権限でトークンを構成します:
+   - **Account:AI Gateway:Edit**
+   - **Account:Hyperdrive:Edit**
+   - **Account:Workers KV Storage:Edit**
+   - **Account:Workers R2 Storage:Edit**
+7. **"Continue to summary"** → **"Create Token"** をクリックします
+8. **重要**: トークンはすぐにコピーして安全に保存してください（後から再表示されません）
+
+<div id="enable-workers">
+  #### Workers を有効化する
+</div>
+
+1. Cloudflare ダッシュボードで **Workers & Pages** に移動します
+2. 表示されたら、Workers の利用規約に同意します
+3. Workers 用のサブドメインを選択します（例：`yourcompany.workers.dev`）
+
+これで `CLOUDFLARE_ACCOUNT_ID` と `CLOUDFLARE_API_TOKEN` の準備が整いました。
+
+<div id="database">
+  ### データベース
+</div>
+
+`DATABASE_URL` 環境変数で PostgreSQL の接続文字列を指定する必要があります。
+
+データベースの要件:
+
+* ベクトル演算のために **pgvector 拡張機能** をサポートしていること
+* Cloudflare Workers からアクセス可能であること
+* SSL 接続をサポートしていること
+* Cloudflare の IP 範囲からの接続を許可していること
+
+接続文字列は次の形式に従ってください:
+
+```
+postgresql://username:password@hostname:port/database
+```
+
+
+<div id="llm-providers">
+  ### LLM（大規模言語モデル）プロバイダ
+</div>
+
+<div id="openai">
+  #### OpenAI
+</div>
+
+1. [platform.openai.com](https://platform.openai.com) にアクセス
+2. サインインするか、アカウントを作成
+3. 左側のサイドバーで **API Keys** を開く
+4. **"Create new secret key"** をクリック
+5. キー名を付ける（例: "supermemory Self-Hosted"）
+6. キーをコピーして安全に保管
+7. まだ設定していない場合は請求情報を追加
+
+<div id="anthropic">
+  #### Anthropic
+</div>
+
+1. [console.anthropic.com](https://console.anthropic.com) にアクセスする
+2. アカウントを作成し、本人確認を完了する
+3. **API Keys** に移動する
+4. **"Create Key"** をクリックする
+5. キーに名前を付け、安全に保管できるようコピーする
+
+<div id="gemini">
+  #### Gemini
+</div>
+
+1. [Google AI Studio](https://aistudio.google.com) にアクセスする
+2. Google アカウントでサインインする
+3. **"Get API key"** → **"Create API key"** をクリックする
+4. 既存の Google Cloud プロジェクトを選択するか、新規プロジェクトを作成する
+5. APIキーをコピーする
+
+<div id="groq">
+  #### Groq
+</div>
+
+1. [console.groq.com](https://console.groq.com) にアクセス
+2. アカウントを作成
+3. **API Keys** に移動
+4. **"Create API Key"** をクリック
+5. キーに名前を付けてコピー
+
+{/* TODO: OAuth のドキュメントを追加 */}
+
+{/* ### Authentication Providers
+#### GitHub OAuth (Optional)
+
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Click **"New OAuth App"**
+3. Fill in the application details:
+   - **Application name**: Your app name
+   - **Homepage URL**: Your API domain (e.g., `https://api.yourdomain.com`)
+   - **Authorization callback URL**: `https://api.yourdomain.com/api/auth/callback/github`
+4. Click **"Register application"**
+5. Note the **Client ID** and generate a **Client Secret**
+6. Use these for `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET`
+
+#### Google OAuth (Optional)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project or select an existing one
+3. Enable the **Google+ API**
+4. Go to **Credentials** → **Create Credentials** → **OAuth client ID**
+5. Choose **Web application**
+6. Add your domain to **Authorized JavaScript origins**
+7. Add `https://api.yourdomain.com/api/auth/callback/google` to **Authorized redirect URIs**
+8. Copy the **Client ID** and **Client secret**
+9. Use these for `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` */}
+
+<div id="email-service-setup">
+  ### メール サービスの設定
+</div>
+
+<div id="resend">
+  #### Resend
+</div>
+
+1. [resend.com](https://resend.com) にアクセスしてアカウントを作成します
+2. **API Keys** に移動します
+3. **"Create API Key"** をクリックします
+4. キーに名前を付けます（例：「supermemory Production」）
+5. `RESEND_API_KEY` に使用するキーをコピーします
+6. **Domains** セクションで送信ドメインを認証します
+
+<div id="connectors-optional">
+  ### コネクタ（オプション）
+</div>
+
+<div id="google-drive">
+  #### Google Drive
+</div>
+
+1. [Google Cloud Console](https://console.cloud.google.com) にアクセスする
+2. プロジェクトを作成するか、既存のプロジェクトを選択する
+3. **Google Drive API** を有効化する
+4. **Credentials** → **Create Credentials** → **OAuth client ID** を開く
+5. 必要に応じて OAuth 同意画面を設定する
+6. **Web application** を選択する
+7. 自社ドメインの承認済みリダイレクト URI を追加する
+8. `GOOGLE_CLIENT_ID` と `GOOGLE_CLIENT_SECRET` をコピーする
+
+<div id="microsoft-onedrive">
+  #### Microsoft OneDrive
+</div>
+
+1. [Azure Portal](https://portal.azure.com) にアクセスします
+2. **Microsoft Entra ID** → **App registrations** に移動します
+3. **"New registration"** をクリックします
+4. アプリ名を入力し、リダイレクト URI を設定します
+5. **Certificates & secrets** → **New client secret** に進みます
+6. **Application (client) ID** と **Client secret** をコピーします
+7. それぞれ `MICROSOFT_CLIENT_ID` と `MICROSOFT_CLIENT_SECRET` に設定します
+
+<div id="notion">
+  #### Notion
+</div>
+
+1. [Notion Developers](https://developers.notion.com) にアクセス
+2. **"Create new integration"** をクリック
+3. 連携の詳細を入力
+4. **Internal Integration Token** をコピー
+5. ユーザー連携が必要な場合は OAuth を設定
+6. `NOTION_CLIENT_ID` と `NOTION_CLIENT_SECRET` に設定して使用
+
+---
+
+<div id="setup-deployment-files">
+  ## デプロイ用ファイルのセットアップ
+</div>
+
+supermemory チームから提供されたデプロイパッケージを、任意のディレクトリに解凍してください。
+
+```bash
+# デプロイメントパッケージを展開
+$ unzip supermemory-enterprise-deployment.zip
+$ cd supermemory-deployment
+```
+
+***
+
+
+<div id="configure-environment-variables">
+  ## 環境変数を設定する
+</div>
+
+デプロイスクリプトは、実行時にシェルから環境変数を**すべて**読み取ります。ワーカーがサポートする環境変数の完全な一覧を記載したサンプルファイルを同梱しています。
+
+```bash
+# テンプレートをコピーして編集を開始
+$ cp packages/alchemy/env.example .env
+
+# お好みのエディターでファイルを開き、空欄を埋める
+$ $EDITOR .env
+```
+
+以下はクイックリファレンスです。\
+デプロイを成功させるには **必須** の値が必要です。関連機能が不要な場合、任意項目は空のままで構いません。
+
+| Name | Required? | Description |
+|------|-----------|-------------|
+| `NODE_ENV` | ✅ | `development`、`staging`、`production` のいずれか。 |
+| `NEXT_PUBLIC_HOST_ID` | ✅ | Supermemory チームから提供される一意の Host ID。 |
+| `BETTER_AUTH_SECRET` | ✅ | ランダムな32バイトの文字列（`openssl rand -base64 32` を実行）。 |
+| `BETTER_AUTH_URL` | ✅ | API の公開ベースURL（末尾に `/` は付けない）。例: `https://api.example.com` |
+| `DATABASE_URL` | ✅ | Postgres の接続文字列（例: `postgres://user:pass@host:5432/db`）。 |
+| `CLOUDFLARE_ACCOUNT_ID` | ✅ | Cloudflare のアカウント ID。 |
+| `CLOUDFLARE_API_TOKEN` | ✅ | 「前提条件」で作成したトークン。 |
+| `OPENAI_API_KEY` | ✅ | [platform.openai.com](https://platform.openai.com) で取得したキー。 |
+| `RESEND_API_KEY` | ✅ | メール送信を行う場合のメールプロバイダのキー。 |
+| `ANTHROPIC_API_KEY` |  | Claude モデルを使用する場合に必要。 |
+| `GEMINI_API_KEY` |  | Google Gemini モデル用のキー。 |
+| `GROQ_API_KEY` |  | Groq モデル用のキー。 |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` |  | GitHub の OAuth ログインを有効化。 |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` |  | Google の OAuth ログインを有効化。 |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` |  | Google Drive コネクタに必要。 |
+| `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` |  | OneDrive コネクタに必要。 |
+| `NOTION_CLIENT_ID` / `NOTION_CLIENT_SECRET` |  | Notion コネクタに必要。 |
+| `CLOUDFLARE_AI_GATEWAY_NAME` / `CLOUDFLARE_AI_GATEWAY_TOKEN` |  | AI Gateway 経由でリクエストをルーティングする場合のみ。 |
+| `SENTRY_DSN` |  | エラーレポーティングに Sentry を使用する場合。 |
+
+***
+
+
+<div id="deploy">
+  ## デプロイ
+</div>
+
+`.env` の準備ができたら、デプロイ用スクリプトを実行します。
+
+```bash
+# パッケージに含まれているデプロイメントスクリプトを実行
+$ bun ./deploy.ts
+```
+
+***
+
+
+<div id="updating-your-deployment">
+  ## デプロイの更新
+</div>
+
+supermemory のデプロイを更新するには、上の **Deploy** セクションで説明している初回デプロイと同じ手順に従ってください。既存の `.env` ファイルを再利用し、必要に応じて新しい環境変数の追加・削除を行えます。
+
+---

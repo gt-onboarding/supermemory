@@ -1,0 +1,54 @@
+---
+title: "クエリ リライト"
+description: "supermemory におけるクエリ リライト"
+icon: "blend"
+---
+
+クエリ リライトは、クエリを自動的に書き換えて、検索の網羅性と精度を高める機能です。
+
+![クエリ リライト](/images/query-rewriting.png)
+
+<div id="usage">
+  ### 使い方
+</div>
+
+Supermemory では、検索 API で `rewriteQuery` パラメーターを `true` に設定すると、クエリ リライトを有効にできます。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --header 'Content-Type: application/json' \
+  -d '{
+    "q": "What is the capital of France?",
+    "rewriteQuery": true
+  }'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rewriteQuery: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rewriteQuery=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### 注意事項と制限
+</div>
+
+- supermemory は複数のリライトを生成し、それぞれについて検索を実行します。
+- 結果は統合されて返されます。
+- クエリ リライトに追加のコストはかかりません。
+- クエリ リライトにより品質は大幅に向上しますが、**追加のレイテンシーが発生します**。
+- フィルタリング、ハイブリッド検索、最新性バイアスなどの他の機能も、リライト後の結果で同様に機能します。

@@ -1,0 +1,291 @@
+---
+title: "メモリー vs RAG: 違いを理解する"
+description: "エージェントのメモリーとRAGが本質的に異なる理由と、それぞれを使うべき場面を学ぶ"
+sidebarTitle: "メモリー vs RAG"
+---
+
+多くの開発者はRAG（Retrieval-Augmented Generation）とエージェントのメモリーを混同しがちです。両者は同じものではなく、メモリーの代わりにRAGを使うことが、エージェントが重要なコンテキストを繰り返し忘れてしまう原因になっています。本質的な違いを理解しましょう。
+
+<div id="the-core-problem">
+  ## 中核となる課題
+</div>
+
+AIエージェントを構築する際、開発者はしばしばメモリーを単なるリトリーバルの問題として扱いがちです。会話をベクターデータベースに保存し、クエリを埋め込み、セマンティック検索が適切なコンテキストを引き出してくれることに望みを託します。
+
+**このアプローチがうまくいかないのは、メモリーとは類似テキストの検索ではなく、関係性、時間的な文脈、そしてユーザーの状態を時間の経過に沿って理解することだからです。**
+
+<div id="documents-vs-memories-in-supermemory">
+  ## Supermemory における documents とメモリーの違い
+</div>
+
+Supermemory は、これら2つの概念を明確に区別します。
+
+<div id="documents-raw-knowledge">
+  ### Documents: 生の知識
+</div>
+
+documents は、Supermemory に送信する生のコンテンツ—PDF、ウェブページ、テキストファイル—を指します。アクセスする人によって変化しない静的な知識を表します。
+
+**特性:**
+
+- **ステートレス**: Python プログラミングに関する documents は、誰にとっても同じ
+- **バージョン管理なし**: コンテンツは時間経過での変更を追跡しない
+- **ユニバーサル**: 特定のユーザーやエンティティに紐づかない
+- **検索可能**: セマンティックな類似度検索に最適
+
+**ユースケース:**
+
+- 企業のナレッジベース
+- 技術ドキュメント
+- 研究論文
+- 一般的なリファレンス資料
+
+<div id="memories-contextual-understanding">
+  ### 保存済みメモリ: 文脈理解
+</div>
+
+保存済みメモリは、documents や会話から抽出されたインサイト、嗜好、関係性です。特定のユーザーやエンティティに結び付き、時間とともに更新・進化します。
+
+**特性:**
+
+- **状態保持**: 「ユーザーはダークモードを好む」はそのユーザーに固有
+- **時間的**: 事実が有効になった／無効になった時点を追跡
+- **パーソナル**: ユーザー、セッション、またはエンティティに紐づく
+- **関係的**: 事実間の関係を理解
+
+**ユースケース:**
+
+- ユーザーの嗜好と履歴
+- 会話のコンテキスト
+- 個人的な事実と関係
+- 行動パターン
+
+<div id="why-rag-fails-as-memory">
+  ## なぜRAGはメモリーとして機能しないのか
+</div>
+
+問題を示す実際のシナリオを見てみましょう：
+
+<Tabs>
+  <Tab title="The Scenario">
+    ```
+    Day 1: "I love Adidas sneakers"
+    Day 30: "My Adidas broke after a month, terrible quality"
+    Day 31: "I'm switching to Puma"
+    Day 45: "What sneakers should I buy?"
+    ```
+  </Tab>
+
+  <Tab title="RAG Approach (Wrong)">
+    ```python
+    # RAGはこれらを互いに独立した埋め込みとして扱う
+    query = "What sneakers should I buy?"
+
+    # セマンティック検索で最も近い一致を見つける
+    result = vector_search(query)
+    # 返り値: "I love Adidas sneakers"（類似度が最も高い）
+
+    # エージェントはAdidasを推奨 🤦
+    ```
+
+    **問題**: RAGはセマンティックに最も類似したテキストを見つけるが、時間的な推移や因果関係を捉えられない。
+  </Tab>
+
+  <Tab title="Memory Approach (Right)">
+    ```python
+    # Supermemoryは時間的コンテキストを理解する
+    query = "What sneakers should I buy?"
+
+    # メモリーの取得で考慮する点:
+    # 1. 時間的妥当性（Adidasの嗜好はすでに古い）
+    # 2. 因果関係（壊れた → 失望 → 乗り換え）
+    # 3. 現在の状態（今はPumaを好む）
+
+    # エージェントは正しくPumaを推奨 ✅
+    ```
+
+    **解決策**: メモリーシステムは、事実が無効化される時点を追跡し、因果の連なりを理解する。
+  </Tab>
+</Tabs>
+
+<div id="the-technical-difference">
+  ## 技術面での違い
+</div>
+
+<div id="rag-semantic-similarity">
+  ### RAG: 意味的類似度
+</div>
+
+```
+クエリ → 埋め込み → ベクトル検索 → Top-K結果 → LLM（大規模言語モデル）
+```
+
+RAGは、クエリに意味的に近い情報の検索が得意です。ステートレスで、各クエリは互いに独立しています。
+
+
+<div id="memory-contextual-graph">
+  ### メモリー: コンテキスト グラフ
+</div>
+
+```
+クエリ → エンティティ認識 → グラフ探索 → 時間フィルタリング → コンテキスト構築 → LLM（大規模言語モデル）
+```
+
+メモリーシステムは、次の事項を理解するナレッジグラフを構築します:
+
+* **エンティティ**: ユーザー、プロダクト、概念
+* **リレーションシップ**: 嗜好、所有、因果
+* **時間的コンテキスト**: その事実が有効だった時点
+* **無効化**: その事実が古くなった（無効になった）時点
+
+
+<div id="when-to-use-each">
+  ## 使い分けの目安
+</div>
+
+<CardGroup cols={2}>
+  <Card title="RAG を使う場面" icon="search">
+    - 静的なドキュメント
+    - ナレッジベース
+    - 調査用のクエリ
+    - 一般的な Q&A
+    - ユーザーごとに内容が変わらないコンテンツ
+  </Card>
+
+  <Card title="メモリーを使う場面" icon="brain">
+    - ユーザーの嗜好
+    - 会話履歴
+    - 個人に関する事実
+    - 行動パターン
+    - 時間とともに更新・変化する情報全般
+  </Card>
+</CardGroup>
+
+<div id="real-world-examples">
+  ## 実践例
+</div>
+
+<div id="e-commerce-assistant">
+  ### Eコマースアシスタント
+</div>
+
+<Tabs>
+  <Tab title="RAG Component">
+    商品カタログ、仕様、レビューを保存
+
+    ```python
+    # RAG に適している
+    "iPhone 15 の仕様は？"
+    "Nike と Adidas のランニングシューズを比較して"
+    "防水ジャケットを見せて"
+    ```
+  </Tab>
+
+  <Tab title="Memory Component">
+    ユーザーの嗜好、購入履歴、やり取りを追跡
+
+    ```python
+    # メモリーが必要
+    "自分は普段どのサイズを着ている？"
+    "前回の購入は気に入った？"
+    "自分の予算の希望は？"
+    ```
+  </Tab>
+</Tabs>
+
+<div id="customer-support-bot">
+  ### カスタマーサポートボット
+</div>
+
+<Tabs>
+  <Tab title="RAG Component">
+    FAQ、トラブルシューティングガイド、各種ポリシー
+
+    ```python
+    # RAG に適した例
+    "パスワードをリセットするには？"
+    "返品ポリシーは？"
+    "Wi‑Fi の不具合のトラブルシューティング"
+    ```
+  </Tab>
+
+  <Tab title="Memory Component">
+    過去の対応履歴、ユーザーアカウント情報、会話の文脈
+
+    ```python
+    # メモリーが必要
+    "先週の件は解決しましたか？"
+    "自分はどのプランに入っていますか？"
+    "この前、あなたに手伝ってもらっていた件で…"
+    ```
+  </Tab>
+</Tabs>
+
+<div id="how-supermemory-handles-both">
+  ## Supermemory は両方をこう扱います
+</div>
+
+Supermemory は、両方のパターンを正しく処理できる統合プラットフォームを提供します。
+
+<div id="1-document-storage-rag">
+  ### 1. ドキュメントストレージ（RAG）
+</div>
+
+```python
+# RAGスタイル検索用のドキュメントを追加
+client.memories.add(
+    content="iPhone 15 has a 48MP camera and A17 Pro chip",
+    # ユーザー関連付けなし - 汎用知識
+)
+```
+
+
+<div id="2-memory-creation">
+  ### 2. メモリーの作成
+</div>
+
+```python
+# ユーザー固有の保存済みメモリを追加
+client.memories.add(
+    content="ユーザーはiOSよりもAndroidを好む",
+    container_tags=["user_123"],  # ユーザー固有
+    metadata={
+        "type": "preference",
+        "confidence": "high"
+    }
+)
+```
+
+
+<div id="3-hybrid-retrieval">
+  ### 3. ハイブリッドリトリーバル
+</div>
+
+```python
+# 検索は両方のアプローチを組み合わせます
+results = client.memories.search(
+    query="どの電話を推奨すべきですか？",
+    container_tags=["user_123"],  # ユーザーの保存済みメモリを取得
+    # 一般的な知識も検索します
+)
+
+# 結果には以下が含まれます：
+# - ユーザーのAndroid設定（メモリー）
+# - 最新のAndroid電話仕様（documents）
+```
+
+
+<div id="the-bottom-line">
+  ## まとめ
+</div>
+
+<Note>
+**重要なポイント**: RAG は「自分は何を知っているか？」に答え、メモリーは「あなたについて何を覚えているか？」に答える
+</Note>
+
+メモリーを単なる検索の問題として扱うのはやめましょう。エージェントにはどちらも必要です:
+
+- **RAG**: 知識にアクセスするため
+- **メモリー**: ユーザーを理解するため
+
+Supermemory は統合プラットフォーム上で両方の機能を提供し、エージェントが適切なタイミングで適切なコンテキストを得られるようにします。

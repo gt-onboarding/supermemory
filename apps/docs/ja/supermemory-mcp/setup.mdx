@@ -1,0 +1,75 @@
+---
+title: "セットアップと使い方"
+description: "supermemory MCP のセットアップと使い方"
+---
+
+<div id="hosted-setup-recommended">
+  ### ホスト型セットアップ（推奨）
+</div>
+
+1. **アクセス** https://mcp.supermemory.ai
+2. **受け取る** 自動生成される一意のURL（例: `https://mcp.supermemory.ai/TN-IKxAcDdHWTJkMhtGLF/sse`）
+3. **選択** ドロップダウンメニューから使用するMCPクライアントを選択
+4. **コピー** 生成されたインストールコマンドをコピー
+5. **実行** 次のコマンドを実行: `npx install-mcp [YOUR_URL] --client [CLIENT_NAME]`
+
+または、以下のクライアント設定例に従ってください。
+
+<div id="self-hosted-configuration">
+  ### セルフホスト構成
+</div>
+
+データを完全に制御したいユーザー向け:
+
+1. **APIキーを取得**: https://console.supermemory.ai
+2. **`.env` ファイルを作成**し、`SUPERMEMORY_API_KEY=your_key` を設定
+3. **リポジトリをクローン**: `git clone https://github.com/supermemoryai/supermemory-mcp.git`
+4. **MCP クライアントを設定**してローカルサーバーインスタンスに接続
+
+<div id="client-configuration-example">
+  ### クライアント設定の例
+</div>
+
+1. `url` 設定をサポートするクライアントの場合:
+
+```json
+{
+  "mcpServers": {
+    "supermemory": {
+      "transport": "sse",
+      "url": "https://mcp.supermemory.ai/[USER_ID]/sse"
+    }
+  }
+}
+```
+
+2. npx で supergateway を使う：
+
+```json
+{
+    "command": "npx",
+    "args": ["-y", "supergateway", "--sse", "YOUR_URL"]
+}
+```
+
+3. `docker` で `supergateway` を使う場合:
+
+同等の MCP コマンドは次のとおりです:
+
+```json
+{
+  "mcpServers": {
+    "supermachineExampleDocker": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "supercorp/supergateway",
+        "--sse",
+        "YOUR_SUPERMEMORY_URL"
+      ]
+    }
+  }
+}
+```

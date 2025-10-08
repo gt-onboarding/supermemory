@@ -1,0 +1,305 @@
+---
+title: "Organization Settings"
+description: "Supermemory の組織全体の設定とコンテンツフィルタリングを設定する"
+icon: "settings"
+---
+
+組織設定では、Supermemory が組織全体のコンテンツをどのように処理するかを管理します。これらの設定はすべてのメモリとコネクタに適用され、次の目的に役立ちます:
+
+* インデキシング前にコンテンツをフィルタリングする
+* コネクタ向けのカスタム OAuth アプリケーションを設定する
+* 組織全体の処理ルールを定義する
+* 何をインデックスし、何を除外するかを管理する
+
+<Note>
+  設定は組織全体で有効になり、組織内のすべてのユーザーとメモリに適用されます。
+</Note>
+
+<div id="why-settings-matter">
+  ## 設定が重要な理由
+</div>
+
+settings エンドポイントは、あなたのユースケースを Supermemory に正しく学習させるうえで不可欠です。これにより Supermemory は次の点を理解できます:
+
+* **あなたは何者か**: 組織固有のユースケースと目的
+* **何を想定すべきか**: システムを流れるコンテンツや情報の種類
+* **どう解釈するか**: あなたのユースケースに即したクエリ理解のためのコンテキスト
+* **何を優先するか**: ユーザーにとって最重要となるコンテンツ
+
+<div id="example-brand-guidelines-use-case">
+  ### 例: ブランドガイドラインのユースケース
+</div>
+
+適切に設定されていない場合、ユーザーが「what are our values?」と検索すると、Supermemory は「values」という語を含むランダムな documents を返してしまう可能性があります。ですが、適切に構成すれば：
+
+```typescript
+await client.settings.update({
+  shouldLLMFilter: true,
+  filterPrompt: `あなたはBrand.aiのブランドガイドラインを管理しています。
+    組織からのすべての外部向けコンテンツを受け取ります。
+    
+    ユーザーが検索する際、以下を探しています：
+    - "私たちの価値観は何ですか？" → 公式ブランド価値観ドキュメントを返す
+    - "私たちのトーンオブボイスは何ですか？" → ブランドボイスガイドラインを返す
+    - "私たちのミッションをどう説明しますか？" → 承認されたミッションステートメントを返す
+    
+    下書きや古いバージョンではなく、最新の承認されたブランド資料に焦点を当ててください。`
+});
+```
+
+これで Supermemory は次の点を理解します:
+
+* 「values」に関する検索は、財務上の値ではなくブランドの価値観を指す
+* 「Tone」はオーディオ設定ではなくブランドの声（トーン）を意味する
+* 公式に承認されたコンテンツを優先する
+
+このコンテキストによって検索の関連性が大幅に向上し、ユーザーは自分のユースケースに適した適切な情報を得られるようになります。
+
+<div id="api-endpoints">
+  ## API（Application Programming Interface）エンドポイント
+</div>
+
+<div id="get-current-settings">
+  ### 現在の設定を取得
+</div>
+
+組織の現在の設定を取得します。
+
+<CodeGroup>
+  ```typescript TypeScript
+  const settings = await client.settings.get();
+  console.log('Current settings:', settings);
+  ```
+
+  ```python Python
+  settings = client.settings.get()
+  print(f'Current settings: {settings}')
+  ```
+
+  ```bash cURL
+  curl -X GET "https://api.supermemory.ai/v3/settings" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+  ```
+</CodeGroup>
+
+<div id="update-settings">
+  ### 設定の更新
+</div>
+
+組織の設定を更新します。変更したいフィールドだけを指定してください。
+
+<CodeGroup>
+  ```typescript TypeScript
+  const updatedSettings = await client.settings.update({
+    shouldLLMFilter: true,
+    filterPrompt: "Only index technical documentation and code",
+    includeItems: ["*.md", "*.ts", "*.py"],
+    excludeItems: ["node_modules", ".git", "*.test.*"]
+  });
+
+  console.log('Updated fields:', updatedSettings.updated);
+  ```
+
+  ```python Python
+  updated_settings = client.settings.update(
+      should_llm_filter=True,
+      filter_prompt="Only index technical documentation and code",
+      include_items=["*.md", "*.ts", "*.py"],
+      exclude_items=["node_modules", ".git", "*.test.*"]
+  )
+
+  print(f'Updated fields: {updated_settings.updated}')
+  ```
+
+  ```bash cURL
+  curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "shouldLLMFilter": true,
+      "filterPrompt": "Only index technical documentation and code",
+      "includeItems": ["*.md", "*.ts", "*.py"],
+      "excludeItems": ["node_modules", ".git", "*.test.*"]
+    }'
+  ```
+</CodeGroup>
+
+<div id="content-filtering-settings">
+  ## コンテンツフィルタリング設定
+</div>
+
+Supermemory に取り込むコンテンツを制御します。
+
+<div id="basic-filtering">
+  ### 基本的なフィルタリング
+</div>
+
+include/exclude パターンを使ってコンテンツを絞り込みます：
+
+```typescript
+await client.settings.update({
+  includeItems: [
+    "*.md",           // 全てのMarkdownファイル
+    "*.mdx",          // MDXドキュメント
+    "docs/**",        // docsフォルダ内の全て
+    "src/**/*.ts"     // src内のTypeScriptファイル
+  ],
+  excludeItems: [
+    "node_modules",   // 依存関係
+    ".git",           // バージョン管理
+    "*.test.*",       // テストファイル
+    "build/**",       // ビルド出力
+    "*.tmp"           // 一時ファイル
+  ]
+});
+```
+
+<div id="intelligent-llm-filtering">
+  ### インテリジェントな LLM フィルタリング
+</div>
+
+意味理解にもとづくAI搭載のコンテンツフィルタリングを有効にします：
+
+```typescript
+await client.settings.update({
+  shouldLLMFilter: true,
+  filterPrompt: `技術ドキュメントシステム用のコンテンツをフィルタリングしています。
+    
+    含める:
+    - API（Application Programming Interface）ドキュメント
+    - コード例とチュートリアル
+    - 技術ガイドとリファレンス
+    - アーキテクチャドキュメント
+    
+    除外する:
+    - マーケティング資料
+    - 内部会議メモ
+    - 個人情報
+    - 古いまたは非推奨のコンテンツ
+    
+    開発者がAPI（Application Programming Interface）を理解し使用するのに役立つコンテンツに焦点を当ててください。`
+});
+```
+
+<div id="connector-oauth-settings">
+  ## コネクタの OAuth 設定
+</div>
+
+コネクタ連携用のカスタム OAuth アプリケーションを設定します。
+
+<div id="google-drive-custom-oauth">
+  ### Google Drive のカスタム OAuth
+</div>
+
+```typescript
+await client.settings.update({
+  googleDriveCustomKeyEnabled: true,
+  googleDriveClientId: "your-client-id.apps.googleusercontent.com",
+  googleDriveClientSecret: "your-client-secret"
+});
+```
+
+<div id="notion-custom-oauth">
+  ### Notion のカスタム OAuth
+</div>
+
+```typescript
+await client.settings.update({
+  notionCustomKeyEnabled: true,
+  notionClientId: "your-notion-oauth-client-id",
+  notionClientSecret: "your-notion-oauth-client-secret"
+});
+```
+
+<div id="onedrive-custom-oauth">
+  ### OneDrive カスタム OAuth
+</div>
+
+```typescript
+await client.settings.update({
+  onedriveCustomKeyEnabled: true,
+  onedriveClientId: "your-azure-app-id",
+  onedriveClientSecret: "your-azure-app-secret"
+});
+```
+
+<div id="best-practices">
+  ## ベストプラクティス
+</div>
+
+<div id="1-set-before-bulk-import">
+  ### 1. 一括インポート前の設定
+</div>
+
+大量のコンテンツをインポートする前に設定を行います。変更は既存のメモリに遡って適用されません。
+
+<div id="2-be-specific-in-filter-prompts">
+  ### 2. フィルター用プロンプトは具体的に
+</div>
+
+組織の情報や想定する検索パターンについて、明確なコンテキストを提示してください：
+
+```typescript
+// 良い例 - 具体的で文脈に沿った内容
+filterPrompt: `開発者向けの技術文書。
+  含める: API（Application Programming Interface）リファレンス、コード例、エラー解決方法。
+  除外する: マーケティングコンテンツ、個人データ、テストファイル。
+  ユーザーが検索する内容: 実装の詳細、トラブルシューティング、ベストプラクティス。`
+
+// 悪い例 - 曖昧すぎる
+filterPrompt: "重要なコンテンツのみ"
+```
+
+<div id="3-test-oauth-credentials">
+  ### 3. OAuth の認証情報をテストする
+</div>
+
+本番環境に移行する前に、開発環境でカスタム OAuth の認証情報を必ずテストしてください。
+
+```typescript
+// OAuth設定を更新した後に接続をテストする
+const testConnection = await client.connections.create('google-drive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['test-connection']
+});
+```
+
+<div id="4-monitor-filter-effectiveness">
+  ### 4. フィルターの有効性を監視する
+</div>
+
+filters が期待どおりに機能しているか確認するため、どのデータがインデックス化されているかを確認します。
+
+```typescript
+const memories = await client.memories.list({
+  containerTags: ['your-tags'],
+  limit: 10
+});
+
+// 実際にインデックス化されている内容を確認
+memories.memories.forEach(memory => {
+  console.log(`インデックス化済み: ${memory.title} - ${memory.type}`);
+});
+```
+
+<div id="important-notes">
+  ## 重要な注意事項
+</div>
+
+<Warning>
+  **設定の制限事項:**
+
+  * 変更はユーザー単位ではなく、組織全体に適用されます
+  * 設定は既存のメモリに対して遡及的に処理を行いません
+  * OAuth の資格情報は、各プラットフォームで正しく構成する必要があります
+  * フィルターパターンはコンテンツの取り込み時に適用されます
+</Warning>
+
+<div id="related-documentation">
+  ## 関連ドキュメント
+</div>
+
+* [Connectors Overview](/ja/connectors/overview) - 外部連携の設定
+* [Google Drive Setup](/ja/connectors/google-drive) - Google Drive の OAuth を構成
+* [Notion Setup](/ja/connectors/notion) - Notion の OAuth を構成
+* [OneDrive Setup](/ja/connectors/onedrive) - OneDrive の OAuth を構成

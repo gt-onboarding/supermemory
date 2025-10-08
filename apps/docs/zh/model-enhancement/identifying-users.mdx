@@ -1,0 +1,140 @@
+---
+title: "识别用户"
+description: "在 supermemory 中识别用户"
+---
+
+通过向 supermemory 发送 `x-sm-user-id`，即可启用内置的跨对话 memory。
+
+<div id="how-supermemory-identifies-users-and-conversations">
+  ## supermemory 如何识别用户与会话
+</div>
+
+supermemory 将按以下优先级在这些位置查找用户 ID：
+
+<div id="x-sm-user-id-header">
+  ### `x-sm-user-id` header
+</div>
+
+你可以在任意客户端和模型中添加名为 x-sm-user-id 的默认请求头
+
+<div id="user-in-body">
+  ### 在 body 中使用 `user`
+</div>
+
+对于支持在请求 body 中传入 `user` 参数的模型（例如 OpenAI），你也可以将其添加到 body 中。
+
+<div id="userid-in-search-params">
+  ### 搜索参数中的 `userId`
+</div>
+
+如果模型不支持该参数，你也可以在 URL 的查询参数中添加 `?userId=xyz`。
+
+<div id="conversation-id">
+  ## 会话 ID
+</div>
+
+如果提供了会话标识符，则无需将整条消息数组发送给 supermemory。
+
+```typescript
+// 如果您提供对话 ID，就无需每次都发送所有消息。supermemory 会自动回填。
+const client = new OpenAI({
+    baseURL:
+"https://api.supermemory.ai/v3/https://api.openai.com/v1",
+    defaultHeaders: {
+        "x-supermemory-api-key":
+            "SUPERMEMORY_API_KEY",
+        "x-sm-user-id": `dhravya`,
+        "x-sm-conversation-id": "conversation-id"
+    },
+})
+
+const messages = [
+{"role" : "user", "text": "SOme long thing"},
+// .... 50 条其他消息
+{"role" : "user", "text": "new message"},
+]
+
+const client.generateText(messages)
+
+// 下次，您无需发送更多消息。
+const messages2 = [{"role" : "user", "text": "我们在这次对话中谈论了什么，以及去年的那次对话？"}]
+
+const client.generateText(messages2)
+```
+
+
+<div id="implementation-examples">
+  ## 实现示例
+</div>
+
+<div id="google-gemini">
+  ### Google Gemini
+</div>
+
+```typescript
+const ai = new GoogleGenAI({ apiKey: "YOUR_API_KEY" });
+
+async function main() {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: "用几句话解释AI是如何工作的",
+    config: {
+      httpOptions: {
+        headers: {
+          'x-sm-user-id': "user_123"
+        }
+      }
+    },
+  });
+  console.debug(response.text);
+}
+```
+
+
+<div id="anthropic">
+  ### Anthropic
+</div>
+
+```typescript
+const anthropic = new Anthropic({
+  apiKey: 'YOUR_API_KEY', // 默认为 process.env["ANTHROPIC_API_KEY"]
+});
+
+async function main() {
+  const msg = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: "Hello, Claude" }],
+  }, {
+    // 使用请求头
+    headers: {
+      'x-sm-user-id': "user_123"
+    }
+  });
+
+  console.debug(msg);
+}
+```
+
+
+<div id="openai">
+  ### OpenAI
+</div>
+
+```typescript
+const openai = new OpenAI({
+  apiKey: "YOUR_API_KEY"
+});
+
+async function main() {
+  const completion = await openai.chat.completions.create({
+    messages: [
+      { role: "user", content: "你好，助手" }
+    ],
+    model: "gpt-5",
+    user: "user_123"
+  });
+
+  console.debug(completion.choices[0].message);
+}
+```

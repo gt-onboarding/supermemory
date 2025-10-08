@@ -1,0 +1,220 @@
+---
+title: "连接器故障排查"
+description: "诊断并解决 Google Drive、Notion 和 OneDrive 连接器的常见问题"
+---
+
+快速指南：排查并解决与身份验证、同步和权限相关的常见连接器问题。
+
+<div id="quick-health-check">
+  ## 快速健康检查
+</div>
+
+确认你的连接器是否正常工作：
+
+<CodeGroup>
+
+```typescript TypeScript
+const connections = await client.connections.list({
+  containerTags: ['user-123']
+});
+
+connections.forEach(conn => {
+  console.log(`${conn.provider}: ${conn.email} - Connected ${conn.createdAt}`);
+});
+
+// Check for stuck documents
+const documents = await client.connections.listDocuments('notion', {
+  containerTags: ['user-123']
+});
+
+const failed = documents.filter(doc => doc.status === 'failed');
+if (failed.length > 0) {
+  console.log(`⚠️ ${failed.length} documents failed to sync`);
+}
+```
+
+```python Python
+connections = client.connections.list(container_tags=['user-123'])
+
+for conn in connections:
+    print(f"{conn.provider}: {conn.email} - Connected {conn.created_at}")
+
+# Check for stuck documents
+documents = client.connections.list_documents(
+    'notion',
+    container_tags=['user-123']
+)
+
+failed = [doc for doc in documents if doc.status == 'failed']
+if failed:
+    print(f"⚠️ {len(failed)} documents failed to sync")
+```
+
+```bash cURL
+# 列出所有链接账户
+curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"]}'
+
+# 检查 Documents 的状态
+curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"], "source": "notion"}'
+```
+
+</CodeGroup>
+
+<div id="common-issues">
+  ## 常见问题
+</div>
+
+<div id="oauth-callback-fails">
+  ### OAuth 回调失败
+</div>
+
+**问题：** 用户授予权限后出现“Invalid redirect URI”错误
+
+**解决方案：** 确保你的重定向 URL 与 OAuth 应用中配置的值完全一致：
+
+```typescript
+// 正确 - 与 OAuth（开放授权协议）应用设置完全匹配
+const connection = await client.connections.create('notion', {
+  redirectUrl: 'https://yourapp.com/auth/notion/callback',
+  containerTags: ['user-123']
+});
+
+// 错误 - URL 不匹配
+// redirectUrl: 'https://yourapp.com/callback'
+```
+
+**预防措施：**
+
+* 生产环境的 url 使用 HTTPS
+* 从你的 OAuth（开放授权协议）应用设置中精确复制 url
+* 先在开发环境中验证整个流程
+
+
+<div id="documents-not-syncing">
+  ### Documents 未同步
+</div>
+
+**问题：** Documents 的 &quot;queued&quot; 或 &quot;extracting&quot; status 持续超过 30 分钟
+
+**解决方案：** 触发手动同步：
+
+```typescript
+// 强制同步卡住的 documents
+await client.connections.import('notion', {
+  containerTags: ['user-123']
+});
+```
+
+如果 Documents 一直失败：
+
+* 检查文件是否大于 50MB（可能会超时）
+* 确认你有权限访问这些 Documents
+* 确认该文档类型受支持
+
+
+<div id="permission-denied-errors">
+  ### 权限被拒绝错误
+</div>
+
+**问题：** 某些 Documents 显示“permission denied”或无法同步
+
+**解决方案：** 重新进行身份验证，并确保具备相应权限：
+
+```typescript
+// 删除并重新创建链接账户
+await client.connections.deleteByProvider('google-drive', {
+  containerTags: ['user-123']
+});
+
+const newConnection = await client.connections.create('google-drive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['user-123']
+});
+
+// 用户必须重新进行身份验证
+window.location.href = newConnection.authLink;
+```
+
+
+<div id="sync-takes-too-long">
+  ### 同步耗时过长
+</div>
+
+**问题：** 数百个 Documents 同步需要数小时
+
+**解决方案：** 设置合理的文档 limit：
+
+```typescript
+const connection = await client.connections.create('onedrive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['user-123'],
+  documentLimit: 500  // 从少量文档开始
+});
+```
+
+
+<div id="provider-specific-issues">
+  ## 各 provider 的特定问题
+</div>
+
+<div id="google-drive">
+  ### Google Drive
+</div>
+
+**共享云端硬盘相关问题**
+
+共享云端硬盘需要特殊权限。请确保：
+
+- 用户拥有对该共享云端硬盘的访问权限
+- OAuth（开放授权协议）应用已申请 drive.readonly 范围（scope）
+- 用户是该共享云端硬盘的成员
+
+<div id="notion">
+  ### Notion
+</div>
+
+**数据库未同步**
+
+Notion 数据库需要明确授权。如果数据库未同步：
+
+1. 打开 Notion 工作区设置
+2. 在“Connections”下找到你的集成
+3. 点击该集成
+4. 选择要共享的具体页面/数据库
+5. 授权后重新进行同步
+
+**工作区访问权限**
+
+若要获得整个工作区的访问权限，工作区管理员必须：
+
+1. 批准该集成
+2. 授予对所有页面的访问权限
+3. 启用“Read content”权限
+
+<div id="onedrive">
+  ### OneDrive
+</div>
+
+**企业账户 vs 个人账户**
+
+企业账户可能有额外限制：
+
+- 可能需要管理员授权
+- 某些 SharePoint 站点可能受限
+- 合规策略可能会阻止某些文件
+
+<div id="best-practices">
+  ## 最佳实践
+</div>
+
+1. **设置合理的文档上限** - 先从 500–1000 个 Documents 开始
+2. **使用具描述性的容器标签** - 便于调试
+3. **监控失败的文档** - 每周检查同步问题
+4. **合理处理速率限制** - 实现指数退避
+5. **在开发环境测试 OAuth（开放授权协议）** - 在上线前确保重定向 url 正常工作

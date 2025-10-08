@@ -1,0 +1,140 @@
+---
+title: "Benutzer identifizieren"
+description: "Benutzer in supermemory identifizieren"
+---
+
+Sie können die integrierte, konversationsübergreifende Speicherfunktion aktivieren, indem Sie supermemory eine `x-sm-user-id` senden.
+
+<div id="how-supermemory-identifies-users-and-conversations">
+  ## Wie supermemory Benutzer und Konversationen identifiziert
+</div>
+
+supermemory ermittelt die Benutzer-ID an den folgenden Stellen (in dieser Prioritätsreihenfolge):
+
+<div id="x-sm-user-id-header">
+  ### `x-sm-user-id`-Header
+</div>
+
+Sie können einen Standardheader x-sm-user-id mit jedem Client und jedem Modell hinzufügen.
+
+<div id="user-in-body">
+  ### `user` im Body
+</div>
+
+Für Modelle, die den Parameter `user` im Body unterstützen, etwa OpenAI, können Sie ihn ebenfalls im Body angeben.
+
+<div id="userid-in-search-params">
+  ### `userId` in Suchparametern
+</div>
+
+Sie können auch `?userId=xyz` in die URL-Suchparameter aufnehmen, falls die Modelle dies nicht unterstützen.
+
+<div id="conversation-id">
+  ## Konversations-ID
+</div>
+
+Wenn eine Konversations-ID angegeben ist, müssen Sie nicht das gesamte Nachrichten-Array an supermemory senden.
+
+```typescript
+// Wenn Sie eine Gesprächs-ID angeben, müssen Sie nicht jedes Mal alle Nachrichten mitsenden. supermemory füllt sie automatisch auf.
+const client = new OpenAI({
+    baseURL:
+"https://api.supermemory.ai/v3/https://api.openai.com/v1",
+    defaultHeaders: {
+        "x-supermemory-api-key":
+            "SUPERMEMORY_API_KEY",
+        "x-sm-user-id": `dhravya`,
+        "x-sm-conversation-id": "conversation-id"
+    },
+})
+
+const messages = [
+{"role" : "user", "text": "Ein ziemlich langer Text"}
+// .... 50 weitere Nachrichten
+{"role" : "user", "text": "neue Nachricht"},
+]
+
+const client.generateText(messages)
+
+// Beim nächsten Mal müssen Sie nicht mehr alles mitsenden.
+const messages2 = [{"role" : "user", "text": "Woran haben wir uns in diesem Gespräch und in dem vom letzten Jahr erinnert?"}]
+
+const client.generateText(messages2)
+```
+
+
+<div id="implementation-examples">
+  ## Implementierungsbeispiele
+</div>
+
+<div id="google-gemini">
+  ### Google Gemini
+</div>
+
+```typescript
+const ai = new GoogleGenAI({ apiKey: "YOUR_API_KEY" });
+
+async function main() {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: "Erkläre in wenigen Worten, wie KI funktioniert",
+    config: {
+      httpOptions: {
+        headers: {
+          'x-sm-user-id': "user_123"
+        }
+      }
+    },
+  });
+  console.debug(response.text);
+}
+```
+
+
+<div id="anthropic">
+  ### Anthropic
+</div>
+
+```typescript
+const anthropic = new Anthropic({
+  apiKey: 'YOUR_API_KEY', // standardmäßig process.env["ANTHROPIC_API_KEY"]
+});
+
+async function main() {
+  const msg = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: "Hello, Claude" }],
+  }, {
+    // Header verwenden
+    headers: {
+      'x-sm-user-id': "user_123"
+    }
+  });
+
+  console.debug(msg);
+}
+```
+
+
+<div id="openai">
+  ### OpenAI
+</div>
+
+```typescript
+const openai = new OpenAI({
+  apiKey: "YOUR_API_KEY"
+});
+
+async function main() {
+  const completion = await openai.chat.completions.create({
+    messages: [
+      { role: "user", content: "Hallo, Assistant." }
+    ],
+    model: "gpt-5",
+    user: "user_123"
+  });
+
+  console.debug(completion.choices[0].message);
+}
+```
