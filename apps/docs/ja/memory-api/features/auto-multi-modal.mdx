@@ -1,0 +1,190 @@
+---
+title: "自動マルチモーダル"
+description: "supermemory は、追加するドキュメントのコンテンツタイプを自動的に検出します。"
+icon: "sparkles"
+---
+
+supermemory はネイティブにマルチモーダルで、追加するドキュメントのコンテンツタイプを自動的に検出します。
+
+私たちは最良のツール群を用いて URL からコンテンツを抽出し、メモリーへの最適な保存のために処理します。
+
+<div id="automatic-content-type-detection">
+  ## コンテンツタイプの自動検出
+</div>
+
+supermemory は、追加するドキュメントのコンテンツタイプを自動検出します。コンテンツを API に渡すだけで、あとは supermemory が処理します。
+
+<Tabs>
+  <Tab title="仕組み">
+    コンテンツ検出システムは以下を解析します:
+    - URL のパターンとドメイン
+    - ファイル拡張子と MIME タイプ
+    - コンテンツ構造とメタデータ
+    - ヘッダーとレスポンス種類
+  </Tab>
+  <Tab title="ベストプラクティス">
+    <Accordion title="コンテンツタイプのベストプラクティス" defaultOpen icon="sparkles">
+      1. **タイプ選択**
+         - シンプルなテキストには `note` を使用
+         - オンラインコンテンツには `webpage` を使用
+         - 可能であればネイティブタイプを使用
+
+      2. **URL コンテンツ**
+         - 追跡パラメータのないクリーンな URL を送信
+         - ホームページではなく記事ページの URL を使用
+         - 送信前に URL へのアクセス可否を確認
+    </Accordion>
+
+  </Tab>
+</Tabs>
+
+<div id="quick-implementation">
+  ### 迅速な実装
+</div>
+
+やることは、コンテンツを `/documents` エンドポイントに渡すだけです:
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/documents \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  -d '{"content": "https://example.com/article"}'
+```
+
+```typescript
+await client.add.create({
+  content: "https://example.com/article",
+});
+```
+
+```python
+client.add.create(
+    content="https://example.com/article"
+)
+```
+
+</CodeGroup>
+
+<Note>
+  supermemory は、URL からコンテンツを抽出するために [Markdowner](https://md.dhr.wtf) を使用しています。
+</Note>
+
+<div id="supported-content-types">
+  ## 対応コンテンツタイプ
+</div>
+
+supermemory は、メモリー作成の柔軟性を高めるため、幅広いコンテンツ形式に対応しています:
+
+<Grid cols={2}>
+  <Card title="Text Content" icon="document-text">
+    - `note`: プレーンテキストのノートや文書
+    - 生のテキストを直接処理
+    - 最適な検索性のためにコンテンツを自動で chunk 化
+    - 書式や構造を保持
+  </Card>
+
+  <Card title="Web Content" icon="globe">
+    - `webpage`: ウェブページ（URL を指定するだけ）
+    - 主要なコンテンツをインテリジェントに抽出
+    - 重要なメタデータ（title、description、images）を保持
+    - 利用可能な場合は OpenGraph メタデータを抽出
+
+    - `tweet`: Twitter コンテンツ
+    - ツイート本文、メディア、メタデータを取得
+    - 該当する場合はスレッド構造を保持
+  </Card>
+
+  <Card title="Document Types" icon="document">
+    - `pdf`: PDF ファイル
+    - 構造を保ったままテキストを抽出
+    - 検索可能な PDF とスキャン文書を OCR で処理
+    - 改ページや書式を保持
+
+    - `google_doc`: Google ドキュメント
+    - Google Docs API とシームレスに連携
+    - 文書の書式や構造を保持
+    - 元の文書が変更された場合に自動更新
+
+    - `notion_doc`: Notion ページ
+    - Notion のブロック構造を保持しつつコンテンツを抽出
+    - リッチテキストの書式や埋め込みコンテンツに対応
+  </Card>
+
+  <Card title="Media Types" icon="photo">
+    - `image`: テキストを含む画像
+    - 高度な OCR によるテキスト抽出
+    - 視覚コンテンツの解析と説明
+
+    - `video`: 動画コンテンツ
+    - 書き起こしとコンテンツ抽出
+    - キーフレーム解析
+  </Card>
+</Grid>
+
+<div id="processing-pipeline">
+  ## 処理パイプライン
+</div>
+
+<Steps>
+  <Step title="Content Detection">
+    supermemory は、与えられた入力に基づいてコンテンツの種類を自動判別します。
+  </Step>
+
+<Step title="Content Extraction">
+  種別ごとの抽出器が次の手順でコンテンツを処理します：- 各フォーマット向けの専用パーサー - リトライ付きのエラー処理 - レート制限の管理
+</Step>
+
+  <Step title="AI Enhancement">
+    ```typescript
+    interface ProcessedContent {
+      content: string;      // 抽出テキスト
+      summary?: string;     // AI生成の要約
+      tags?: string[];     // 抽出タグ
+      categories?: string[]; // コンテンツのカテゴリ
+    }
+    ```
+  </Step>
+
+  <Step title="Chunking & Indexing">
+    - 文単位の分割
+    - 2文のオーバーラップ
+    - コンテキストの保持
+    - セマンティックな一貫性
+  </Step>
+</Steps>
+
+<div id="technical-specifications">
+  ## 技術仕様
+</div>
+
+<div id="size-limits">
+  ### サイズ上限
+</div>
+
+| コンテンツ種別 | 最大サイズ |
+| -------------- | ---------- |
+| テキスト／ノート | 1MB       |
+| PDF            | 10MB       |
+| 画像           | 5MB        |
+| 動画           | 100MB      |
+| ウェブページ   | 該当なし   |
+| Google ドキュメント | 該当なし |
+| Notion ページ  | 該当なし   |
+| ツイート       | 該当なし   |
+
+<div id="processing-time">
+  ### 処理時間
+</div>
+
+| コンテンツ種別 | 処理時間 |
+| -------------- | -------- |
+| テキスト／ノート | ほぼ即時 |
+| PDF            | 1〜5秒   |
+| 画像           | 2〜10秒  |
+| 動画           | 10秒以上 |
+| Webページ       | 1〜3秒   |
+| Googleドキュメント | 該当なし |
+| Notionページ    | 該当なし |
+| ツイート        | 該当なし |

@@ -1,0 +1,812 @@
+---
+title: "パーソナルAIアシスタント"
+description: "会話をまたいでユーザーの嗜好や習慣、コンテキストを記憶するAIアシスタントを構築する"
+---
+
+ユーザーの嗜好や習慣、業務コンテキスト、会話履歴など、あらゆる情報を学習して記憶するパーソナルAIアシスタントを構築します。このレシピでは、Supermemory の Memory Tools を用いて、真にパーソナライズされたAI体験を実現する方法を紹介します。
+
+<div id="what-youll-build">
+  ## これから構築するもの
+</div>
+
+次の機能を備えたパーソナルAIアシスタント:
+
+- **ユーザーの嗜好を記憶**（食事制限、勤務スケジュール、コミュニケーションスタイル）
+- **会話から学習**し、時間の経過とともに応答を改善
+- **複数のチャットセッションにわたって文脈を維持**
+- **ユーザー履歴に基づくパーソナライズされたおすすめを提供**
+- **複数の話題を扱いながら文脈を維持**
+
+<div id="prerequisites">
+  ## 前提条件
+</div>
+
+- Node.js 18+ または Python 3.8+
+- Supermemory の APIキー
+- OpenAI または Anthropic の APIキー
+- チャットアプリケーションの基礎知識
+
+<div id="implementation">
+  ## 実装
+</div>
+
+<div id="step-1-project-setup">
+  ### ステップ 1: プロジェクトのセットアップ
+</div>
+
+<Tabs>
+  <Tab title="Next.js (TypeScript)">
+    ```bash
+    npx create-next-app@latest personal-ai --typescript --tailwind --eslint
+    cd personal-ai
+    npm install @supermemory/tools ai openai
+    ```
+
+    環境変数を設定します:
+    ```bash .env.local
+    SUPERMEMORY_API_KEY=your_supermemory_key
+    OPENAI_API_KEY=your_openai_key
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```bash
+    mkdir personal-ai && cd personal-ai
+    python -m venv venv
+    source venv/bin/activate  # Windows の場合: venv\Scripts\activate
+    pip install supermemory openai fastapi uvicorn python-multipart
+    ```
+
+    環境変数を設定します:
+    ```bash .env
+    SUPERMEMORY_API_KEY=your_supermemory_key
+    OPENAI_API_KEY=your_openai_key
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-2-core-assistant-logic">
+  ### ステップ 2: アシスタントのコアロジック
+</div>
+
+<Tabs>
+  <Tab title="Next.js の API ルート">
+    ```typescript app/api/chat/route.ts
+    import { streamText } from 'ai'
+    import { createOpenAI } from '@ai-sdk/openai'
+    import { supermemoryTools } from '@supermemory/tools/ai-sdk'
+
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY!
+    })
+
+    export async function POST(request: Request) {
+      const { messages, userId = 'default-user' } = await request.json()
+
+      const result = await streamText({
+        model: openai('gpt-5'),
+        messages,
+        tools: supermemoryTools(process.env.SUPERMEMORY_API_KEY!, {
+          containerTags: [userId]
+        }),
+        system: `あなたは高度にパーソナライズされたAIアシスタントです。主な目標は、ユーザーについて学習し、時間の経過とともにより個人に特化したサポートを提供することです。
+
+    メモリー管理：
+    1. ユーザーが個人情報、設定、またはコンテキストを共有した際は、すぐにaddMemoryを使用して保存してください
+    2. リクエストに応答する前に、ユーザーに関連するコンテキストをメモリーから検索してください
+    3. 過去の会話を活用して現在の応答に反映させてください
+    4. ユーザーのコミュニケーションスタイル、設定、よく話題にするトピックを記憶してください
+
+    パーソナリティ：
+    - ユーザーの好みに合わせてコミュニケーションスタイルを調整する
+    - 関連する場合は過去の会話を自然に参照する
+    - 学習したパターンに基づいて積極的にサポートを提案する
+    - プライバシーを尊重しながら真に役立つ存在となる
+
+    記憶すべき内容の例：
+    - 勤務スケジュールと職務
+    - 食事の好みや制限
+    - コミュニケーションの好み（フォーマル/カジュアル）
+    - よく関心を示すトピック
+    - 取り組んでいる目標やプロジェクト
+    - 共有される家族や個人的な背景
+    - 好みのツールやワークフロー
+    - タイムゾーンと利用可能時間
+
+    パーソナライズされたコンテキストに応じたサポートを提供するため、応答前には必ずメモリーを検索してください。`
+      })
+
+      return result.toAIStreamResponse()
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python FastAPI">
+    ```python main.py
+    from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    import openai
+    from supermemory import Supermemory
+    import json
+    import os
+    from typing import List, Dict, Any
+    import asyncio
+
+    app = FastAPI()
+
+    openai_client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    supermemory_client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+    SYSTEM_PROMPT = """あなたは高度にパーソナライズされたAIアシスタントです。主な目標は、ユーザーについて学習し、時間の経過とともにより個人に特化したサポートを提供することです。
+
+    メモリー管理:
+    1. ユーザーが個人情報、設定、またはコンテキストを共有した場合、即座に保存する
+    2. リクエストに応答する前に、ユーザーに関する関連コンテキストを検索する
+    3. 過去の会話を活用して現在の応答に反映させる
+    4. ユーザーのコミュニケーションスタイル、設定、よく話題にするトピックを記憶する
+
+    パーソナリティ:
+    - ユーザーの設定に合わせてコミュニケーションスタイルを調整する
+    - 関連する場合は過去の会話を自然に参照する
+    - 学習したパターンに基づいて積極的にサポートを提供する
+    - プライバシーを尊重しながら真に役立つ存在になる
+
+    パーソナライズされた、コンテキストに応じたサポートを提供するため、応答前に必ずメモリーを検索してください。"""
+
+    async def search_user_memories(query: str, user_id: str) -> str:
+        """ユーザーのメモリーから関連するコンテキストを検索"""
+        try:
+            results = supermemory_client.search.memories(
+                q=query,
+                container_tag=f"user_{user_id}",
+                limit=5
+            )
+
+            if results.results:
+                context = "\n".join([r.memory for r in results.results])
+                return f"ユーザーに関する関連メモリー:\n{context}"
+            return "関連するメモリーが見つかりませんでした。"
+        except Exception as e:
+            return f"メモリー検索エラー: {e}"
+
+    async def add_user_memory(content: str, user_id: str):
+        """ユーザーのメモリーに新しい情報を追加"""
+        try:
+            supermemory_client.memories.add(
+                content=content,
+                container_tag=f"user_{user_id}",
+                metadata={"type": "personal_info", "timestamp": "auto"}
+            )
+        except Exception as e:
+            print(f"メモリー追加エラー: {e}")
+
+    @app.post("/chat")
+    async def chat_endpoint(data: dict):
+        messages = data.get("messages", [])
+        user_id = data.get("userId", "default-user")
+
+        if not messages:
+            raise HTTPException(status_code=400, detail="メッセージが提供されていません")
+
+        # メモリー検索用のユーザーの最後のメッセージを取得
+        user_message = messages[-1]["content"] if messages else ""
+
+        # 関連するメモリーを検索
+        memory_context = await search_user_memories(user_message, user_id)
+
+        # メモリーコンテキストを含むシステムメッセージを追加
+        enhanced_messages = [
+            {"role": "system", "content": f"{SYSTEM_PROMPT}\n\n{memory_context}"}
+        ] + messages
+
+        try:
+            response = await openai_client.chat.completions.create(
+                model="gpt-5",
+                messages=enhanced_messages,
+                stream=True,
+                temperature=0.7
+            )
+
+            async def generate():
+                full_response = ""
+                async for chunk in response:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        full_response += content
+                        yield f"data: {json.dumps({'content': content})}\n\n"
+
+                # 応答完了後、メモリーに保存する価値のあるコンテンツを分析
+                if "remember" in user_message.lower() or any(word in user_message.lower() for word in ["prefer", "like", "dislike", "work", "schedule", "diet"]):
+                    await add_user_memory(user_message, user_id)
+
+            return StreamingResponse(generate(), media_type="text/plain")
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    if __name__ == "__main__":
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-3-frontend-interface">
+  ### ステップ3：フロントエンドのインターフェース
+</div>
+
+<Tabs>
+  <Tab title="Next.js チャットコンポーネント">
+    ```tsx app/page.tsx
+    'use client'
+
+    import { useChat } from 'ai/react'
+    import { useState, useEffect } from 'react'
+
+    export default function PersonalAssistant() {
+      const [userId, setUserId] = useState('')
+      const [userName, setUserName] = useState('')
+
+      const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+        api: '/api/chat',
+        body: {
+          userId
+        }
+      })
+
+      // ユーザーIDを生成または取得
+      useEffect(() => {
+        const storedUserId = localStorage.getItem('personal-ai-user-id')
+        const storedUserName = localStorage.getItem('personal-ai-user-name')
+
+        if (storedUserId) {
+          setUserId(storedUserId)
+          setUserName(storedUserName || '')
+        } else {
+          const newUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          localStorage.setItem('personal-ai-user-id', newUserId)
+          setUserId(newUserId)
+        }
+      }, [])
+
+      const handleNameSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (userName.trim()) {
+          localStorage.setItem('personal-ai-user-name', userName)
+          // 自己紹介メッセージを送信
+          handleSubmit(e, {
+            data: {
+              content: `こんにちは！私の名前は${userName}です。私について学習し、様々なタスクでサポートしてくれるパーソナルAIアシスタントを探しています。`
+            }
+          })
+        }
+      }
+
+      return (
+        <div className="flex flex-col h-screen max-w-4xl mx-auto p-4">
+          {/* ヘッダー */}
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg mb-6">
+            <h1 className="text-2xl font-bold">パーソナルAIアシスタント</h1>
+            <p className="text-blue-100">
+              {userName ? `こんにちは${userName}さん！` : 'あなたを学習し記憶するAI'}
+            </p>
+          </div>
+
+          {/* 名前設定 */}
+          {!userName && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <form onSubmit={handleNameSubmit} className="flex gap-2">
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="何とお呼びすればよろしいですか？"
+                  className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  開始する
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* メッセージ */}
+          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+            {messages.length === 0 && userName && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-gray-600">
+                  こんにちは{userName}さん！私はあなたのパーソナルAIアシスタントです。チャットを通じて、あなたの好み、
+                  仕事のスタイル、興味について学習していきます。覚えておいてほしいことがあれば、お気軽にお話しください！
+                </p>
+                <div className="mt-3 text-sm text-gray-500">
+                  <p><strong>例えば、こんなことを言ってみてください：</strong></p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>「私はソフトウェアエンジニアとして働いており、簡潔な回答を好みます」</li>
+                    <li>「私はベジタリアンで、ナッツアレルギーがあることを覚えておいてください」</li>
+                    <li>「私は通常EST時間の9時から5時まで働き、正午に昼食を取ります」</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`p-4 rounded-lg ${
+                  message.role === 'user'
+                    ? 'bg-blue-500 text-white ml-auto max-w-2xl'
+                    : 'bg-white border border-gray-200 max-w-2xl'
+                }`}
+              >
+                <div className="flex items-start space-x-2">
+                  {message.role === 'assistant' && (
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      AI
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-2xl">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    AI
+                  </div>
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 入力 */}
+          {userName && (
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                value={input}
+                onChange={handleInputChange}
+                placeholder="あなた自身について教えてください、またはサポートが必要なことをお聞かせください..."
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                送信
+              </button>
+            </form>
+          )}
+        </div>
+      )
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python（Streamlit）">
+    ```python streamlit_app.py
+    import streamlit as st
+    import requests
+    import json
+    import uuid
+
+    st.set_page_config(page_title="パーソナルAIアシスタント", page_icon="🤖", layout="wide")
+
+    # セッション状態を初期化
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+    if 'user_id' not in st.session_state:
+        st.session_state.user_id = f"user_{uuid.uuid4().hex[:8]}"
+    if 'user_name' not in st.session_state:
+        st.session_state.user_name = None
+
+    # ヘッダー
+    st.title("🤖 パーソナルAIアシスタント")
+    st.markdown("*学習し記憶するあなたのAI*")
+
+    # ユーザー情報用サイドバー
+    with st.sidebar:
+        st.header("👤 ユーザープロフィール")
+
+        if not st.session_state.user_name:
+            name = st.text_input("何とお呼びすればよろしいですか？")
+            if st.button("開始") and name:
+                st.session_state.user_name = name
+                st.session_state.messages.append({
+                    "role": "user",
+                    "content": f"こんにちは！私の名前は{name}です。パーソナルAIアシスタントを探しています。"
+                })
+                st.rerun()
+        else:
+            st.write(f"**名前:** {st.session_state.user_name}")
+            st.write(f"**user_id:** {st.session_state.user_id[:12]}...")
+
+            if st.button("会話をリセット"):
+                st.session_state.messages = []
+                st.rerun()
+
+        st.markdown("---")
+        st.markdown("""
+        ### 💡 こんなことを言ってみてください：
+        - "私はソフトウェアエンジニアとして働いており、簡潔な回答を好みます"
+        - "私がベジタリアンであることを覚えておいてください"
+        - "私は通常EST時間の9時から5時まで働いています"
+        """)
+
+    # メインチャットインターフェース
+    if st.session_state.user_name:
+        # メッセージを表示
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # チャット入力
+        if prompt := st.chat_input("あなた自身について教えてください、または助けを求めてください..."):
+            # ユーザーメッセージを追加
+            st.session_state.messages.append({"role": "user", "content": prompt})
+
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # AI応答を取得
+            with st.chat_message("assistant"):
+                with st.spinner("考え中..."):
+                    try:
+                        response = requests.post(
+                            "http://localhost:8000/chat",
+                            json={
+                                "messages": st.session_state.messages,
+                                "userId": st.session_state.user_id
+                            },
+                            timeout=30
+                        )
+
+                        if response.status_code == 200:
+                            # ストリーミング応答を処理
+                            full_response = ""
+                            for line in response.iter_lines():
+                                if line:
+                                    try:
+                                        data = json.loads(line.decode('utf-8').replace('data: ', ''))
+                                        if 'content' in data:
+                                            full_response += data['content']
+                                    except:
+                                        continue
+
+                            st.markdown(full_response)
+                            st.session_state.messages.append({
+                                "role": "assistant",
+                                "content": full_response
+                            })
+                        else:
+                            st.error(f"エラー: {response.status_code}")
+                    except Exception as e:
+                        st.error(f"接続エラー: {e}")
+
+    else:
+        st.info("👆 開始するにはサイドバーでお名前を入力してください！")
+
+    # 実行方法: streamlit run streamlit_app.py
+    ```
+  </Tab>
+</Tabs>
+
+<div id="testing-your-assistant">
+  ## アシスタントをテストする
+</div>
+
+<div id="step-4-test-memory-formation">
+  ### ステップ4: メモリー形成をテストする
+</div>
+
+メモリー機能を検証するために、次の会話フローを試してください:
+
+1. **個人の嗜好**:
+   ```
+   User: "Hi! I'm Sarah, a product manager at a tech startup. I prefer brief, actionable responses and I'm always busy with user research."
+
+   Assistant: [名前、役割、コミュニケーションの嗜好を記憶しておく]
+
+   User: "What's a good way to prioritize features?"
+
+   Assistant: [ユーザーがPMで、簡潔な回答を好む点に言及する]
+   ```
+
+2. **食事・ライフスタイル**:
+   ```
+   User: "Remember that I'm vegan and I work out every morning at 6 AM."
+
+   User: "Suggest a quick breakfast for tomorrow."
+
+   Assistant: [ワークアウトの前後に適したヴィーガンの選択肢を提案する]
+   ```
+
+3. **仕事の文脈**:
+   ```
+   User: "I'm working on a React project and I prefer TypeScript over JavaScript."
+
+   User: "Help me with state management."
+
+   Assistant: [TypeScriptに特化した解決策を提案する]
+   ```
+
+<div id="step-5-verify-memory-storage">
+  ### ステップ 5: メモリー保存の確認
+</div>
+
+保存メモリが正しく保存されているか確認します:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript scripts/check-memories.ts
+    import { Supermemory } from '@supermemory/tools'
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    })
+
+    async function checkUserMemories(userId: string) {
+      try {
+        const memories = await client.memories.list({
+          containerTags: [userId],
+          limit: 20,
+          sort: 'updatedAt',
+          order: 'desc'
+        })
+
+        console.log(`Found ${memories.memories.length} memories for ${userId}:`)
+        memories.memories.forEach((memory, i) => {
+          console.log(`${i + 1}. ${memory.content.substring(0, 100)}...`)
+        })
+
+        // Test search
+        const searchResults = await client.search.memories({
+          q: "preferences work",
+          containerTag: userId,
+          limit: 5
+        })
+
+        console.log('\nSearch Results:')
+        searchResults.results.forEach((result, i) => {
+          console.log(`${i + 1}. (${result.similarity}) ${result.memory.substring(0, 100)}...`)
+        })
+
+      } catch (error) {
+        console.error('Error:', error)
+      }
+    }
+
+    // Run: npx ts-node scripts/check-memories.ts USER_ID_HERE
+    checkUserMemories(process.argv[2] || 'default-user')
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python check_memories.py
+    from supermemory import Supermemory
+    import os
+    import sys
+
+    client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+    def check_user_memories(user_id):
+        try:
+            # List all memories for user
+            memories = client.memories.list(
+                container_tags=[user_id],
+                limit=20,
+                sort="updatedAt",
+                order="desc"
+            )
+
+            print(f"Found {len(memories.memories)} memories for {user_id}:")
+            for i, memory in enumerate(memories.memories):
+                print(f"{i + 1}. {memory.content[:100]}...")
+
+            # Test search
+            search_results = client.search.memories(
+                q="preferences work",
+                container_tag=user_id,
+                limit=5
+            )
+
+            print('\nSearch Results:')
+            for i, result in enumerate(search_results.results):
+                print(f"{i + 1}. ({result.similarity}) {result.memory[:100]}...")
+
+        except Exception as error:
+            print(f'Error: {error}')
+
+    # Run: python check_memories.py USER_ID_HERE
+    user_id = sys.argv[1] if len(sys.argv) > 1 else 'default-user'
+    check_user_memories(user_id)
+    ```
+  </Tab>
+</Tabs>
+
+<div id="production-considerations">
+  ## 本番運用における考慮事項
+</div>
+
+<div id="security-privacy">
+  ### セキュリティとプライバシー
+</div>
+
+1. ユーザーの分離:
+   ```typescript
+   // 常にユーザーごとのコンテナータグを使用する
+   const tools = supermemoryTools(apiKey, {
+     containerTags: [userId]
+   })
+   ```
+
+2. メモリーの暗号化:
+   ```typescript
+   // 機微なデータにはクライアント側の暗号化を検討する
+   const encryptedContent = encrypt(sensitiveData, userKey)
+   await client.memories.add({
+     content: encryptedContent,
+     containerTag: userId,
+     metadata: { encrypted: true }
+   })
+   ```
+
+<div id="performance-optimization">
+  ### パフォーマンス最適化
+</div>
+
+1. **メモリー検索の最適化**:
+   ```typescript
+   // 速度と精度のトレードオフに応じて適切なthresholdを設定
+   const quickSearch = await client.search.memories({
+     q: userQuery,
+     containerTag: userId,
+     threshold: 0.6,     // バランス重視
+     rerank: false,      // 高速化のためスキップ
+     limit: 3            // 取得件数を絞る
+   })
+   ```
+
+2. **キャッシュ戦略**:
+   ```typescript
+   // よく参照されるユーザーコンテキストをキャッシュ
+   const userContext = await redis.get(`user_context:${userId}`)
+   if (!userContext) {
+     const memories = await client.search.memories({
+       q: "user preferences work style",
+       containerTag: userId,
+       limit: 10
+     })
+     await redis.setex(`user_context:${userId}`, 300, JSON.stringify(memories))
+   }
+   ```
+
+<div id="monitoring-analytics">
+  ### モニタリングとアナリティクス
+</div>
+
+```typescript
+// メモリーの形成と取得を追跡
+const analytics = {
+  memoriesCreated: await redis.incr(`memories_created:${userId}`),
+  searchesPerformed: await redis.incr(`searches:${userId}`),
+  conversationLength: messages.length
+}
+
+// 分析用ログ
+console.log('ユーザーインタラクション:', {
+  userId,
+  action: 'chat_response',
+  memoriesFound: searchResults.results.length,
+  responseTime: Date.now() - startTime,
+  ...analytics
+})
+```
+
+
+<div id="extensions-customization">
+  ## 拡張とカスタマイズ
+</div>
+
+<div id="1-add-personality-profiles">
+  ### 1. パーソナリティ・プロファイルを追加
+</div>
+
+```typescript
+const personalityProfiles = {
+  professional: "フォーマルでビジネスに適したトーンで応答する",
+  casual: "フレンドリーで会話的なトーンを使用し、時折ユーモアを交える",
+  technical: "例を含む詳細な技術的説明を提供する",
+  concise: "応答を簡潔で要点を絞ったものにする"
+}
+
+// ユーザーの設定に基づいてシステムプロンプトに追加
+const userProfile = await getUserProfile(userId)
+const systemPrompt = `${basePrompt}\n\nCommunication Style: ${personalityProfiles[userProfile.style]}`
+```
+
+
+<div id="2-smart-notifications">
+  ### 2. スマート通知
+</div>
+
+```typescript
+// ユーザーパターンに基づくプロアクティブな提案
+const shouldSuggest = await analyzeUserPatterns(userId)
+if (shouldSuggest.type === 'daily_standup') {
+  return {
+    message: "スケジュールを確認したところ、午前9時のスタンドアップの準備をお手伝いしましょうか？",
+    suggestedActions: ["昨日の進捗を確認", "今日の目標を準備"]
+  }
+}
+```
+
+
+<div id="3-multi-modal-memory">
+  ### 3. マルチモーダル メモリー
+</div>
+
+```typescript
+// 画像とdocumentsを処理
+if (message.attachments) {
+  for (const attachment of message.attachments) {
+    await client.memories.uploadFile({
+      file: attachment,
+      containerTag: userId,
+      metadata: {
+        type: 'user_shared',
+        context: message.content
+      }
+    })
+  }
+}
+```
+
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+- **複数ユーザー対応へのスケール**: ユーザー認証の導入と適切なアイソレーション
+- **音声インタラクションの追加**: 音声認識/音声合成APIとの統合
+- **モバイルアプリ**: React Native または Flutter でモバイル版を実装
+- **外部連携**: カレンダー、メール、タスク管理ツールと接続
+- **高度なAI機能**: 感情検出や会話要約の追加
+
+<div id="troubleshooting">
+  ## トラブルシューティング
+</div>
+
+**メモリーが保持されない？**
+
+- `x-sm-user-id` ヘッダーが一貫していることを確認
+- APIキーに書き込み権限があることを確認
+- コンテナタグが正しく設定されていることを確認
+
+**レスポンスがパーソナライズされない？**
+
+- 関連する保存メモリをより多く見つけられるように検索の limit を増やす
+- ヒット範囲を広げるために threshold を下げる
+- 保存メモリが適切なコンテキスト付きで追加されているか確認
+
+**パフォーマンスに問題がある？**
+
+- 応答を高速化するために検索の limit を減らす
+- 頻出検索に対してキャッシュを実装
+- 速度と精度のバランスを取るために適切な threshold を使用
+
+---
+
+*このレシピは個人向けAIアシスタントの基盤です。ニーズやユースケースに合わせてカスタマイズしてください。*

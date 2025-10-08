@@ -1,0 +1,90 @@
+---
+title: "AI SDK 連携"
+description: "Supermemory を Vercel AI SDK と組み合わせてシームレスにメモリー管理を実現"
+sidebarTitle: "概要"
+---
+
+Supermemory の AI SDK は、Vercel の AI SDK とネイティブに統合されており、次の 2 つのアプローチを提供します：エージェント主導の対話に使える **Memory Tools** と、自動的にコンテキストを管理する **Infinite Chat**。
+
+<Card title="npm 上の Supermemory ツール" icon="npm" href="https://www.npmjs.com/package/@supermemory/tools">
+  詳細は npm のページをご確認ください
+</Card>
+
+<div id="installation">
+  ## インストール
+</div>
+
+```bash
+npm install @supermemory/tools
+```
+
+<div id="memory-tools">
+  ## Memory Tools
+</div>
+
+検索・追加・取得の各操作で、AIエージェントにメモリー機能を付与します。
+
+```typescript
+import { streamText } from "ai"
+import { createAnthropic } from "@ai-sdk/anthropic"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const anthropic = createAnthropic({
+  apiKey: "YOUR_ANTHROPIC_KEY"
+})
+
+const result = await streamText({
+  model: anthropic("claude-3-sonnet"),
+  prompt: "私の名前はAliceだということを覚えておいて",
+  tools: supermemoryTools("YOUR_SUPERMEMORY_KEY")
+})
+```
+
+<div id="infinite-chat">
+  ## Infinite Chat（インフィニット・チャット）
+</div>
+
+無制限のコンテキストを実現する、チャットアプリケーション向けの自動メモリー管理。
+
+```typescript
+import { streamText } from "ai"
+
+const infiniteChat = createAnthropic({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+
+const result = await streamText({
+  model: infiniteChat("claude-3-sonnet"),
+  messages: [
+    { role: "user", content: "私の名前は何ですか？" }
+  ]
+})
+```
+
+<div id="when-to-use">
+  ## 使いどころ
+</div>
+
+| アプローチ | ユースケース |
+|----------|----------|
+| Memory Tools | 明示的にメモリーを制御する必要があるAIエージェント |
+| Infinite Chat（インフィニット・チャット） | コンテキストを自動付与するチャットアプリケーション |
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Memory Tools" icon="wrench" href="/ja/ai-sdk/memory-tools">
+    エージェントによるメモリー管理
+  </Card>
+
+  <Card title="Infinite Chat" icon="infinity" href="/ja/ai-sdk/infinite-chat">
+    コンテキストの自動管理
+  </Card>
+</CardGroup>

@@ -1,0 +1,163 @@
+---
+title: "Memory Tools"
+description: "Vercel AI SDK のツールで AI エージェントにメモリー機能を追加"
+sidebarTitle: "Memory Tools"
+---
+
+Memory Tools により、AI エージェントは保存メモリを検索・追加・取得できるようになります。
+
+<div id="setup">
+  ## セットアップ
+</div>
+
+```typescript
+import { streamText } from "ai"
+import { createOpenAI } from "@ai-sdk/openai"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const openai = createOpenAI({
+  apiKey: "YOUR_OPENAI_KEY"
+})
+
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "私の名前はAliceであることを覚えておいて",
+  tools: supermemoryTools("YOUR_SUPERMEMORY_KEY")
+})
+```
+
+<div id="available-tools">
+  ## 使用可能なツール
+</div>
+
+<div id="search-memories">
+  ### 保存メモリの検索
+</div>
+
+ユーザーの保存メモリに対してセマンティック検索を実行します。
+
+```typescript
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "私の食事の好みは何ですか？",
+  tools: supermemoryTools("API_KEY")
+})
+
+// AIは自動的にsearchMemoriesツールを呼び出します
+// ツール呼び出しの例:
+// searchMemories({ informationToGet: "dietary preferences and restrictions" })
+```
+
+<div id="add-memory">
+  ### メモリーの追加
+</div>
+
+新しい情報を保存します：
+
+```typescript
+const result = await streamText({
+  model: anthropic("claude-3-sonnet"),
+  prompt: "私がピーナッツアレルギーであることを覚えておいて",
+  tools: supermemoryTools("API_KEY")
+})
+
+// AIは自動的にaddMemoryツールを呼び出します
+// ツール呼び出しの例:
+// addMemory({ memory: "ユーザーはピーナッツアレルギーです" })
+```
+
+<div id="fetch-memory">
+  ### メモリーの取得
+</div>
+
+ID を指定して特定のメモリーを取得します:
+
+```typescript
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "メモリー abc123 の詳細を取得して",
+  tools: supermemoryTools("API_KEY")
+})
+
+// AIは自動的にfetchMemoryツールを呼び出します
+// ツール呼び出しの例:
+// fetchMemory({ memoryId: "abc123" })
+```
+
+<div id="using-individual-tools">
+  ## 個別ツールの使用
+</div>
+
+より細かな制御が必要な場合は、ツールを個別にインポートしてください：
+
+```typescript
+import {
+  searchMemoriesTool,
+  addMemoryTool,
+  fetchMemoryTool
+} from "@supermemory/tools/ai-sdk"
+
+// 検索ツールのみを使用
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "私について何を知っていますか？",
+  tools: {
+    searchMemories: searchMemoriesTool("API_KEY", {
+      projectId: "personal"
+    })
+  }
+})
+
+// カスタムツールと組み合わせ
+const result = await streamText({
+  model: anthropic("claude-3"),
+  prompt: "カレンダーの管理を手伝って",
+  tools: {
+    searchMemories: searchMemoriesTool("API_KEY"),
+    // あなたのカスタムツール
+    createEvent: yourCustomTool,
+    sendEmail: anotherCustomTool
+  }
+})
+```
+
+<div id="tool-results">
+  ## ツールの結果
+</div>
+
+各ツールは結果オブジェクトを返します。
+
+```typescript
+// searchMemories の結果
+{
+  success: true,
+  results: [...],  // 保存メモリの配列
+  count: 5
+}
+
+// addMemory の結果
+{
+  success: true,
+  memory: { id: "mem_123", ... }
+}
+
+// fetchMemory の結果
+{
+  success: true,
+  memory: { id: "mem_123", content: "...", ... }
+}
+```
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Infinite Chat" icon="infinity" href="/ja/ai-sdk/infinite-chat">
+    自動メモリー管理を試してみる
+  </Card>
+
+  <Card title="Examples" icon="code" href="/ja/cookbook/ai-sdk-integration">
+    より完成度の高いサンプルを見る
+  </Card>
+</CardGroup>

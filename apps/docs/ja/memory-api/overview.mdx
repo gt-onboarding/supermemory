@@ -1,0 +1,158 @@
+---
+title: "クイックスタート - 5分"
+description: "supermemory をアプリケーションに統合する方法を学ぶ"
+---
+
+<div id="authentication">
+  ## 認証
+</div>
+
+[Supermemory の Developer Platform](https://console.supermemory.ai) にアクセスして、API のあらゆる側面を監視・管理しましょう。
+
+すべての API リクエストには APIキー による認証が必要です。APIキーは次のように指定します:
+
+<CodeGroup>
+  ```bash cURL
+  Authorization: Bearer YOUR_API_KEY
+  ```
+
+  ```typescript Typescript
+  // npm install supermemory
+
+  const client = new supermemory({
+    apiKey: "YOUR_API_KEY",
+  });
+  ```
+
+  ```python Python
+  # pip install supermemory
+
+  client = supermemory(
+      api_key="YOUR_API_KEY",
+  )
+  ```
+</CodeGroup>
+
+<div id="installing-the-clients">
+  ## クライアントのインストール
+</div>
+
+supermemory は API 経由、または当社の SDK（Software Development Kit、ソフトウェア開発キット）を使用して利用できます
+
+<CodeGroup>
+  ```bash cURL
+  https://api.supermemory.ai/v3
+  ```
+
+  ```bash Typescript
+  npm i supermemory
+  ```
+
+  ```bash Python
+  pip install supermemory
+  ```
+</CodeGroup>
+
+<div id="add-your-first-memory">
+  ## 最初のメモリーを追加する
+</div>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{"content": "This is the content of my first memory."}'
+  ```
+
+  ```typescript Typescript
+  await client.memory.add({
+    content: "This is the content of my first memory.",
+  });
+  ```
+
+  ```python Python
+  client.memory.add(
+      content="This is the content of my first memory.",
+  )
+  ```
+</CodeGroup>
+
+これで、あなたの Supermemory アカウントに新しいメモリーが追加されます。
+
+[API Playground](/ja/api-reference/manage-memories/add-memory) で試してみましょう。
+
+<div id="content-processing">
+  ## コンテンツ処理
+</div>
+
+<Accordion title="Processing steps" icon="sparkles">
+  supermemory にコンテンツを追加すると、いくつかの処理ステップを経ます:
+
+  1. **Queued**: コンテンツが送信された直後の初期状態（キュー待ち）
+  2. **Extracting**: ソースからコンテンツを抽出中
+  3. **Chunking**: コンテンツを意味的な chunks に分割中
+  4. **Embedding**: 検索用のベクター埋め込みを生成中
+  5. **Indexing**: コンテンツを検索インデックスに追加中
+  6. **Done**: 処理完了
+</Accordion>
+
+<Accordion title="Advanced Chunking" icon="sparkles">
+  システムは最適なチャンク化（分割処理）のために高度な NLP 技術を用いています:
+
+  * 自然な境界を保つ文単位の分割
+  * オーバーラップする chunks によるコンテキスト保持
+  * 長文コンテンツのスマートな処理
+  * 意味的一貫性の最適化
+</Accordion>
+
+<div id="search-your-memories">
+  ## 保存メモリを検索する
+</div>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/search \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{"q": "This is the content of my first memory."}'
+  ```
+
+  ```typescript Typescript
+  await client.search.execute({
+    q: "This is the content of my first memory.",
+  });
+  ```
+
+  ```python Python
+  client.search.execute(
+      q="This is the content of my first memory.",
+  )
+  ```
+</CodeGroup>
+
+[API Playground](/ja/api-reference/search-memories/search-memories)で試してみましょう。
+
+supermemory ではさらに多くのことができます。必要な内容は順を追ってご案内します。
+
+次に、supermemory で利用できる機能を見ていきましょう。
+
+<CardGroup cols={2}>
+  <Card title="メモリーを追加する" icon="plus" href="/ja/memory-api/creation">
+    メモリーを追加する
+  </Card>
+
+  <Card title="検索とフィルタリング" icon="search" href="/ja/memory-api/searching">
+    項目の検索
+  </Card>
+
+  <Card title="コネクタと同期" icon="plug" href="/ja/memory-api/connectors">
+    外部ソースとの接続
+  </Card>
+
+  <Card title="機能" icon="sparkles" href="/ja/memory-api/features">
+    機能を見てみる
+  </Card>
+</CardGroup>

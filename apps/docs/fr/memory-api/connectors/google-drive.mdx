@@ -1,0 +1,34 @@
+---
+title: "Google Drive"
+description: "Synchronisez le contenu de votre Google Drive avec supermemory"
+---
+
+supermemory synchronise automatiquement et instantanément les documents Google Drive.
+
+<div id="supported-file-types">
+  ## Formats de fichiers pris en charge
+</div>
+
+- Google Docs
+- Google Slides
+- Google Sheets
+
+<div id="conversions">
+  ## Conversions
+</div>
+
+Pour importer des éléments, supermemory convertit les documents en Markdown, puis les ingère dans supermemory.
+Cette conversion est destructive et peut entraîner la perte de certains éléments de mise en forme.
+
+<div id="sync-frequency">
+  ## Fréquence de synchronisation
+</div>
+
+supermemory synchronise les documents :
+
+- **Lorsqu’un document est modifié ou créé (webhook reçu)**
+    - Notez que tous les providers ne sont pas synchronisés via webhook (synchronisation instantanée actuellement)
+    - Les documents `Google-Drive` et `Notion` sont synchronisés instantanément
+- Toutes les **quatre heures**
+- Sur **synchronisation manuelle** (appel à l’API)
+    - Vous pouvez appeler `/v3/connections/{provider}/sync` pour synchroniser les documents manuellement

@@ -1,0 +1,189 @@
+---
+title: "Überblick"
+description: "Verwandle jedes LLM in einen intelligenten Agenten mit unbegrenztem Kontext und dauerhaftem Speicher"
+sidebarTitle: "Überblick"
+---
+
+Der Memory Router ist ein transparenter Proxy zwischen Ihrer Anwendung und Ihrem LLM-Provider, der Kontext und Speicher-Einträge automatisch verwaltet – ganz ohne Codeänderungen.
+
+<Note>
+  **Live-Demo**: Probieren Sie den Memory Router auf [supermemory.chat](https://supermemory.chat) aus, um ihn in Aktion zu sehen.
+</Note>
+
+<Tip>
+  **Verwenden Sie die Vercel AI SDK?** Sehen Sie sich unsere [AI SDK-Integration](/de/ai-sdk/overview) für die sauberste Implementierung mit `@supermemory/tools/ai-sdk` an – unsere Empfehlung für neue Projekte.
+</Tip>
+
+<div id="what-is-the-memory-router">
+  ## Was ist der Memory Router?
+</div>
+
+Der Memory Router bietet Ihren LLM-Anwendungen:
+
+* **Unbegrenzter Kontext**: Keine Token-Limits mehr – Unterhaltungen können unbegrenzt weiterlaufen
+* **Automatisches Speichermanagement**: Teilt Inhalte intelligent in Chunks, speichert sie und ruft relevanten Kontext ab
+* **Keine Code-Änderungen**: Funktioniert mit Ihren bestehenden OpenAI-kompatiblen Clients
+* **Kostenoptimierung**: Sparen Sie bis zu 70 % bei Token-Kosten durch intelligentes Kontext-Management
+
+<div id="how-it-works">
+  ## Funktionsweise
+</div>
+
+<Steps>
+  <Step title="Proxy-Anfrage">
+    Ihre Anwendung sendet Anfragen an Supermemory statt direkt an Ihren LLM provider
+  </Step>
+
+  <Step title="Kontextverwaltung">
+    Supermemory erledigt automatisch:
+
+    * Entfernt unnötigen Kontext aus langen Unterhaltungen
+    * Sucht relevante Speicher-Einträge aus früheren Interaktionen
+    * Fügt den relevantesten Kontext zu Ihrem Prompt hinzu
+  </Step>
+
+  <Step title="Weiterleitung an LLM">
+    Die optimierte Anfrage wird an Ihren gewählten LLM provider weitergeleitet
+  </Step>
+
+  <Step title="Asynchrone Speichererstellung">
+    Neue Speicher-Einträge werden asynchron erstellt, ohne die Antwort zu verzögern
+  </Step>
+</Steps>
+
+<div id="key-benefits">
+  ## Zentrale Vorteile
+</div>
+
+<div id="for-developers">
+  ### Für Entwickler
+</div>
+
+* **Drop-in-Integration**: Ändern Sie einfach Ihre Basis-URL – keine weiteren Code-Änderungen nötig
+* **Provider-agnostisch**: Funktioniert mit OpenAI, Anthropic, Google, Groq und mehr
+* **Gemeinsamer Speicherpool**: Über die API erstellte Speicher sind für den Router verfügbar – und umgekehrt
+* **Automatisches Fallback**: Wenn Supermemory ein Problem hat, werden Anfragen direkt durchgeleitet
+
+<div id="for-applications">
+  ### Für Anwendungen
+</div>
+
+* **Längere, bessere Unterhaltungen**: Behält den Kontext auch nach Tausenden von Nachrichten
+* **Konsistente Antworten**: Speicher-Einträge sorgen sitzungsübergreifend für konsistente Informationen
+* **Intelligentes Retrieval**: Es wird nur relevanter Kontext einbezogen, was die Antwortqualität verbessert
+* **Kosteneinsparungen**: Automatisches Chunking reduziert den Token-Verbrauch deutlich
+
+<div id="when-to-use-the-memory-router">
+  ## Wann der Memory Router eingesetzt werden sollte
+</div>
+
+Der Memory Router ist ideal für:
+
+<Tabs>
+  <Tab title="Perfekt für">
+    * **Chat-Anwendungen**: Kundensupport, KI-Assistenten, Chatbots
+    * **Lange Unterhaltungen**: Sitzungen, die das Kontextfenster des Modells überschreiten
+    * **Sitzungsübergreifenden Speicher**: Nutzer, die zurückkehren und Gespräche fortsetzen
+    * **Schnelle Prototypen**: Speicherfunktionen ohne eigene Infrastruktur
+  </Tab>
+
+  <Tab title="Stattdessen API erwägen">
+    * **Eigene Retrieval-Logik**: Präzise Kontrolle darüber, welche Speicher abgerufen werden
+    * **Nicht-konversationelle Nutzung**: Dokumentenverarbeitung, Analysetools
+    * **Komplexe Filter**: Erweitertes Metadata-Filtering erforderlich
+    * **Stapelverarbeitung**: Verarbeitung mehrerer documents auf einmal
+  </Tab>
+</Tabs>
+
+<div id="supported-providers">
+  ## Unterstützte Provider
+</div>
+
+Der Memory Router funktioniert mit jedem OpenAI-kompatiblen Endpoint:
+
+| Provider | Basis-URL | Status |
+|----------|----------|---------|
+| OpenAI | `api.openai.com/v1` | ✅ Vollständig unterstützt |
+| Anthropic | `api.anthropic.com/v1` | ✅ Vollständig unterstützt |
+| Google Gemini | `generativelanguage.googleapis.com/v1beta/openai` | ✅ Vollständig unterstützt |
+| Groq | `api.groq.com/openai/v1` | ✅ Vollständig unterstützt |
+| DeepInfra | `api.deepinfra.com/v1/openai` | ✅ Vollständig unterstützt |
+| OpenRouter | `openrouter.ai/api/v1` | ✅ Vollständig unterstützt |
+| Custom | Jeder OpenAI-kompatible Endpoint | ✅ Unterstützt |
+
+<Warning>
+  **Noch nicht unterstützt**:
+
+  * OpenAI Assistants API (`/v1/assistants`)
+</Warning>
+
+<div id="authentication">
+  ## Authentifizierung
+</div>
+
+Der Memory Router benötigt zwei API-Schlüssel:
+
+1. **Supermemory API Key**: Für die Speicherverwaltung
+2. **Provider API Key**: Für Ihren gewählten LLM-Provider
+
+Sie können diese übermitteln über:
+
+* Header (für die Produktion empfohlen)
+* URL-Parameter (nützlich zum Testen)
+* Request-Body (für Kompatibilität)
+
+<div id="how-memories-work">
+  ## Funktionsweise von Speichern
+</div>
+
+Bei Verwendung des Memory Router:
+
+1. **Automatische Extraktion**: Wichtige Informationen aus Unterhaltungen werden automatisch erfasst
+2. **Intelligentes Chunking**: Lange Nachrichten werden in semantische Chunks segmentiert
+3. **Beziehungsaufbau**: Neue Speicher verknüpfen sich mit bestehendem Wissen
+4. **Gezielte Abrufe**: Nur die relevantesten Speicher werden in den Kontext aufgenommen
+
+<Note>
+  Speicher werden zwischen dem Memory Router und der Memory API gemeinsam genutzt, wenn derselbe `user_id` verwendet wird. So können Sie beide zusammen einsetzen.
+</Note>
+
+<div id="response-headers">
+  ## Antwort-Header
+</div>
+
+Der Memory Router fügt Diagnose-Header hinzu, um besser nachvollziehen zu können, was passiert:
+
+| Header | Beschreibung |
+|--------|--------------|
+| `x-supermemory-conversation-id` | Eindeutiger Konversationsbezeichner |
+| `x-supermemory-context-modified` | Ob der Kontext geändert wurde (`true`/`false`) |
+| `x-supermemory-tokens-processed` | Anzahl verarbeiteter Token |
+| `x-supermemory-chunks-created` | Neu erstellte Speicher-Chunks |
+| `x-supermemory-chunks-retrieved` | Zum Kontext hinzugefügte Speicher-Chunks |
+
+<div id="error-handling">
+  ## Fehlerbehandlung
+</div>
+
+Der Memory Router ist auf Zuverlässigkeit ausgelegt:
+
+* **Automatisches Fallback**: Wenn Supermemory auf einen Fehler stößt, wird Ihre Anfrage unverändert durchgeschleust
+* **Error-Header**: Der Header `x-supermemory-error` enthält Details zum Fehler
+* **Keine Ausfallzeit**: Ihre Anwendung läuft weiter, selbst wenn Speicherfunktionen nicht verfügbar sind
+
+## Ratenbegrenzungen &amp; Preise
+
+<div id="rate-limits">
+  ### Rate Limits
+</div>
+
+* Keine Supermemory-spezifischen Rate Limits
+* Unterliegt nur den Limits deines LLM-Providers
+
+<div id="pricing">
+  ### Preise
+</div>
+
+* **Kostenlose Stufe**: 100k Tokens werden kostenlos gespeichert
+* **Standardtarif**: 20 $/Monat nach der kostenlosen Stufe
+* **Nutzungsbasiert**: Jedes Gespräch enthält 20k kostenlose Tokens, danach 1 $ pro Million Tokens

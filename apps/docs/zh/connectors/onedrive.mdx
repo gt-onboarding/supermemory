@@ -1,0 +1,422 @@
+---
+title: "OneDrive Connector"
+description: "通过计划同步与企业账号支持，从 OneDrive 同步 Microsoft Office 文档"
+icon: "microsoft"
+---
+
+将 OneDrive 连接到你的 Supermemory 知识库，可自动同步 Word 文档、Excel 表格和 PowerPoint 演示文稿。支持个人和企业账号，并提供定时同步。
+
+<div id="quick-setup">
+  ## 快速开始
+</div>
+
+<div id="1-create-onedrive-connection">
+  ### 1. 创建 OneDrive 链接账户
+</div>
+
+<CodeGroup>
+
+```typescript Typescript
+import Supermemory from 'supermemory';
+
+const client = new Supermemory({
+  apiKey: process.env.SUPERMEMORY_API_KEY!
+});
+
+const connection = await client.connections.create('onedrive', {
+  redirectUrl: 'https://yourapp.com/auth/onedrive/callback',
+  containerTags: ['user-123', 'onedrive-sync'],
+  documentLimit: 1500,
+  metadata: {
+    source: 'onedrive',
+    accountType: 'business',
+    department: 'marketing'
+  }
+});
+
+// 将用户重定向至 Microsoft OAuth
+window.location.href = connection.authLink;
+// 输出：重定向至 OAuth provider
+// 输出：重定向至 https://login.microsoftonline.com/oauth2/authorize?...
+```
+
+```python Python
+from supermemory import Supermemory
+import os
+
+client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+connection = client.connections.create(
+    'onedrive',
+    redirect_url='https://yourapp.com/auth/onedrive/callback',
+    container_tags=['user-123', 'onedrive-sync'],
+    document_limit=1500,
+    metadata={
+        'source': 'onedrive',
+        'accountType': 'business',
+        'department': 'marketing'
+    }
+)
+
+# 将用户重定向至 Microsoft OAuth
+print(f'Redirect to: {connection.auth_link}')
+# 输出：Redirect to: https://oauth.provider.com/...
+# 输出：Redirect to: https://login.microsoftonline.com/oauth2/authorize?...
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/connections/onedrive" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "redirectUrl": "https://yourapp.com/auth/onedrive/callback",
+    "containerTags": ["user-123", "onedrive-sync"],
+    "documentLimit": 1500,
+    "metadata": {
+      "source": "onedrive",
+      "accountType": "business",
+      "department": "marketing"
+    }
+  }'
+
+# 响应：{
+#   "authLink": "https://login.microsoftonline.com/oauth2/authorize?...",
+#   "expiresIn": "1 hour",
+#   "id": "conn_od123"
+# }
+```
+
+</CodeGroup>
+
+<div id="2-handle-microsoft-oauth">
+  ### 2. 处理 Microsoft OAuth（开放授权协议）
+</div>
+
+在用户授予权限后，Microsoft 会重定向到你的回调 url。链接账户会自动建立，并开始首次同步。
+
+<div id="3-monitor-sync-status">
+  ### 3. 监控同步状态
+</div>
+
+<CodeGroup>
+  ```typescript Typescript
+    // 检查链接账户详情
+    const connection = await client.connections.getByTags('onedrive', {
+      containerTags: ['user-123', 'onedrive-sync']
+    });
+
+
+    // 列出已同步的 Office 文档
+    const documents = await client.connections.listDocuments('onedrive', {
+      containerTags: ['user-123', 'onedrive-sync']
+    });
+    ```
+  ```python Python
+    # 检查链接账户详情
+    connection = client.connections.get_by_tags(
+        'onedrive',
+        container_tags=['user-123', 'onedrive-sync']
+    )
+
+    # 列出已同步的 Office 文档
+    documents = client.connections.list_documents(
+        'onedrive',
+        container_tags=['user-123', 'onedrive-sync']
+    )
+    ```
+  ```bash cURL
+    # 按 provider 和标签获取链接账户
+    curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "onedrive-sync"],
+        "provider": "onedrive"
+      }'
+
+    # 列出已同步的 Office 文档
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "onedrive-sync"],
+        "source": "onedrive"
+      }'
+    ```
+</CodeGroup>
+
+<div id="supported-document-types">
+  ## 支持的文档类型
+</div>
+
+<div id="microsoft-word-documents">
+  ### Microsoft Word Documents
+</div>
+
+- 将**富文本格式**转换为 Markdown
+- 将**标题和样式**保留为 Markdown 层级
+- **图片和图表**将被提取并引用
+- 将**表格**转换为 Markdown 表格
+
+<div id="excel-spreadsheets">
+  ### Excel 电子表格
+</div>
+
+- 将**工作表数据**转换为结构化 Markdown
+- **多个工作表**分别处理
+- 将**图表和图形**提取为图像
+- 将**公式**转换为计算后的数值
+- 在 Markdown 中简化**单元格格式**
+
+<div id="powerpoint-presentations">
+  ### PowerPoint 演示文稿
+</div>
+
+- 将**幻灯片内容**转换为结构化 Markdown
+- 如有则包含**演讲者备注**
+- 提取并引用**图像与媒体**
+- 在可行时处理**嵌入对象**
+
+<div id="sync-mechanism">
+  ## 同步机制
+</div>
+
+Webhooks 可实现对 Documents 更改的实时同步。你也可以手动触发同步。
+
+<div id="manual-sync-trigger">
+  ### 手动触发同步
+</div>
+
+<CodeGroup>
+  ```typescript Typescript
+    // 立即触发所有 OneDrive 链接账户的同步
+    await client.connections.import('onedrive');
+
+    // 为特定用户触发同步
+    await client.connections.import('onedrive', {
+      containerTags: ['user-123']
+    });
+
+    console.log('已手动发起同步 — Documents 将在 5–10 分钟内更新');
+    ```
+  ```python Python
+    # 立即触发所有 OneDrive 链接账户的同步
+    client.connections.import_('onedrive')
+
+    # 为特定用户触发同步
+    client.connections.import_(
+        'onedrive',
+        container_tags=['user-123']
+    )
+
+    print('已手动发起同步 — Documents 将在 5–10 分钟内更新')
+    ```
+  ```bash cURL
+    # 手动触发同步
+    curl -X POST "https://api.supermemory.ai/v3/connections/onedrive/import" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123"]}'
+    ```
+</CodeGroup>
+
+<div id="delete-connection">
+  ## 删除链接账户
+</div>
+
+当不再需要时移除 OneDrive 链接账户：
+
+<CodeGroup>
+
+```typescript Typescript
+// 按链接账户 ID 删除
+const result = await client.connections.delete('connection_id_123');
+console.log('已删除的链接账户：', result.id);
+
+// 按 provider 和 container tags 删除
+const providerResult = await client.connections.deleteByProvider('onedrive', {
+  containerTags: ['user-123']
+});
+console.log('已为该用户删除 OneDrive 链接账户');
+```
+
+```python Python
+# 按链接账户 ID 删除
+result = client.connections.delete('connection_id_123')
+print(f'已删除的链接账户：{result.id}')
+
+# 按 provider 和 container tags 删除
+provider_result = client.connections.delete_by_provider(
+    'onedrive',
+    container_tags=['user-123']
+)
+print('已为该用户删除 OneDrive 链接账户')
+```
+
+```bash cURL
+# 按链接账户 ID 删除
+curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+# 按 provider 和 container tags 删除
+curl -X DELETE "https://api.supermemory.ai/v3/connections/onedrive" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"]}'
+```
+
+</CodeGroup>
+
+<Note>
+删除链接账户将：
+- 停止来自 OneDrive 的所有后续同步
+- 移除 OAuth（开放授权协议）授权
+- 保留已在 Supermemory 中同步的 Documents（不会被删除）
+</Note>
+
+<div id="advanced-configuration">
+  ## 高级配置
+</div>
+
+<div id="custom-microsoft-app">
+  ### 自定义 Microsoft 应用
+</div>
+
+在生产环境部署中，请配置你自己的 Microsoft 应用：
+
+<CodeGroup>
+  ```typescript Typescript
+    // 首先，使用你的 Microsoft 应用凭据更新组织设置
+    await client.settings.update({
+      onedriveCustomKeyEnabled: true,
+      onedriveClientId: 'your-microsoft-app-id',
+      onedriveClientSecret: 'your-microsoft-app-secret'
+    });
+
+    // 然后使用你的自定义应用创建链接账户
+    const connection = await client.connections.create('onedrive', {
+      redirectUrl: 'https://yourapp.com/callback',
+      containerTags: ['org-456', 'user-789'],
+      metadata: { customApp: true }
+    });
+    ```
+  ```python Python
+    # 首先，使用你的 Microsoft 应用凭据更新组织设置
+    client.settings.update(
+        onedrive_custom_key_enabled=True,
+        onedrive_client_id='your-microsoft-app-id',
+        onedrive_client_secret='your-microsoft-app-secret'
+    )
+
+    # 然后使用你的自定义应用创建链接账户
+    connection = client.connections.create(
+        'onedrive',
+        redirect_url='https://yourapp.com/callback',
+        container_tags=['org-456', 'user-789'],
+        metadata={'customApp': True}
+    )
+    ```
+  ```bash cURL
+    # 更新组织设置
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "onedriveCustomKeyEnabled": true,
+        "onedriveClientId": "your-microsoft-app-id",
+        "onedriveClientSecret": "your-microsoft-app-secret"
+      }'
+    ```
+</CodeGroup>
+
+<div id="document-filtering">
+  ### 文档过滤
+</div>
+
+控制要同步的 OneDrive 文档：
+
+<CodeGroup>
+  ```typescript Typescript
+    // 配置 Office 文档的过滤
+    await client.settings.update({
+      shouldLLMFilter: true,
+      includeItems: {
+        fileTypes: ['docx', 'xlsx', 'pptx'],
+        folderNames: ['Projects', 'Documentation', 'Reports'],
+        titlePatterns: ['*Proposal*', '*Specification*', '*Analysis*']
+      },
+      excludeItems: {
+        folderNames: ['Archive', 'Templates', 'Personal'],
+        titlePatterns: ['*Draft*', '*Old*', '*Backup*', '*~$*']
+      },
+      filterPrompt: "Sync professional business documents, project files, reports, and presentations. Skip personal files, drafts, temporary files, and archived content."
+    });
+    ```
+  ```python Python
+    # 配置 Office 文档的过滤
+    client.settings.update(
+        should_llm_filter=True,
+        include_items={
+            'fileTypes': ['docx', 'xlsx', 'pptx'],
+            'folderNames': ['Projects', 'Documentation', 'Reports'],
+            'titlePatterns': ['*Proposal*', '*Specification*', '*Analysis*']
+        },
+        exclude_items={
+            'folderNames': ['Archive', 'Templates', 'Personal'],
+            'titlePatterns': ['*Draft*', '*Old*', '*Backup*', '*~$*']
+        },
+        filter_prompt="Sync professional business documents, project files, reports, and presentations. Skip personal files, drafts, temporary files, and archived content."
+    )
+    ```
+  ```bash cURL
+    # 配置 Office 文档的过滤
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "includeItems": {
+          "fileTypes": ["docx", "xlsx", "pptx"],
+          "folderNames": ["Projects", "Documentation", "Reports"],
+          "titlePatterns": ["*Proposal*", "*Specification*", "*Analysis*"]
+        },
+        "excludeItems": {
+          "folderNames": ["Archive", "Templates", "Personal"],
+          "titlePatterns": ["*Draft*", "*Old*", "*Backup*", "*~$*"]
+        },
+        "filterPrompt": "Sync professional business documents, project files, reports, and presentations. Skip personal files, drafts, temporary files, and archived content."
+      }'
+
+    # Response: {
+    #   "shouldLLMFilter": true,
+    #   "includeItems": {...},
+    #   "excludeItems": {...},
+    #   "filterPrompt": "..."
+    # }
+    ```
+</CodeGroup>
+
+<div id="optimization-tips">
+  ### 优化建议
+</div>
+
+1. **根据存储与使用情况设定合理的文档上限**
+2. **使用定向筛选**，仅同步对业务至关重要的 Documents
+3. **定期监控同步健康状况**，因其为定时执行
+4. **在需要即时更新时手动触发同步**
+5. **设定预期时考虑账户类型**
+
+<Callout type="info">
+**OneDrive 专属优势：**
+- 同时支持 Microsoft 个人与企业账户
+- 兼容处理主流 Office 文档格式
+- 保留文档结构与排版
+- 可处理大规模企业文档集合
+</Callout>
+
+<Warning>
+**重要限制：**
+- 大型 Office 文档的处理可能耗时较长
+- 复杂的 Excel 公式可能无法完美转换为 Markdown
+- Microsoft API 的速率限制可能会降低大型账户的同步速度
+</Warning>

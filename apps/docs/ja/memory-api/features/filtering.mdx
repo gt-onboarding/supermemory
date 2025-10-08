@@ -1,0 +1,310 @@
+---
+title: "フィルタリング"
+description: "supermemory での検索時にコンテンツを絞り込む方法を学ぶ"
+icon: "list-filter-plus"
+---
+
+<div id="container-tag">
+  ## コンテナタグ
+</div>
+
+コンテナタグはエンドユーザーを特定し、保存メモリをグループ化するための識別子です。
+
+たとえば次のようなものです:
+
+- あなたのプロダクトを利用するユーザー
+- SaaS を利用する組織
+
+プロジェクト ID、あるいは `user_project_etc` のような動的なものでも構いません。
+
+すべての API リクエストで単一の containerTag を使用することを推奨します。
+
+グラフはコンテナタグを基盤として構築されます。例えば、あなたの supermemory アカウント内の各ユーザー／タグごとに、1 つのグラフが構築されます。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --data '{
+    "q": "machine learning",
+    "containerTags": ["user_123"]
+  }'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "machine learning",
+  containerTags: ["user_123"],
+});
+```
+
+```python Python
+client.search.execute(
+    q="machine learning",
+    containerTags=["user_123"]
+)
+```
+
+</CodeGroup>
+
+<div id="metadata">
+  ## メタデータ
+</div>
+
+必要に応じてメタデータを追加し、その内容に基づいて高度なフィルタリングを行うことができます。
+
+メタデータのフィルタリングを使うと、次の条件で検索できます:
+
+- AND と OR の条件
+- 文字列の一致
+- 数値の一致
+- 日付の一致
+- 時間範囲のクエリ
+
+<div id="validation-rules-limits">
+  ### 検証ルールと制限
+</div>
+
+最適なパフォーマンスとセキュリティを確保するため、フィルタリングシステムには次の制限があります：
+
+- **メタデータキー**：英数字、アンダースコア、ハイフンのみ使用可能（`/^[a-zA-Z0-9_-]+$/`）
+- **メタデータキーの長さ**：最大64文字
+- **条件の最大数**：クエリあたり最大200件
+- **ネストの最大深さ**：AND/OR を入れ子にできるのは最大8階層
+- **有効な演算子**：数値フィルタリングでは `=`, `!=`, `<`, `<=`, `>`, `>=` が使用可能
+
+<Warning>
+これらの制限は、パフォーマンスに影響しうる過度に複雑なクエリを防ぐためのものです。より多くの条件でフィルタリングする必要がある場合は、クエリを複数のリクエストに分割するか、事後処理と併用してより広い検索語句の利用をご検討ください。
+</Warning>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --data '{
+    "q": "machine learning",
+    "filters": {
+        "AND": [
+            {
+                "key": "category",
+                "value": "technology",
+                "negate": false
+            },
+            {
+                "filterType": "numeric",
+                "key": "readingTime",
+                "value": "5",
+                "negate": false,
+                "numericOperator": "<="
+            }
+        ]
+    }
+}'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "machine learning",
+  filters: {
+    AND: [
+      {
+        key: "category",
+        value: "technology",
+        negate: false,
+      },
+      {
+        filterType: "numeric",
+        key: "readingTime",
+        value: "5",
+        negate: false,
+        numericOperator: "<=",
+      },
+    ],
+  },
+});
+```
+
+```python Python
+client.search.execute(
+    q="machine learning",
+    filters={
+        "AND": [
+            {
+                "key": "category",
+                "value": "technology",
+                "negate": false
+            },
+            {
+                "filterType": "numeric",
+                "key": "readingTime",
+                "value": "5",
+                "negate": false,
+                "numericOperator": "<="
+            }
+        ]
+    }
+)
+```
+
+</CodeGroup>
+
+<div id="array-contains-filtering">
+  ## 配列要素によるフィルタリング
+</div>
+
+`array_contains` フィルタータイプを使うと、配列型の値で保存メモリをフィルタリングできます。参加者など、配列ベースのメタデータでの絞り込みに特に有用です。
+
+まず、メタデータに参加者を含むメモリーを作成します:
+
+<CodeGroup>
+
+```bash cURL
+curl --location 'https://api.supermemory.ai/v3/documents' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+--data '{
+    "content": "quarterly planning meeting discussion",
+    "metadata": {
+        "participants": ["john.doe", "sarah.smith", "mike.wilson"]
+    }
+  }'
+```
+
+```typescript Typescript
+await client.memories.create({
+  content: "quarterly planning meeting discussion",
+  metadata: {
+    participants: ["john.doe", "sarah.smith", "mike.wilson"]
+  }
+});
+```
+
+```python Python
+client.memories.create(
+    content="quarterly planning meeting discussion",
+    metadata={
+        "participants": ["john.doe", "sarah.smith", "mike.wilson"]
+    }
+)
+```
+
+</CodeGroup>
+
+次に、`array_contains` フィルターで検索します:
+
+<CodeGroup>
+
+```bash cURL
+curl --location 'https://api.supermemory.ai/v3/search' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+--data '{
+    "q": "meeting",
+    "filters": {
+      "AND": [
+        {
+          "key": "participants",
+          "value": "john.doe",
+          "filterType": "array_contains"
+        }
+      ]
+    },
+    "limit": 5
+  }'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "meeting",
+  filters: {
+    AND: [
+      {
+        key: "participants",
+        value: "john.doe",
+        filterType: "array_contains"
+      }
+    ]
+  },
+  limit: 5
+});
+```
+
+```python Python
+client.search.execute(
+    q="meeting",
+    filters={
+        "AND": [
+            {
+                "key": "participants",
+                "value": "john.doe",
+                "filterType": "array_contains"
+            }
+        ]
+    },
+    limit=5
+)
+```
+
+</CodeGroup>
+
+<div id="migration-notes">
+  ## 移行に関する注意事項
+</div>
+
+<Note>
+**互換性に影響する変更**: 最近のフィルタリングシステムの更新により、検証ルールがより厳格になりました。フィルタの検証エラーが発生している場合は、以下を確認してください。
+
+1. **メタデータキーの形式**: すべてのメタデータキーは英数字、アンダースコア、ハイフンのみを含む必要があります。スペースやドット、その他の特殊文字を含むキーは、検証に失敗します。
+
+2. **キーの長さ**: メタデータキーは64文字以下である必要があります。
+
+3. **フィルタの複雑さ**: 条件が200件を超える、または入れ子が8階層を超えるクエリは拒否されます。
+
+**更新が必要な無効なキーの例**:
+- "user.email" → "user_email"
+- "reading time" → "reading_time"
+- "category-with-very-long-name-that-exceeds-the-limit" → "category_name"
+</Note>
+
+<div id="document">
+  ## Document
+</div>
+
+特定の大規模なドキュメント内から、chunks（ドキュメントのセグメント）を見つけることもできます。
+
+これは、書籍やポッドキャストなどの非常に大きな documents に対して特に有用です。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --data '{
+    "q": "machine learning",
+    "docId": "doc_123"
+  }'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "machine learning",
+  docId: "doc_123",
+});
+```
+
+```python Python
+client.search.execute(
+    q="machine learning",
+    docId="doc_123"
+)
+```
+
+</CodeGroup>

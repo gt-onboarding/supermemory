@@ -1,0 +1,34 @@
+---
+title: "Google Drive"
+description: "将你的 Google Drive 内容与 supermemory 同步"
+---
+
+supermemory 会自动、即时地同步 Google Drive 的 Documents。
+
+<div id="supported-file-types">
+  ## 支持的文件类型
+</div>
+
+- Google 文档
+- Google 幻灯片
+- Google 表格
+
+<div id="conversions">
+  ## 转换
+</div>
+
+要导入条目，supermemory 会先将 Documents 转换为 Markdown，然后再将其导入 supermemory。
+此转换为有损转换，可能会丢失部分格式。
+
+<div id="sync-frequency">
+  ## 同步频率
+</div>
+
+supermemory 同步 Documents：
+
+- **当 document 被修改或创建（收到 Webhook）**
+    - 请注意，并非所有 provider 都通过 webhook 同步（目前即时同步）
+    - `Google-Drive` 和 `Notion` 的 documents 会被即时同步
+- 每 **四小时** 同步一次
+- 进行 **手动同步**（API 调用）
+    - 你可以调用 `/v3/connections/{provider}/sync` 手动同步 documents

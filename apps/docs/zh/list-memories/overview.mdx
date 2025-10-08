@@ -1,0 +1,163 @@
+---
+title: "列出记忆存储"
+description: "使用筛选和排序选项获取分页记忆存储"
+sidebarTitle: "概览"
+---
+
+从你的 Supermemory 账户中使用筛选和排序选项获取分页的记忆存储。
+
+<div id="quick-start">
+  ## 快速上手
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const memories = await client.memories.list({ limit: 10 });
+    console.log(memories);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+    memories = client.memories.list(limit=10)
+    print(f"Found {len(memories.memories)} memories")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 10}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="response-schema">
+  ## 响应架构
+</div>
+
+该端点会返回一个包含你的记忆存储和分页信息的结构化响应：
+
+```json
+{
+  "memories": [
+    {
+      "id": "abc123",
+      "connectionId": null,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:35:00.000Z",
+      "customId": "ml-basics-001",
+      "title": "机器学习入门",
+      "summary": "本文档介绍了机器学习作为人工智能的一个子集...",
+      "status": "done",
+      "type": "text",
+      "metadata": {
+        "category": "教育",
+        "priority": "高",
+        "source": "研究笔记"
+      },
+      "containerTags": ["user_123", "ai-research"]
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 3,
+    "totalItems": 25,
+    "limit": 10
+  }
+}
+```
+
+<div id="memory-object-fields">
+  ### memory 对象字段
+</div>
+
+<Accordion title="核心字段" defaultOpen>
+  | 字段 | 类型 | 描述 |
+  |-------|------|-------------|
+  | `id` | string | 该 memory 的唯一标识符 |
+  | `status` | ProcessingStatus | 当前处理状态（`queued`、`extracting`、`chunking`、`embedding`、`indexing`、`done`、`failed`） |
+  | `type` | MemoryType | 内容类型（`text`、`pdf`、`webpage`、`video`、`image` 等） |
+  | `title` | string | null | 自动生成或自定义的标题 |
+  | `summary` | string | null | AI 生成的内容摘要 |
+  | `createdAt` | string | ISO 8601 创建时间戳 |
+  | `updatedAt` | string | ISO 8601 最近更新时间戳 |
+</Accordion>
+
+<Accordion title="可选字段">
+  | 字段 | 类型 | 描述 |
+  |-------|------|-------------|
+  | `customId` | string | null | 你为该 memory 提供的自定义标识符 |
+  | `connectionId` | string | null | 创建此 memory 的链接账户 ID |
+  | `metadata` | object | null | 你提供的自定义键值 Metadata |
+  | `containerTags` | string[] | 用于组织与筛选记忆存储的标签 |
+</Accordion>
+
+<div id="key-parameters">
+  ## 关键参数
+</div>
+
+所有参数均为可选，并通过请求体发送，因为此端点使用 `POST`：
+
+<ParamField path="limit" type="number/string" default="50">
+  **每页返回数量。** 控制单次请求返回的 memory 数量。建议最大值：200（以获得最佳性能）。
+</ParamField>
+
+<ParamField path="page" type="number/string" default="1">
+  **要获取的页码（从 1 开始）。** 与 `limit` 搭配使用以分页浏览大规模结果集。
+</ParamField>
+
+<ParamField path="containerTags" type="string[]">
+  **按标签筛选。** 记忆存储必须匹配提供的所有标签。用于按用户 ID、项目或自定义组织标签进行筛选。
+</ParamField>
+
+<ParamField path="sort" type="string" default="createdAt">
+  **排序字段。** 选项：&quot;createdAt&quot;（memory 添加时间）或 &quot;updatedAt&quot;（memory 上次修改时间）。
+</ParamField>
+
+<ParamField path="order" type="string" default="desc">
+  **排序方向。** 使用 &quot;desc&quot; 表示最新在前，使用 &quot;asc&quot; 表示最旧在前。
+</ParamField>
+
+<ParamField path="filters" type="string">
+  **高级筛选。** 基于 Metadata，使用高级 SQL 逻辑进行筛选。
+</ParamField>
+
+<div id="examples">
+  ## 示例
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Basic Listing" icon="list" href="/zh/list-memories/examples/basic">
+    使用默认设置进行简单的 memory 检索
+  </Card>
+
+  <Card title="Filtering" icon="filter" href="/zh/list-memories/examples/filtering">
+    按标签、status 以及其他条件进行筛选
+  </Card>
+
+  <Card title="Pagination" icon="arrow-right" href="/zh/list-memories/examples/pagination">
+    通过分页处理大型数据集
+  </Card>
+
+  <Card title="Status Monitoring" icon="chart-line" href="/zh/list-memories/examples/monitoring">
+    跨记忆存储跟踪处理 status
+  </Card>
+</CardGroup>
+
+<Note>
+  “/v3/documents/list” 端点使用 **POST** 方法而非 GET。这使得可以在请求体中传递复杂的筛选参数。
+</Note>

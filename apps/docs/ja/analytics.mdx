@@ -1,0 +1,333 @@
+---
+title: "Analytics & Monitoring"
+description: "使用状況、エラー、ログを把握して Supermemory 連携を監視する"
+icon: "chart-line"
+---
+
+API 呼び出し、エラー、パフォーマンス指標に関する詳細なアナリティクスで、Supermemory の利用状況を監視します。
+
+<div id="overview">
+  ## 概要
+</div>
+
+Analytics API は、Supermemory の利用状況を多角的に可視化します:
+
+- **利用統計**: API 呼び出しを種類別、時間帯トレンド、API キー別の内訳で追跡
+- **エラーモニタリング**: 主要なエラータイプや発生傾向を特定
+- **詳細ログ**: デバッグのためのリクエスト／レスポンスの完全なログにアクセス
+- **パフォーマンス指標**: 平均応答時間や処理時間を監視
+
+<Note>
+Analytics データは組織全体を対象としており、期間で絞り込みできます。
+</Note>
+
+<div id="usage-statistics">
+  ## 利用統計
+</div>
+
+時間別の内訳やキー単位のメトリクスなど、包括的な利用統計を取得できます。
+
+<div id="endpoint">
+  ### エンドポイント
+</div>
+
+`GET /v3/analytics/usage`
+
+<div id="parameters">
+  ### パラメータ
+</div>
+
+| パラメータ | 型 | 説明 |
+|-----------|------|-------------|
+| `from` | string (ISO 8601) | 期間の開始日時 |
+| `to` | string (ISO 8601) | 期間の終了日時 |
+| `period` | string | `from` の代替: `1h`、`24h`、`7d`、`30d` |
+| `page` | integer | ページネーション用のページ番号（既定: 1） |
+| `limit` | integer | 1ページあたりの件数（既定: 20、最大: 100） |
+
+<div id="example-request">
+  ### リクエスト例
+</div>
+
+<CodeGroup>
+
+```typescript TypeScript
+// 過去24時間の使用量を取得
+const usage = await fetch('https://api.supermemory.ai/v3/analytics/usage?period=24h', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const data = await usage.json();
+```
+
+```python Python
+import requests
+from datetime import datetime, timedelta
+
+# 過去7日間の使用量を取得
+response = requests.get(
+    'https://api.supermemory.ai/v3/analytics/usage',
+    params={'period': '7d'},
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+data = response.json()
+```
+
+```bash cURL
+# 特定の期間の使用量を取得
+curl -X GET "https://api.supermemory.ai/v3/analytics/usage?from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-schema">
+  ### レスポンススキーマ
+</div>
+
+```json
+{
+  "usage": [
+    {
+      "type": "add",
+      "count": 1523,
+      "avgDuration": 245.5,
+      "lastUsed": "2024-01-15T14:30:00Z"
+    },
+    {
+      "type": "search",
+      "count": 3421,
+      "avgDuration": 89.2,
+      "lastUsed": "2024-01-15T14:35:00Z"
+    }
+  ],
+  "hourly": [
+    {
+      "hour": "2024-01-15T14:00:00Z",
+      "count": 156,
+      "avgDuration": 125.3
+    }
+  ],
+  "byKey": [
+    {
+      "keyId": "key_abc123",
+      "keyName": "本番用API",
+      "count": 2341,
+      "avgDuration": 98.7,
+      "lastUsed": "2024-01-15T14:35:00Z"
+    }
+  ],
+  "totalMemories": 45678,
+  "pagination": {
+    "currentPage": 1,
+    "limit": 20,
+    "totalItems": 150,
+    "totalPages": 8
+  }
+}
+```
+
+
+<div id="error-monitoring">
+  ## エラーモニタリング
+</div>
+
+エラーを追跡・分析して問題を特定し、信頼性の向上につなげます。
+
+<div id="endpoint">
+  ### エンドポイント
+</div>
+
+`GET /v3/analytics/errors`
+
+<div id="parameters">
+  ### パラメーター
+</div>
+
+使用状況エンドポイントと同様に、`from`、`to`、`period`、`page`、`limit` をサポートします。
+
+<div id="example-request">
+  ### リクエスト例
+</div>
+
+<CodeGroup>
+
+```typescript TypeScript
+// 過去24時間のエラーを取得
+const errors = await fetch('https://api.supermemory.ai/v3/analytics/errors?period=24h', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const data = await errors.json();
+```
+
+```python Python
+# エラーを監視し、スパイク時にアラートを送信
+response = requests.get(
+    'https://api.supermemory.ai/v3/analytics/errors?period=1h',
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+data = response.json()
+```
+
+```bash cURL
+# 過去7日間のエラーを取得
+curl -X GET "https://api.supermemory.ai/v3/analytics/errors?period=7d" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-schema">
+  ### レスポンススキーマ
+</div>
+
+```json
+{
+  "totalErrors": 234,
+  "errorRate": 0.023,
+  "topErrors": [
+    {
+      "type": "ValidationError",
+      "count": 89,
+      "statusCodes": [400],
+      "lastOccurred": "2024-01-15T14:30:00Z"
+    },
+    {
+      "type": "RateLimitError",
+      "count": 45,
+      "statusCodes": [429],
+      "lastOccurred": "2024-01-15T13:15:00Z"
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2024-01-15T14:00:00Z",
+      "count": 12,
+      "types": ["ValidationError", "NotFoundError"]
+    }
+  ],
+  "byStatusCode": {
+    "400": 89,
+    "404": 34,
+    "429": 45,
+    "500": 66
+  }
+}
+```
+
+
+<div id="detailed-logs">
+  ## 詳細ログ
+</div>
+
+デバッグや監査のために、リクエスト／レスポンスの完全なログにアクセスできます。
+
+<div id="endpoint">
+  ### エンドポイント
+</div>
+
+`GET /v3/analytics/logs`
+
+<div id="parameters">
+  ### パラメータ
+</div>
+
+usage エンドポイントと同様で、任意の filters を追加可能:
+
+- `type`: リクエスト種別でフィルタリング（add、search、update、delete）
+- `statusCode`: HTTP status コードでフィルタリング
+- `keyId`: 特定の API キーでフィルタリング
+
+<div id="example-request">
+  ### リクエスト例
+</div>
+
+<CodeGroup>
+
+```typescript TypeScript
+// 直近の失敗リクエストを取得
+const logs = await fetch('https://api.supermemory.ai/v3/analytics/logs?period=1h&statusCode=500', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const data = await logs.json();
+```
+
+```python Python
+# 特定の API キーの利用状況をデバッグ
+response = requests.get(
+    'https://api.supermemory.ai/v3/analytics/logs',
+    params={
+        'keyId': 'key_abc123',
+        'period': '24h'
+    },
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+logs = response.json()['logs']
+
+```
+
+```bash cURL
+# デバッグ用に全ログを取得
+curl -X GET "https://api.supermemory.ai/v3/analytics/logs?period=1h&limit=50" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-schema">
+  ### レスポンス スキーマ
+</div>
+
+```json
+{
+  "logs": [
+    {
+      "id": "req_xyz789",
+      "createdAt": "2024-01-15T14:30:00Z",
+      "type": "search",
+      "statusCode": 200,
+      "duration": 89,
+      "input": {
+        "q": "ユーザークエリ",
+        "limit": 10
+      },
+      "output": {
+        "results": 10,
+        "processingTime": 85
+      }
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "limit": 20,
+    "totalItems": 500,
+    "totalPages": 25
+  }
+}
+```
+
+
+<div id="rate-limits">
+  ## レート制限
+</div>
+
+Analytics エンドポイントには以下のレート制限があります：
+
+- 組織ごとに毎分 100 リクエスト
+- 最大期間：90 日
+- 最大ページサイズ：100 件
+
+<Warning>
+Analytics データの保持期間は 90 日です。より長期間の保持が必要な場合は、データをエクスポートして自社システムに保存してください。
+</Warning>

@@ -1,0 +1,812 @@
+---
+title: "个人 AI 助手"
+description: "构建一款能在多轮对话中记住用户偏好、习惯与上下文的 AI 助手"
+---
+
+构建一个个人 AI 助手，能够学习并记住有关用户的一切——他们的偏好、习惯、工作背景与对话历史。此示例演示如何使用 Supermemory 的 Memory Tools 打造真正个性化的 AI 体验。
+
+<div id="what-youll-build">
+  ## 你将构建的内容
+</div>
+
+一个个人 AI 助手，它可以：
+
+- **记住用户偏好**（饮食禁忌、工作安排、沟通风格）
+- **从对话中不断学习**，并随着时间改进回复
+- **在多次聊天会话间保持上下文**
+- **基于用户历史提供个性化推荐**
+- **在保持上下文的同时处理多个话题**
+
+<div id="prerequisites">
+  ## 前置条件
+</div>
+
+- Node.js 18+ 或 Python 3.8+
+- Supermemory API 密钥
+- OpenAI 或 Anthropic API 密钥
+- 具备聊天应用的基础知识
+
+<div id="implementation">
+  ## 实现
+</div>
+
+<div id="step-1-project-setup">
+  ### 第 1 步：项目初始化
+</div>
+
+<Tabs>
+  <Tab title="Next.js (TypeScript)">
+    ```bash
+    npx create-next-app@latest personal-ai --typescript --tailwind --eslint
+    cd personal-ai
+    npm install @supermemory/tools ai openai
+    ```
+
+    创建环境变量：
+    ```bash .env.local
+    SUPERMEMORY_API_KEY=your_supermemory_key
+    OPENAI_API_KEY=your_openai_key
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```bash
+    mkdir personal-ai && cd personal-ai
+    python -m venv venv
+    source venv/bin/activate  # Windows 上为：venv\Scripts\activate
+    pip install supermemory openai fastapi uvicorn python-multipart
+    ```
+
+    创建环境变量：
+    ```bash .env
+    SUPERMEMORY_API_KEY=your_supermemory_key
+    OPENAI_API_KEY=your_openai_key
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-2-core-assistant-logic">
+  ### 步骤 2：核心助理逻辑
+</div>
+
+<Tabs>
+  <Tab title="Next.js API 路由">
+    ```typescript app/api/chat/route.ts
+    import { streamText } from 'ai'
+    import { createOpenAI } from '@ai-sdk/openai'
+    import { supermemoryTools } from '@supermemory/tools/ai-sdk'
+
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY!
+    })
+
+    export async function POST(request: Request) {
+      const { messages, userId = 'default-user' } = await request.json()
+
+      const result = await streamText({
+        model: openai('gpt-5'),
+        messages,
+        tools: supermemoryTools(process.env.SUPERMEMORY_API_KEY!, {
+          containerTags: [userId]
+        }),
+        system: `你是一名高度个性化的 AI 助手。你的首要目标是了解用户，并随着时间的推移提供越来越个性化的帮助。
+
+    记忆管理：
+    1. 当用户分享个人信息、偏好或上下文时，立即使用 addMemory 进行存储
+    2. 在回应请求前，先在你的记忆中搜索与该用户相关的上下文
+    3. 利用以往对话来指导当前回复
+    4. 记住用户的沟通风格、偏好以及常谈论的话题
+
+    个性与风格：
+    - 调整你的沟通方式以匹配用户的偏好
+    - 在合适的情境下自然引用过往对话
+    - 基于已学到的模式主动提供帮助
+    - 在尊重隐私的前提下真正做到有用
+
+    建议记住的内容示例：
+    - 工作时间安排与职责角色
+    - 饮食偏好/禁忌
+    - 沟通偏好（正式/随意）
+    - 频繁感兴趣的话题
+    - 正在推进的目标与项目
+    - 他们分享的家庭/个人背景
+    - 偏好的工具与工作流
+    - 时区与可用时段
+
+    在作答前务必先搜索记忆，以提供个性化、具备上下文的帮助。`
+      })
+
+      return result.toAIStreamResponse()
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python FastAPI">
+    ```python main.py
+    from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    import openai
+    from supermemory import Supermemory
+    import json
+    import os
+    from typing import List, Dict, Any
+    import asyncio
+
+    app = FastAPI()
+
+    openai_client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    supermemory_client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+    SYSTEM_PROMPT = """你是一名高度个性化的 AI 助手。你的首要目标是了解用户，并随着时间的推移提供愈加个性化的帮助。
+
+    记忆管理：
+    1. 当用户分享个人信息、偏好或上下文时，立即存储
+    2. 在回应请求之前，先搜索与该用户相关的上下文
+    3. 使用过往对话来指导当前回复
+    4. 记住用户的沟通风格、偏好和常聊话题
+
+    人格与风格：
+    - 调整你的沟通方式以贴合用户偏好
+    - 在合适的情况下自然引用过往对话
+    - 基于已学习的模式主动提供帮助
+    - 在尊重隐私的前提下真诚且有用
+
+    在回复之前务必先搜索记忆，以提供个性化、具备上下文的帮助。"""
+
+    async def search_user_memories(query: str, user_id: str) -> str:
+        """在用户的记忆中搜索相关上下文"""
+        try:
+            results = supermemory_client.search.memories(
+                q=query,
+                container_tag=f"user_{user_id}",
+                limit=5
+            )
+
+            if results.results:
+                context = "\n".join([r.memory for r in results.results])
+                return f"关于该用户的相关记忆：\n{context}"
+            return "未找到相关记忆。"
+        except Exception as e:
+            return f"搜索记忆时出错：{e}"
+
+    async def add_user_memory(content: str, user_id: str):
+        """向用户的记忆添加新信息"""
+        try:
+            supermemory_client.memories.add(
+                content=content,
+                container_tag=f"user_{user_id}",
+                metadata={"type": "personal_info", "timestamp": "auto"}
+            )
+        except Exception as e:
+            print(f"添加记忆时出错：{e}")
+
+    @app.post("/chat")
+    async def chat_endpoint(data: dict):
+        messages = data.get("messages", [])
+        user_id = data.get("userId", "default-user")
+
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+            raise HTTPException(status_code=400, detail="未提供消息")
+        # 获取用户的最后一条消息以进行记忆搜索
+        user_message = messages[-1]["content"] if messages else ""
+
+        # 搜索相关记忆
+        memory_context = await search_user_memories(user_message, user_id)
+
+        # 使用记忆上下文添加系统消息
+        enhanced_messages = [
+            {"role": "system", "content": f"{SYSTEM_PROMPT}\n\n{memory_context}"}
+        ] + messages
+
+        try:
+            response = await openai_client.chat.completions.create(
+                model="gpt-5",
+                messages=enhanced_messages,
+                stream=True,
+                temperature=0.7
+            )
+
+            async def generate():
+                full_response = ""
+                async for chunk in response:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        full_response += content
+                        yield f"data: {json.dumps({'content': content})}\n\n"
+
+                # 在回复完成后，分析是否包含值得存入记忆的内容
+                if "remember" in user_message.lower() or any(word in user_message.lower() for word in ["prefer", "like", "dislike", "work", "schedule", "diet"]):
+                    await add_user_memory(user_message, user_id)
+
+            return StreamingResponse(generate(), media_type="text/plain")
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    if __name__ == "__main__":
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-3-frontend-interface">
+  ### 第 3 步：前端界面
+</div>
+
+<Tabs>
+  <Tab title="Next.js 聊天组件">
+    ```tsx app/page.tsx
+    'use client'
+
+    import { useChat } from 'ai/react'
+    import { useState, useEffect } from 'react'
+
+    export default function PersonalAssistant() {
+      const [userId, setUserId] = useState('')
+      const [userName, setUserName] = useState('')
+
+      const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+        api: '/api/chat',
+        body: {
+          userId
+        }
+      })
+
+      // Generate or retrieve user ID
+      useEffect(() => {
+        const storedUserId = localStorage.getItem('personal-ai-user-id')
+        const storedUserName = localStorage.getItem('personal-ai-user-name')
+
+        if (storedUserId) {
+          setUserId(storedUserId)
+          setUserName(storedUserName || '')
+        } else {
+          const newUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          localStorage.setItem('personal-ai-user-id', newUserId)
+          setUserId(newUserId)
+        }
+      }, [])
+
+      const handleNameSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (userName.trim()) {
+          localStorage.setItem('personal-ai-user-name', userName)
+          // 发送自我介绍
+          handleSubmit(e, {
+            data: {
+              content: `嗨！我叫 ${userName}。我想要一位能了解我、并在各类任务上帮助我的个人 AI 助手。`
+            }
+          })
+        }
+      }
+
+      return (
+        <div className="flex flex-col h-screen max-w-4xl mx-auto p-4">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg mb-6">
+            <h1 className="text-2xl font-bold">个人 AI 助手</h1>
+            <p className="text-blue-100">
+              {userName ? `你好，${userName}！` : '会学习并记忆的 AI 助手'}
+            </p>
+          </div>
+
+          {/* 名称设置 */}
+          {!userName && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <form onSubmit={handleNameSubmit} className="flex gap-2">
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="我该怎么称呼你？"
+                  className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  开始使用
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* 消息 */}
+          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+            {messages.length === 0 && userName && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-gray-600">
+                  嗨，{userName}！我是你的个人 AI 助手。接下来的对话中，我会了解你的偏好、工作方式和兴趣。欢迎分享任何你希望我记住的内容！
+                  work style, and interests as we chat. Feel free to share anything you'd like me to remember!
+                </p>
+                <div className="mt-3 text-sm text-gray-500">
+                  <p><strong>可以试试说：</strong></p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>“我是一名软件工程师，偏好简洁的回复”</li>
+                    <li>“记住我吃素，并且对坚果过敏”</li>
+                    <li>“我通常在东部时间 9 点到 5 点工作，中午吃午饭”</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`p-4 rounded-lg ${
+                  message.role === 'user'
+                    ? 'bg-blue-500 text-white ml-auto max-w-2xl'
+                    : 'bg-white border border-gray-200 max-w-2xl'
+                }`}
+              >
+                <div className="flex items-start space-x-2">
+                  {message.role === 'assistant' && (
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      AI
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-2xl">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  AI
+                  </div>
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 输入 */}
+          {userName && (
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <input
+                value={input}
+                onChange={handleInputChange}
+                placeholder="告诉我一些你的情况，或向我寻求帮助……"
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                发送
+              </button>
+            </form>
+          )}
+        </div>
+      )
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python（Streamlit）">
+    ```python streamlit_app.py
+    import streamlit as st
+    import requests
+    import json
+    import uuid
+
+    st.set_page_config(page_title="个人 AI 助手", page_icon="🤖", layout="wide")
+
+    # Initialize session state
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+    if 'user_id' not in st.session_state:
+        st.session_state.user_id = f"user_{uuid.uuid4().hex[:8]}"
+    if 'user_name' not in st.session_state:
+        st.session_state.user_name = None
+
+    # Header
+    st.title("🤖 个人 AI 助手")
+    st.markdown("*会学习并记忆的 AI*")
+
+    # Sidebar for user info
+    with st.sidebar:
+    st.header("👤 用户档案")
+
+        if not st.session_state.user_name:
+    name = st.text_input("我应该怎么称呼你？")
+            if st.button("开始使用") and name:
+                st.session_state.user_name = name
+                st.session_state.messages.append({
+                    "role": "user",
+                    "content": f"嗨！我叫 {name}。我正在寻找一款个人 AI 助手。"
+                })
+                st.rerun()
+        else:
+            st.write(f"**姓名：** {st.session_state.user_name}")
+            st.write(f"**用户 ID：** {st.session_state.user_id[:12]}...")
+
+            if st.button("重置对话"):
+                st.session_state.messages = []
+                st.rerun()
+
+        st.markdown("---")
+        st.markdown("""
+        ### 💡 可以试着说：
+        - "我是软件工程师，偏好简洁的回答"
+        - "请记住我是素食者"
+        - "我通常在东部时间 9 点到 5 点工作"
+        """)
+
+    # Main chat interface
+    if st.session_state.user_name:
+        # Display messages
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # Chat input
+        if prompt := st.chat_input("先介绍一下你自己，或告诉我你需要什么帮助…"):
+            # Add user message
+            st.session_state.messages.append({"role": "user", "content": prompt})
+
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Get AI response
+            with st.chat_message("assistant"):
+                with st.spinner("思考中…"):
+                    try:
+                        response = requests.post(
+                            "http://localhost:8000/chat",
+                            json={
+                                "messages": st.session_state.messages,
+                                "userId": st.session_state.user_id
+                            },
+                            timeout=30
+                        )
+
+                        if response.status_code == 200:
+                            # Handle streaming response
+                            full_response = ""
+                            for line in response.iter_lines():
+                                if line:
+                                    try:
+                                        data = json.loads(line.decode('utf-8').replace('data: ', ''))
+                                        if 'content' in data:
+                                            full_response += data['content']
+                                    except:
+                                        continue
+
+                            st.markdown(full_response)
+                            st.session_state.messages.append({
+                                "role": "assistant",
+                                "content": full_response
+                            })
+                        else:
+                            st.error(f"错误：{response.status_code}")
+                    except Exception as e:
+                        st.error(f"连接错误：{e}")
+
+    else:
+        st.info("👆 请在侧边栏输入你的姓名以开始！")
+
+    # 运行方式：streamlit run streamlit_app.py
+    ```
+  </Tab>
+</Tabs>
+
+<div id="testing-your-assistant">
+  ## 测试你的助手
+</div>
+
+<div id="step-4-test-memory-formation">
+  ### 步骤 4：测试 memory 形成
+</div>
+
+尝试以下对话流程来测试 memory 能力：
+
+1. **个人偏好**：
+   ```
+   User: "Hi! I'm Sarah, a product manager at a tech startup. I prefer brief, actionable responses and I'm always busy with user research."
+
+   Assistant: [应记住姓名、角色、沟通偏好]
+
+   User: "What's a good way to prioritize features?"
+
+   Assistant: [应结合你是 PM 且偏好简短、可执行的回复]
+   ```
+
+2. **饮食与生活方式**：
+   ```
+   User: "Remember that I'm vegan and I work out every morning at 6 AM."
+
+   User: "Suggest a quick breakfast for tomorrow."
+
+   Assistant: [应推荐适合运动前/后的纯素选项]
+   ```
+
+3. **工作背景**：
+   ```
+   User: "I'm working on a React project and I prefer TypeScript over JavaScript."
+
+   User: "Help me with state management."
+
+   Assistant: [应提供面向 TypeScript 的解决方案]
+   ```
+
+<div id="step-5-verify-memory-storage">
+  ### 步骤 5：验证记忆存储
+</div>
+
+检查是否已正确存储记忆：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript scripts/check-memories.ts
+    import { Supermemory } from '@supermemory/tools'
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    })
+
+    async function checkUserMemories(userId: string) {
+      try {
+        const memories = await client.memories.list({
+          containerTags: [userId],
+          limit: 20,
+          sort: 'updatedAt',
+          order: 'desc'
+        })
+
+        console.log(`Found ${memories.memories.length} memories for ${userId}:`)
+        memories.memories.forEach((memory, i) => {
+          console.log(`${i + 1}. ${memory.content.substring(0, 100)}...`)
+        })
+
+        // Test search
+        const searchResults = await client.search.memories({
+          q: "preferences work",
+          containerTag: userId,
+          limit: 5
+        })
+
+        console.log('\nSearch Results:')
+        searchResults.results.forEach((result, i) => {
+          console.log(`${i + 1}. (${result.similarity}) ${result.memory.substring(0, 100)}...`)
+        })
+
+      } catch (error) {
+        console.error('Error:', error)
+      }
+    }
+
+    // Run: npx ts-node scripts/check-memories.ts USER_ID_HERE
+    checkUserMemories(process.argv[2] || 'default-user')
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python check_memories.py
+    from supermemory import Supermemory
+    import os
+    import sys
+
+    client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+    def check_user_memories(user_id):
+        try:
+            # List all memories for user
+            memories = client.memories.list(
+                container_tags=[user_id],
+                limit=20,
+                sort="updatedAt",
+                order="desc"
+            )
+
+            print(f"Found {len(memories.memories)} memories for {user_id}:")
+            for i, memory in enumerate(memories.memories):
+                print(f"{i + 1}. {memory.content[:100]}...")
+
+            # Test search
+            search_results = client.search.memories(
+                q="preferences work",
+                container_tag=user_id,
+                limit=5
+            )
+
+            print('\nSearch Results:')
+            for i, result in enumerate(search_results.results):
+                print(f"{i + 1}. ({result.similarity}) {result.memory[:100]}...")
+
+        except Exception as error:
+            print(f'Error: {error}')
+
+    # Run: python check_memories.py USER_ID_HERE
+    user_id = sys.argv[1] if len(sys.argv) > 1 else 'default-user'
+    check_user_memories(user_id)
+    ```
+  </Tab>
+</Tabs>
+
+<div id="production-considerations">
+  ## 生产环境注意事项
+</div>
+
+<div id="security-privacy">
+  ### 安全与隐私
+</div>
+
+1. **用户隔离**:
+   ```typescript
+   // 始终使用按用户区分的 container tags
+   const tools = supermemoryTools(apiKey, {
+     containerTags: [userId]
+   })
+   ```
+
+2. **memory 加密**:
+   ```typescript
+   // 对敏感数据，建议使用客户端加密
+   const encryptedContent = encrypt(sensitiveData, userKey)
+   await client.memories.add({
+     content: encryptedContent,
+     containerTag: userId,
+     metadata: { encrypted: true }
+   })
+   ```
+
+<div id="performance-optimization">
+  ### 性能优化
+</div>
+
+1. **memory 搜索优化**:
+   ```typescript
+   // 在速度与准确性之间选择合适的最小相似度阈值
+   const quickSearch = await client.search.memories({
+     q: userQuery,
+     containerTag: userId,
+     threshold: 0.6,     // 兼顾
+     rerank: false,      // 为提速跳过
+     limit: 3            // 返回更少结果
+   })
+   ```
+
+2. **缓存策略**:
+   ```typescript
+   // 缓存高频访问的用户上下文
+   const userContext = await redis.get(`user_context:${userId}`)
+   if (!userContext) {
+     const memories = await client.search.memories({
+       q: "user preferences work style",
+       containerTag: userId,
+       limit: 10
+     })
+     await redis.setex(`user_context:${userId}`, 300, JSON.stringify(memories))
+   }
+   ```
+
+<div id="monitoring-analytics">
+  ### 监控与分析
+</div>
+
+```typescript
+// 跟踪 memory 的创建与检索
+const analytics = {
+  memoriesCreated: await redis.incr(`memories_created:${userId}`),
+  searchesPerformed: await redis.incr(`searches:${userId}`),
+  conversationLength: messages.length
+}
+
+// 记录用于分析
+console.log('用户交互:', {
+  userId,
+  action: 'chat_response',
+  memoriesFound: searchResults.results.length,
+  responseTime: Date.now() - startTime,
+  ...analytics
+})
+```
+
+
+<div id="extensions-customization">
+  ## 扩展与定制
+</div>
+
+<div id="1-add-personality-profiles">
+  ### 1. 添加人物画像
+</div>
+
+```typescript
+const personalityProfiles = {
+  professional: "以正式、符合商务场合的语气回应",
+  casual: "使用友好、对话式的语气，适当加入幽默",
+  technical: "提供详尽的技术说明，并附示例",
+  concise: "保持回答简洁且直截了当"
+}
+
+// 根据用户偏好添加到系统提示
+const userProfile = await getUserProfile(userId)
+const systemPrompt = `${basePrompt}\n\n沟通风格：${personalityProfiles[userProfile.style]}`
+```
+
+
+<div id="2-smart-notifications">
+  ### 2. 智能通知
+</div>
+
+```typescript
+// 基于用户行为模式的主动建议
+const shouldSuggest = await analyzeUserPatterns(userId)
+if (shouldSuggest.type === 'daily_standup') {
+  return {
+    message: "根据你的日程安排，需要我帮你准备上午9点的站会吗？",
+    suggestedActions: ["回顾昨天的进展", "制定今天的目标"]
+  }
+}
+```
+
+
+<div id="3-multi-modal-memory">
+  ### 3. 多模态 memory
+</div>
+
+```typescript
+// 处理图片和文档
+if (message.attachments) {
+  for (const attachment of message.attachments) {
+    await client.memories.uploadFile({
+      file: attachment,
+      containerTag: userId,
+      metadata: {
+        type: 'user_shared',
+        context: message.content
+      }
+    })
+  }
+}
+```
+
+
+<div id="next-steps">
+  ## 下一步
+</div>
+
+- **扩展至多用户**：添加用户身份验证并实现完善的隔离
+- **加入语音交互**：集成语音转文本/文本转语音 API
+- **移动应用**：构建 React Native 或 Flutter 版移动应用
+- **集成**：连接日历、邮件、任务管理工具
+- **高级 AI 功能**：加入情绪识别、会话摘要
+
+<div id="troubleshooting">
+  ## 疑难解答
+</div>
+
+**Memory 未被持久化？**
+
+- 检查是否始终使用一致的 `x-sm-user-id` 请求头
+- 验证 API 密钥是否具备写入权限
+- 确保容器标签配置正确
+
+**响应缺乏个性化？**
+
+- 增大搜索 limit 以检索更多相关的记忆存储
+- 降低 最小相似度阈值 扩大匹配范围
+- 检查是否在正确的上下文下添加了记忆存储
+
+**性能问题？**
+
+- 减小搜索 limit 以提升响应速度
+- 为高频搜索实现缓存
+- 使用合适的 最小相似度阈值 在速度与准确性之间取得平衡
+
+---
+
+*此配方为个人 AI 助手提供基础，可根据你的具体需求和用例进行自定义。*

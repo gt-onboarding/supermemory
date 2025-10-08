@@ -1,0 +1,404 @@
+---
+title: 'Python SDK'
+sidebarTitle: "Python"
+description: 'Python で supermemory を使う方法'
+---
+
+<div id="installation">
+  ## インストール
+</div>
+
+```sh
+# PyPIからインストール
+pip install --pre supermemory
+```
+
+
+<div id="usage">
+  ## 使い方
+</div>
+
+```python
+import os
+from supermemory import Supermemory
+
+client = supermemory(
+    api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # これはデフォルト値で、省略可能です
+)
+
+response = client.search.execute(
+    q="pythonに関連するdocuments",
+)
+print(response.results)
+```
+
+`api_key` キーワード引数を渡すこともできますが、
+[python-dotenv](https://pypi.org/project/python-dotenv/) を使って
+`.env` ファイルに `SUPERMEMORY_API_KEY="My API Key"` を追加し、
+APIキーがソース管理に含まれないようにすることをおすすめします。
+
+
+<div id="async-usage">
+  ## 非同期での使用
+</div>
+
+`supermemory` の代わりに `AsyncSupermemory` をインポートし、各 API 呼び出しで `await` を使ってください。
+
+```python
+import os
+import asyncio
+from supermemory import AsyncSupermemory
+
+client = AsyncSupermemory(
+    api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # これはデフォルト値で、省略可能です
+)
+
+
+async def main() -> None:
+    response = await client.search.execute(
+        q="pythonに関連するdocuments",
+    )
+    print(response.results)
+
+
+asyncio.run(main())
+```
+
+同期クライアントと非同期クライアントの機能は、その他の点では同一です。
+
+
+<div id="using-types">
+  ## 型の使用
+</div>
+
+ネストされたリクエストパラメータは [TypedDict](https://docs.python.org/3/library/typing.html#typing.TypedDict) です。レスポンスは [Pydantic モデル](https://docs.pydantic.dev)で、次のような補助メソッドも提供します:
+
+- JSON へのシリアライズ: `model.to_json()`
+- 辞書への変換: `model.to_dict()`
+
+型付きのリクエストとレスポンスにより、エディタ内で補完やドキュメント参照が可能になります。バグを早期に検出するために VS Code で型エラーを確認したい場合は、`python.analysis.typeCheckingMode` を `basic` に設定してください。
+
+<div id="file-uploads">
+  ## ファイルのアップロード
+</div>
+
+ファイルアップロードに対応するリクエストパラメータは、`bytes`、[`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike) のインスタンス、または `(filename, contents, media type)` のタプルとして渡せます。
+
+```python
+from pathlib import Path
+from supermemory import Supermemory
+
+client = supermemory()
+
+client.memories.upload_file(
+    file=Path("/path/to/file"),
+)
+```
+
+非同期クライアントは同じインターフェースを使用します。[`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike) インスタンスを渡すと、ファイルの内容は自動的に非同期で読み込まれます。
+
+
+<div id="handling-errors">
+  ## エラー処理
+</div>
+
+ライブラリが API に接続できない場合（たとえばネットワークの問題やタイムアウトが原因）、`supermemory.APIConnectionError` のサブクラスが送出されます。
+
+API が成功以外の status コード（つまり 4xx または 5xx のレスポンス）を返した場合、`status_code` と `response` プロパティを含む `supermemory.APIStatusError` のサブクラスが送出されます。
+
+すべてのエラーは `supermemory.APIError` を継承します。
+
+```python
+import supermemory
+from supermemory import Supermemory
+
+client = supermemory()
+
+try:
+    client.memories.add(
+        content="これは機械学習の概念に関する詳細な記事です...",
+    )
+except supermemory.APIConnectionError as e:
+    print("サーバーに接続できませんでした")
+    print(e.__cause__)  # 基盤となる例外、おそらくhttpx内で発生
+except supermemory.RateLimitError as e:
+    print("429ステータスコードを受信しました。少し待機してください。")
+except supermemory.APIStatusError as e:
+    print("200番台以外のステータスコードを受信しました")
+    print(e.status_code)
+    print(e.response)
+```
+
+エラーコードは次のとおりです。
+
+| ステータスコード | エラータイプ               |
+| -------------- | -------------------------- |
+| 400            | `BadRequestError`          |
+| 401            | `AuthenticationError`      |
+| 403            | `PermissionDeniedError`    |
+| 404            | `NotFoundError`            |
+| 422            | `UnprocessableEntityError` |
+| 429            | `RateLimitError`           |
+| &gt;=500         | `InternalServerError`      |
+| N/A            | `APIConnectionError`       |
+
+
+<div id="retries">
+  ### リトライ
+</div>
+
+一部のエラーはデフォルトで自動的に最大2回再試行され、短い指数バックオフが適用されます。
+接続エラー（例：ネットワーク接続の問題）、408 Request Timeout、409 Conflict、
+429 Rate Limit、および 500 以上の内部エラーは、いずれもデフォルトで再試行されます。
+
+`max_retries` オプションを使用して、リトライ設定を調整または無効化できます。
+
+```python
+from supermemory import Supermemory
+
+# 全リクエストのデフォルト設定：
+client = supermemory(
+    # デフォルトは2
+    max_retries=0,
+)
+
+# または、リクエスト毎に設定：
+client.with_options(max_retries=5).memories.add(
+    content="機械学習の概念に関する詳細な記事です...",
+)
+```
+
+
+<div id="timeouts">
+  ### タイムアウト
+</div>
+
+デフォルトではリクエストは1分でタイムアウトします。`timeout` オプションで設定でき、浮動小数点数または [`httpx.Timeout`](https://www.python-httpx.org/advanced/#fine-tuning-the-configuration) オブジェクトを受け付けます。
+
+```python
+from supermemory import Supermemory
+
+# 全リクエストのデフォルト設定:
+client = supermemory(
+    # 20秒（デフォルトは1分）
+    timeout=20.0,
+)
+
+# より詳細な制御:
+client = supermemory(
+    timeout=httpx.Timeout(60.0, read=5.0, write=10.0, connect=2.0),
+)
+
+# リクエスト単位でのオーバーライド:
+client.with_options(timeout=5.0).memories.add(
+    content="機械学習の概念に関する詳細な記事です...",
+)
+```
+
+タイムアウトが発生すると、`APITimeoutError` がスローされます。
+
+タイムアウトしたリクエストは[既定で2回リトライされます](#retries)。
+
+
+<div id="advanced">
+  ## 詳細設定
+</div>
+
+<div id="logging">
+  ### ロギング
+</div>
+
+標準ライブラリの [`logging`](https://docs.python.org/3/library/logging.html) モジュールを使用しています。
+
+環境変数 `SUPERMEMORY_LOG` を `info` に設定すると、ロギングを有効にできます。
+
+```shell
+$ export SUPERMEMORY_LOG=info
+```
+
+または、より詳細なログ出力のために `debug` に設定します。
+
+
+<div id="how-to-tell-whether-none-means-null-or-missing">
+  ### `None` が `null` なのか欠落なのかを見分ける方法
+</div>
+
+API レスポンスでは、フィールドが明示的に `null` の場合もあれば、そもそも存在しない（欠落している）場合もあります。どちらの場合でも、このライブラリでは値は `None` になります。両者を区別するには、`.model_fields_set` を使います。
+
+```py
+if response.my_field is None:
+  if 'my_field' not in response.model_fields_set:
+    print('{}のようなjsonを受信しましたが、"my_field"キーが存在しません。')
+  else:
+    print('{"my_field": null}のようなjsonを受信しました。')
+```
+
+
+<div id="accessing-raw-response-data-eg-headers">
+  ### 生のレスポンスデータへのアクセス（例：ヘッダー）
+</div>
+
+“生”の Response オブジェクトには、任意の HTTP メソッド呼び出しに `.with_raw_response.` を付けることでアクセスできます。例：
+
+```py
+from supermemory import Supermemory
+
+client = supermemory()
+response = client.memories.with_raw_response.add(
+    content="これは機械学習の概念を詳しく解説した記事です...",
+)
+print(response.headers.get('X-My-Header'))
+
+memory = response.parse()  # `memories.add()` が返すオブジェクトを取得
+print(memory.id)
+```
+
+これらのメソッドは、[`APIResponse`](https://github.com/supermemoryai/python-sdk/tree/main/src/supermemory/_response.py) オブジェクトを返します。
+
+非同期クライアントは、同じ構造の [`AsyncAPIResponse`](https://github.com/supermemoryai/python-sdk/tree/main/src/supermemory/_response.py) を返します。違いは、レスポンス内容を読み取るための `await` 可能なメソッドを備えている点だけです。
+
+
+<div id="with_streaming_response">
+  #### `.with_streaming_response`
+</div>
+
+上記のインターフェースは、リクエスト時にレスポンス本文を即時に全体読み込みしますが、常に望ましいとは限りません。
+
+レスポンス本文をストリーミングするには、代わりに `.with_streaming_response` を使用します。これはコンテキストマネージャを必要とし、`.read()`、`.text()`、`.json()`、`.iter_bytes()`、`.iter_text()`、`.iter_lines()`、または `.parse()` を呼び出したときにのみ本文を読み込みます。非同期クライアントでは、これらは非同期メソッドになります。
+
+```python
+with client.memories.with_streaming_response.add(
+    content="これは機械学習の概念に関する詳細な記事です...",
+) as response:
+    print(response.headers.get("X-My-Header"))
+
+    for line in response.iter_lines():
+        print(line)
+```
+
+レスポンスを確実にクローズするために、コンテキストマネージャーが必要です。
+
+
+<div id="making-customundocumented-requests">
+  ### カスタム／未公開リクエストの作成
+</div>
+
+このライブラリは、ドキュメント化された API に便利にアクセスできるよう型付けされています。
+
+未公開のエンドポイント、パラメータ、あるいはレスポンスプロパティにアクセスする必要がある場合でも、このライブラリを引き続き利用できます。
+
+<div id="undocumented-endpoints">
+  #### 未公開のエンドポイント
+</div>
+
+未公開のエンドポイントにリクエストするには、`client.get`、`client.post` などの
+HTTP メソッドを使用します。このリクエストを行う際は、クライアントのオプション（リトライなど）が適用されます。
+
+```py
+import httpx
+
+response = client.post(
+    "/foo",
+    cast_to=httpx.Response,
+    body={"my_param": True},
+)
+
+print(response.headers.get("x-foo"))
+```
+
+
+<div id="undocumented-request-params">
+  #### ドキュメント化されていないリクエストパラメータ
+</div>
+
+追加のパラメータを明示的に送信する場合は、`extra_query`、`extra_body`、`extra_headers` のリクエストオプションを使用できます。
+
+<div id="undocumented-response-properties">
+  #### 未ドキュメントのレスポンスプロパティ
+</div>
+
+未ドキュメントのレスポンスプロパティにアクセスするには、`response.unknown_prop` のように追加フィールドにアクセスします。
+また、Pydantic モデル上のすべての追加フィールドを dict として取得するには、
+[`response.model_extra`](https://docs.pydantic.dev/latest/api/base_model/#pydantic.BaseModel.model_extra) を使用します。
+
+<div id="configuring-the-http-client">
+  ### HTTP クライアントの設定
+</div>
+
+[httpx クライアント](https://www.python-httpx.org/api/#client)を直接上書きして、次の用途に合わせてカスタマイズできます：
+
+* [プロキシ](https://www.python-httpx.org/advanced/proxies/)のサポート
+* カスタム[トランスポート](https://www.python-httpx.org/advanced/transports/)
+* 追加の[上級](https://www.python-httpx.org/advanced/clients/)機能
+
+```python
+import httpx
+from supermemory import Supermemory, DefaultHttpxClient
+
+client = supermemory(
+    # または `SUPERMEMORY_BASE_URL` 環境変数を使用する
+    base_url="http://my.test.server.example.com:8083",
+    http_client=DefaultHttpxClient(
+        proxy="http://my.test.proxy.example.com",
+        transport=httpx.HTTPTransport(local_address="0.0.0.0"),
+    ),
+)
+```
+
+`with_options()` を使うと、リクエスト単位でクライアントをカスタマイズできます。
+
+```python
+client.with_options(http_client=DefaultHttpxClient(...))
+```
+
+
+<div id="managing-http-resources">
+  ### HTTP リソースの管理
+</div>
+
+デフォルトでは、クライアントが[ガベージコレクト](https://docs.python.org/3/reference/datamodel.html#object.__del__)されると、ライブラリは下層の HTTP 接続を閉じます。必要に応じて、`.close()` メソッドでクライアントを手動で閉じることも、終了時に自動で閉じるコンテキストマネージャーを使うこともできます。
+
+```py
+from supermemory import Supermemory
+
+with supermemory() as client:
+  # ここでリクエストを行います
+  ...
+
+# HTTP クライアントは閉じられました
+```
+
+
+<div id="versioning">
+  ## バージョニング
+</div>
+
+このパッケージは原則として [SemVer](https://semver.org/spec/v2.0.0.html) の規約に従いますが、以下のような後方互換性のない変更がマイナーバージョンとしてリリースされる場合があります。
+
+1. 実行時の挙動を変えず、静的型にのみ影響する変更。
+2. 技術的には公開されているものの、外部からの利用を想定しておらずドキュメント化もされていないライブラリ内部への変更。 _(そのような内部に依存している場合は、GitHub の issue を作成してお知らせください。)_
+3. 実際には大多数のユーザーに影響しないと考えられる変更。
+
+私たちは後方互換性を重視しており、スムーズにアップグレードできるよう努めています。
+
+皆さまからのフィードバックを歓迎します。質問や不具合、提案があれば [issue](https://www.github.com/supermemoryai/python-sdk/issues) を作成してください。
+
+<div id="determining-the-installed-version">
+  ### インストールされているバージョンの確認
+</div>
+
+最新バージョンにアップグレードしたのに期待していた新機能が見当たらない場合、Python 環境が古いバージョンのままである可能性があります。
+
+実行時に使用されているバージョンは、次の方法で確認できます：
+
+```py
+import supermemory
+print(supermemory.__version__)
+```
+
+
+<div id="requirements">
+  ## 必要条件
+</div>
+
+Python 3.8以上

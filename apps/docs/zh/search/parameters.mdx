@@ -1,0 +1,250 @@
+---
+title: "搜索参数"
+description: "涵盖所有搜索参数及其作用的完整参考"
+---
+
+针对三个搜索端点（文档搜索、memory 搜索和执行搜索）的完整参数参考。
+
+<div id="common-parameters">
+  ## 常用参数
+</div>
+
+这些参数适用于所有搜索端点：
+
+<ParamField query="q" type="string" required>
+  **搜索查询字符串**
+
+  你要搜索的文本。可以是自然语言、关键词或问题。
+
+  ```typescript
+  q: "machine learning neural networks"
+  q: "What are the applications of quantum computing?"
+  q: "python tutorial beginner"
+  ```
+</ParamField>
+
+<ParamField query="limit" type="number" default="10">
+  **返回结果的最大数量**
+
+  控制返回的结果数量。更高的 limit 会增加响应时间和返回体大小。
+
+  ```typescript
+  limit: 5    // 快速、聚焦的结果
+  limit: 20   // 更全面的结果
+  limit: 100  // 建议的最大值
+  ```
+</ParamField>
+
+<ParamField query="containerTags" type="Array<string>">
+  **按容器标签过滤**
+
+  用于筛选结果的组织标签。采用**精确数组匹配**——必须按相同顺序完全匹配所有标签。
+
+  ```typescript
+  containerTags: ["user_123"]                    // 单个标签
+  containerTags: ["user_123", "project_ai"]      // 多个标签（精确匹配）
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **使用类 SQL 结构的 Metadata 过滤**
+
+  含有 AND/OR 逻辑的 JSON 字符串，用于按 Metadata 字段过滤。结构与 memory 列表的过滤相同。
+
+  ```typescript
+  filters: JSON.stringify({
+    AND: [
+      { key: "category", value: "tutorial", negate: false },
+      { key: "difficulty", value: "beginner", negate: false }
+    ]
+  })
+  ```
+
+  <Note>
+    完整语法和示例见[Metadata 过滤指南](/zh/search/filtering)。
+  </Note>
+</ParamField>
+
+<ParamField query="rerank" type="boolean" default="false">
+  **重新打分以提升相关性**
+
+  应用二次排序算法以提升结果质量。会增加约 100–200ms 的 Latency，但能提高准确性。
+
+  ```typescript
+  rerank: true   // 更高准确性，稍慢
+  rerank: false  // 更快，标准准确性
+  ```
+</ParamField>
+
+<ParamField query="rewriteQuery" type="boolean" default="false">
+  **扩展并优化查询**
+
+  重写你的查询以找到更相关的结果。对缩写和领域特定术语尤其有用。**会增加约 400ms 的 Latency**。
+
+  ```typescript
+  // 查询重写示例：
+  "ML" → "machine learning artificial intelligence"
+  "JS" → "JavaScript programming language"
+  "API" → "application programming interface REST"
+  ```
+
+  <Warning>
+    查询重写会显著增加 Latency。仅在搜索质量优先于速度时使用。
+  </Warning>
+</ParamField>
+
+<div id="document-search-parameters-post-v3search">
+  ## 文档搜索参数（POST `/v3/search`）
+</div>
+
+这些参数专用于 `client.search.documents()`：
+
+<ParamField query="chunkThreshold" type="number" range="0-1" default="0.5">
+  **chunk（文档片段）选择敏感度**
+
+  控制哪些文本 chunk 会包含在结果中：
+
+  * **0.0** = 最不敏感（更多 chunks、更多结果）
+  * **1.0** = 最敏感（更少 chunks、更高质量）
+
+  ```typescript
+  chunkThreshold: 0.2   // 范围更广，返回较多 chunks
+  chunkThreshold: 0.8   // 更加精确，仅返回相关 chunks
+  ```
+</ParamField>
+
+<ParamField query="documentThreshold" type="number" range="0-1" default="0.5">
+  **文档选择敏感度**
+
+  控制纳入搜索范围的文档：
+
+  * **0.0** = 搜索更多文档（更全面）
+  * **1.0** = 仅搜索高度相关文档（更聚焦）
+
+  ```typescript
+  documentThreshold: 0.1   // 广撒网
+  documentThreshold: 0.9   // 仅非常相关的文档
+  ```
+</ParamField>
+
+<ParamField query="docId" type="string">
+  **在特定文档内搜索**
+
+  将搜索限定为单个文档内的 chunks。适用于在大型文档中定位内容。
+
+  ```typescript
+  docId: "doc_abc123"  // 仅搜索此文档
+  ```
+</ParamField>
+
+<ParamField query="onlyMatchingChunks" type="boolean" default="false">
+  **仅返回精确匹配的 chunks**
+
+  默认情况下，Supermemory 会包含相邻的上下文 chunks。将其设为 `true` 可仅获取精确匹配的文本。
+
+  ```typescript
+  onlyMatchingChunks: false  // 包含上下文 chunks（默认）
+  onlyMatchingChunks: true   // 仅匹配的 chunks
+  ```
+
+  <Note>
+    上下文 chunks 有助于 LLM（大型语言模型）理解完整语义。仅在需要精确文本抽取时再禁用。
+  </Note>
+</ParamField>
+
+<ParamField query="includeFullDocs" type="boolean" default="false">
+  **包含完整文档内容**
+
+  为每个结果添加完整的文档文本。适用于需要完整上下文的聊天机器人。
+
+  ```typescript
+  includeFullDocs: true   // 响应中包含完整文档
+  includeFullDocs: false  // 仅包含 chunks 和 Metadata
+  ```
+
+  <Warning>
+    包含完整文档会使响应非常庞大。请谨慎使用，并设置合适的 limit。
+  </Warning>
+</ParamField>
+
+<ParamField query="includeSummary" type="boolean" default="false">
+  **包含文档摘要**
+
+  在结果中添加由 AI 生成的文档摘要，是介于 chunks 与完整文档之间的折中方案。
+
+  ```typescript
+  includeSummary: true   // 包含文档摘要
+  includeSummary: false  // 不包含摘要
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **使用类似 SQL 的查询按 Metadata 过滤**
+
+  ```typescript
+
+  // 请改用以下方式：
+  filters: JSON.stringify({
+    OR: [
+      { key: "category", value: "technology", negate: false },
+      { key: "category", value: "science", negate: false }
+    ]
+  })
+  ```
+</ParamField>
+
+<div id="memory-search-parameters-post-v4search">
+  ## memory 搜索参数（POST `/v4/search`）
+</div>
+
+这些参数特定于 `client.search.memories()`：
+
+<ParamField query="threshold" type="number" range="0-1" default="0.5">
+  **memory 选择的灵敏度**
+
+  按相似性决定返回哪些 memory：
+
+  * **0.0** = 返回更多 memory（宽泛搜索）
+  * **1.0** = 仅返回高度相似的 memory（精确搜索）
+
+  ```typescript
+  threshold: 0.3   // 更宽泛的 memory 搜索
+  threshold: 0.8   // 仅返回高度相似的 memories
+  ```
+</ParamField>
+
+<ParamField query="containerTag" type="string">
+  **按单个 container tag 过滤**
+
+  注意：memory 搜索使用 `containerTag`（单数），而 Documents 搜索使用 `containerTags`（复数数组）。
+
+  ```typescript
+  containerTag: "user_123"  // memory 搜索的单个标签
+  ```
+</ParamField>
+
+<ParamField query="include" type="object">
+  **控制要包含的附加数据**
+
+  指定与 memory 结果一起返回哪些上下文信息的对象。
+
+  <ParamField query="include.documents" type="boolean" default="false">
+    为每个 memory 包含关联的 Documents
+  </ParamField>
+
+  <ParamField query="include.relatedMemories" type="boolean" default="false">
+    包含父级与子级记忆存储（上下文关系）
+  </ParamField>
+
+  <ParamField query="include.summaries" type="boolean" default="false">
+    包含 memory 摘要
+  </ParamField>
+
+  ```typescript
+  include: {
+    documents: true,        // 显示相关 Documents
+    relatedMemories: true,  // 显示父/子记忆存储
+    summaries: true         // 包含摘要
+  }
+  ```
+</ParamField>

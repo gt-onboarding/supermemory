@@ -1,0 +1,89 @@
+---
+title: "Crear integraciones"
+description: "Crea una integración para sincronizar tu contenido con Supermemory"
+---
+
+Para crear una integración, simplemente haz una solicitud `POST` a `/v3/connections/{provider}`
+
+<CodeGroup>
+```typescript Typescript
+import Supermemory from 'supermemory';
+
+const client = new Supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // Este es el valor predeterminado y puede omitirse
+});
+
+const connection = await client.connections.create('notion');
+
+console.debug(connection.authLink);
+```
+
+```python Python
+import requests
+
+url = "https://api.supermemory.ai/v3/connections/{provider}"
+
+payload = {
+    "redirectUrl": "<string>",
+    "containerTags": ["<string>"],
+    "metadata": {},
+    "documentLimit": 5000
+}
+headers = {
+    "Authorization": "Bearer <token>",
+    "Content-Type": "application/json"
+}
+
+response = requests.request("POST", url, json=payload, headers=headers)
+
+print(response.text)
+```
+
+```bash cURL
+curl --request POST \
+  --url https://api.supermemory.ai/v3/connections/{provider} \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "redirectUrl": "<string>",
+  "containerTags": [
+    "<string>"
+  ],
+  "metadata": {},
+  "documentLimit": 5000
+}'
+```
+</CodeGroup>
+
+<div id="parameters">
+  ### Parámetros
+</div>
+
+- `provider`: El proveedor con el que conectar. Los proveedores actualmente compatibles son `notion`, `google-drive`, `one-drive`
+- `redirectUrl`: La URL a la que redirigir después de crear la integración (la URL de tu app)
+- `containerTags`: Opcional. Para segmentar usuarios, organizaciones, etc. en tu app.
+    - Ejemplo: `["user_123", "project_alpha"]`
+- `metadata`: Opcional. Cualquier metadata que quieras asociar con la integración.
+    - Esta metadata se agrega a cada documento sincronizado desde esta integración.
+- `documentLimit`: Opcional. El número máximo de documentos a sincronizar desde esta integración.
+    - Predeterminado: 10.000
+    - Se puede usar para limitar costos y sincronizar un número determinado de documentos para un usuario específico.
+
+<div id="response">
+  ## Respuesta
+</div>
+
+supermemory envía una respuesta con el siguiente esquema:
+
+```json
+{
+  "id": "<string>",
+  "authLink": "<string>",
+  "expiresIn": "<string>",
+  "redirectsTo": "<string>"
+}
+```
+
+Puedes usar el `authLink` para redirigir al usuario a la página de inicio de sesión del provider.
+
+A continuación, gestión de integraciones.

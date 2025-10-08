@@ -1,0 +1,235 @@
+---
+title: "添加记忆存储概览"
+description: "通过文本、文件或 URL 将内容添加到 Supermemory"
+sidebarTitle: "概览"
+---
+
+将任意类型的内容添加到 Supermemory：文本、文件、URL、图像、视频等。所有内容都会自动处理为可搜索的 memory，成为你的智能知识图谱的一部分。
+
+<div id="quick-start">
+  ## 快速上手
+</div>
+
+<CodeGroup>
+  ```typescript TypeScript
+  // 添加文本内容
+  const result = await client.memories.add({
+    content: "Machine learning enables computers to learn from data",
+    containerTag: "ai-research",
+    metadata: { priority: "high" }
+  });
+
+  console.log(result);
+  // 输出：{ id: "abc123", status: "queued" }
+  ```
+
+  ```python Python
+  # 添加文本内容
+  result = client.memories.add(
+      content="Machine learning enables computers to learn from data",
+      container_tags=["ai-research"],
+      metadata={"priority": "high"}
+  )
+
+  print(result)
+  # 输出：{"id": "abc123", "status": "queued"}
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "content": "Machine learning enables computers to learn from data",
+      "containerTag": "ai-research",
+      "metadata": {"priority": "high"}
+    }'
+
+  # 响应：{"id": "abc123", "status": "queued"}
+  ```
+</CodeGroup>
+
+<div id="key-concepts">
+  ## 关键概念
+</div>
+
+<Note>
+  **初次了解 Supermemory？** 阅读 [Supermemory 的工作原理](/zh/how-it-works)，以掌握其知识图谱架构，并弄清 Documents 与 memory 的区别。
+</Note>
+
+<div id="quick-overview">
+  ### 快速概览
+</div>
+
+* **Documents**: 你上传的原始内容（PDF、url、文本）
+* **Memories**: 系统自动生成的、带有关联关系的可搜索 chunk（文档片段）
+* **Container Tags**: 将相关内容分组以提供更好的上下文
+* **Metadata**: 用于过滤的附加信息
+
+<div id="content-sources">
+  ### 内容来源
+</div>
+
+通过三种方式添加内容：
+
+1. **直接文本**：通过 API 直接发送文本内容
+2. **文件上传**：上传 PDF、图像、视频以进行提取
+3. **URL 处理**：从网页和平台自动提取
+
+<div id="endpoints">
+  ## 端点
+</div>
+
+<Warning>
+  请注意，这些端点用于添加 Documents。memory 由 Supermemory 自动推断生成。
+</Warning>
+
+<div id="add-content">
+  ### 添加内容
+</div>
+
+`POST /v3/documents`
+
+添加文本、URL 或任何受支持的格式。
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.add({
+    content: "Your content here",
+    containerTag: "project"
+  });
+  ```
+
+  ```python Python
+  client.memories.add(
+    content="Your content here",
+    container_tags=["project"]
+  )
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"content": "Your content here", "containerTag": "project"}'
+  ```
+</CodeGroup>
+
+<div id="upload-file">
+  ### 上传文件
+</div>
+
+`POST /v3/documents/file`
+
+直接上传文件进行处理。
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.uploadFile({
+    file: fileStream,
+    containerTag: "project"
+  });
+  ```
+
+  ```python Python
+  client.memories.upload_file(
+    file=open('file.pdf', 'rb'),
+    container_tags='project'
+  )
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -F "file=@document.pdf" \
+    -F "containerTags=project"
+  ```
+</CodeGroup>
+
+<div id="update-memory">
+  ### 更新 memory
+</div>
+
+`PATCH /v3/documents/{id}`
+
+更新现有 Documents 的内容。
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.update("doc_id", {
+    content: "Updated content"
+  });
+  ```
+
+  ```python Python
+  client.memories.update("doc_id", {
+    "content": "Updated content"
+  })
+  ```
+
+  ```bash cURL
+  curl -X PATCH "https://api.supermemory.ai/v3/documents/doc_id" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"content": "Updated content"}'
+  ```
+</CodeGroup>
+
+<div id="supported-content-types">
+  ## 受支持的内容类型
+</div>
+
+<div id="documents">
+  ### Documents
+</div>
+
+* 支持光学字符识别（OCR）的 PDF
+* Google Docs、Sheets、Slides
+* Notion 页面
+* Microsoft Office 文件
+
+<div id="media">
+  ### 媒体
+</div>
+
+* 支持光学字符识别（OCR）的图像（JPG、PNG、GIF、WebP）
+
+<div id="web-content">
+  ### 网页内容
+</div>
+
+* Twitter/X 帖文
+* 带字幕的 YouTube 视频
+
+<div id="text-formats">
+  ### 文本格式
+</div>
+
+* 纯文本
+* Markdown
+* CSV 文件
+
+<Note> 请参阅[连接器指南](/zh/connectors/overview)，了解如何连接 Google Drive、Notion 和 OneDrive，并实时同步文件。 </Note>
+
+<div id="response-format">
+  ## 响应格式
+</div>
+
+```json
+{
+  "id": "D2Ar7Vo7ub83w3PRPZcaP1",
+  "status": "queued"
+}
+```
+
+* **`id`**: 文档的唯一标识符
+* **`status`**: 处理状态（`queued`、`processing`、`done`）
+
+<div id="next-steps">
+  ## 下一步
+</div>
+
+* [跟踪处理状态](/zh/api/track-progress) - 监控文档处理
+* [搜索记忆存储](/zh/search/overview) - 搜索你的内容
+* [列出记忆存储](/zh/list-memories/overview) - 浏览已存储的记忆
+* [更新与删除](/zh/update-delete-memories/overview) - 管理记忆存储

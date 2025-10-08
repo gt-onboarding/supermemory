@@ -1,0 +1,270 @@
+---
+title: "レスポンススキーマ"
+description: "すべての検索エンドポイントに共通するレスポンス構造の完全版とスコアリングの詳細"
+---
+
+<div id="document-search-response-post-v3search">
+  ## Document Search Response (POST `/v3/search`)
+</div>
+
+`client.search.documents()` と `client.search.execute()` のレスポンス:
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_abc123",
+      "title": "機械学習の基礎",
+      "type": "pdf",
+      "score": 0.89,
+      "chunks": [
+        {
+          "content": "機械学習は人工知能のサブセットです...",
+          "score": 0.95,
+          "isRelevant": true
+        }
+      ],
+      "metadata": {
+        "category": "教育",
+        "author": "Dr. Smith",
+        "difficulty": "初心者向け"
+      },
+      "createdAt": "2024-01-15T10:30:00Z",
+      "updatedAt": "2024-01-20T14:45:00Z"
+    }
+  ],
+  "timing": 187,
+  "total": 1
+}
+```
+
+
+<div id="document-result-fields">
+  ### ドキュメント結果フィールド
+</div>
+
+<ResponseField name="documentId" type="string">
+  一致するchunksを含むドキュメントの一意の識別子。
+</ResponseField>
+
+<ResponseField name="title" type="string | null">
+  利用可能な場合のドキュメントのタイトル。タイトルがないdocumentsではnullになることがあります。
+</ResponseField>
+
+<ResponseField name="type" type="string | null">
+  ドキュメントの種類（例: "pdf", "text", "webpage", "notion_doc"）。指定されていない場合はnullになることがあります。
+</ResponseField>
+
+<ResponseField name="score" type="number" range="0-1">
+  **ドキュメント全体の関連度score**。意味的な類似性、キーワード一致、メタデータの関連度を組み合わせた値。
+
+  - **0.9-1.0**: 極めて関連性が高い
+  - **0.7-0.9**: 非常に関連性が高い
+  - **0.5-0.7**: 中程度に関連性がある
+  - **0.3-0.5**: ある程度関連性がある
+  - **0.0-0.3**: わずかに関連性がある
+</ResponseField>
+
+<ResponseField name="chunks" type="Array<Chunk>">
+  ドキュメント内の一致したテキストchunksの配列。各chunkは、クエリに一致したドキュメントの一部分を表します。
+
+  <ResponseField name="chunks[].content" type="string">
+    一致したchunkの実際のテキスト内容。`onlyMatchingChunks=true`でない限り、周辺のchunksからのコンテキストを含む場合があります。
+  </ResponseField>
+
+  <ResponseField name="chunks[].score" type="number" range="0-1">
+    **チャンク固有の類似度score**。この特定のchunkがクエリにどの程度一致しているか。
+  </ResponseField>
+
+  <ResponseField name="chunks[].isRelevant" type="boolean">
+    このchunkが`chunkThreshold`を満たしたかどうか。`true`はthresholdを上回ることを、`false`はコンテキスト目的でのみ含まれていることを意味します。
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="metadata" type="object | null">
+  キーと値のペアで表されるドキュメントのメタデータ。構造はドキュメントとともに保存された内容に依存します。
+
+  ```json
+  {
+    "category": "tutorial",
+    "language": "python",
+    "difficulty": "intermediate",
+    "tags": "web-development,backend"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ドキュメントが作成された時刻のISO 8601タイムスタンプ。
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ドキュメントが最後に更新された時刻のISO 8601タイムスタンプ。
+</ResponseField>
+
+<ResponseField name="content" type="string | null" optional>
+  **ドキュメント全文**。`includeFullDocs=true`の場合にのみ含まれます。非常に大きくなることがあります。
+
+  <Warning>
+    ドキュメント全文はレスポンスを極めて大きくする可能性があります。必要な場合に限り、適切なlimitとともに使用してください。
+  </Warning>
+</ResponseField>
+
+<ResponseField name="summary" type="string | null" optional>
+  **AI生成のドキュメント要約**。`includeSummary=true`の場合にのみ含まれます。ドキュメントの簡潔な概要を提供します。
+</ResponseField>
+
+<div id="memory-search-response">
+  ## メモリー検索のレスポンス
+</div>
+
+`client.search.memories()` のレスポンス：
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_xyz789",
+      "memory": "量子コンピューティングの応用に関する完全なメモリーコンテンツ...",
+      "similarity": 0.87,
+      "metadata": {
+        "category": "research",
+        "topic": "quantum-computing"
+      },
+      "updatedAt": "2024-01-18T09:15:00Z",
+      "version": 3,
+      "context": {
+        "parents": [
+          {
+            "memory": "量子理論の基礎についての以前の議論...",
+            "relation": "extends",
+            "version": 2,
+            "updatedAt": "2024-01-17T16:30:00Z"
+          }
+        ],
+        "children": [
+          {
+            "memory": "量子アルゴリズムに関するフォローアップの質問...",
+            "relation": "derives",
+            "version": 4,
+            "updatedAt": "2024-01-19T11:20:00Z"
+          }
+        ]
+      },
+      "documents": [
+        {
+          "id": "doc_quantum_paper",
+          "title": "量子コンピューティングの応用",
+          "type": "pdf",
+          "createdAt": "2024-01-10T08:00:00Z"
+        }
+      ]
+    }
+  ],
+  "timing": 156,
+  "total": 1
+}
+```
+
+
+<div id="memory-result-fields">
+  ### メモリー結果のフィールド
+</div>
+
+<ResponseField name="id" type="string">
+  メモリーエントリの一意の識別子。
+</ResponseField>
+
+<ResponseField name="memory" type="string">
+  **メモリーの完全な内容**。document 検索が chunks を返すのに対し、メモリー検索はメモリーの全文を返します。
+</ResponseField>
+
+<ResponseField name="similarity" type="number" range="0-1">
+  クエリとこのメモリーの**類似度 score**。値が高いほど一致度が高いことを示します。
+
+  - **0.9-1.0**: 極めて高い類似
+  - **0.8-0.9**: 非常に高い類似
+  - **0.7-0.8**: 高い類似
+  - **0.6-0.7**: やや類似
+  - **0.5-0.6**: わずかな類似
+</ResponseField>
+
+<ResponseField name="metadata" type="object | null">
+  メモリーのメタデータ（キーと値のペア）。構造はメモリーとともに保存された内容に依存します。
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  メモリーが最後に更新された時刻（ISO 8601 タイムスタンプ）。
+</ResponseField>
+
+<ResponseField name="version" type="number | null" optional>
+  このメモリーエントリのバージョン番号。メモリーの変遷や関係を追跡するために使用します。
+</ResponseField>
+
+<ResponseField name="context" type="object" optional>
+  **文脈上のメモリー関係**。`include.relatedMemories=true` の場合にのみ含まれます。
+
+  <ResponseField name="context.parents" type="Array<ContextMemory>" optional>
+    このメモリーが拡張または派生している親メモリーの配列。
+  </ResponseField>
+
+  <ResponseField name="context.children" type="Array<ContextMemory>" optional>
+    このメモリーから拡張または派生している子メモリーの配列。
+  </ResponseField>
+
+  ### コンテキストメモリーの構造
+
+  <ResponseField name="memory" type="string">
+    関連メモリーの内容。
+  </ResponseField>
+
+  <ResponseField name="relation" type="string">
+    関係タイプ: `"updates"`、`"extends"`、`"derives"`。
+
+    - **updates**: このメモリーは関連メモリーを更新・置換します
+    - **extends**: このメモリーは関連メモリーを発展させます
+    - **derives**: このメモリーは関連メモリーから派生しています
+  </ResponseField>
+
+  <ResponseField name="version" type="number | null">
+    相対的なバージョン距離:
+    - **負の値** は親を示す（-1 = 直近の親、-2 = 祖父母）
+    - **正の値** は子を示す（+1 = 直近の子、+2 = 孫）
+  </ResponseField>
+
+  <ResponseField name="updatedAt" type="string">
+    関連メモリーが最後に更新された時刻。
+  </ResponseField>
+
+  <ResponseField name="metadata" type="object | null" optional>
+    関連メモリーのメタデータ。
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="documents" type="Array<Document>" optional>
+  **関連する documents**。`include.documents=true` の場合にのみ含まれます。
+
+  <ResponseField name="documents[].id" type="string">
+    Document の識別子。
+  </ResponseField>
+
+  <ResponseField name="documents[].title" type="string">
+    Document のタイトル。
+  </ResponseField>
+
+  <ResponseField name="documents[].type" type="string">
+    Document のタイプ。
+  </ResponseField>
+
+  <ResponseField name="documents[].metadata" type="object">
+    Document のメタデータ。
+  </ResponseField>
+
+  <ResponseField name="documents[].createdAt" type="string">
+    Document の作成時刻。
+  </ResponseField>
+
+  <ResponseField name="documents[].updatedAt" type="string">
+    Document の更新時刻。
+  </ResponseField>
+</ResponseField>

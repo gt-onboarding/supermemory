@@ -1,0 +1,171 @@
+---
+title: "Supermemory 的工作原理"
+description: "理解驱动智能 memory 的知识图谱架构"
+icon: "brain"
+---
+
+Supermemory 不只是一个文档存储系统。它旨在映射人类 memory 的真实运作方式——建立连接、随时间演化，并从累积的知识中产生洞见。
+
+![](/images/graph-view.png)
+
+<div id="the-mental-model">
+  ## 心智模型
+</div>
+
+传统系统存储文件。Supermemory 构建一个有机生长的知识图谱。
+
+<CardGroup cols={2}>
+  <Card title="Traditional Systems" icon="folder">
+    * 文件夹中的静态文件
+    * 内容之间没有连接
+    * 搜索仅匹配关键词
+    * 信息停滞不变
+  </Card>
+
+  <Card title="Supermemory" icon="network">
+    * 动态知识图谱
+    * memory 之间的丰富关联
+    * 语义级理解
+    * 信息持续演化并彼此联结
+  </Card>
+</CardGroup>
+
+<div id="documents-vs-memories">
+  ## documents 与 Memories
+</div>
+
+理解这一区分对于高效使用 Supermemory 至关重要。
+
+<div id="documents-your-raw-input">
+  ### Documents：你的原始输入
+</div>
+
+documents 是你提供的——原始素材：
+
+* 你上传的 PDF 文件
+* 你保存的网页
+* 你粘贴的文本
+* 含有文本的图像
+* 需要转写的视频
+
+把 documents 想象成你交给 Supermemory 的书本。
+
+<div id="memories-intelligent-knowledge-units">
+  ### Memories：智能知识单元
+</div>
+
+Memories 是 Supermemory 创建的产物——即理解：
+
+* 具有语义意义的 chunk
+* 为相似性搜索而做的嵌入
+* 通过关系相互连接
+* 随时间动态更新
+
+把 memories 看作是你读完那些书后，大脑形成的洞见与关联。
+
+<Note>
+  **关键洞见**：当你上传一个 50 页的 PDF 时，Supermemory 不只是存储它。它会将其拆分为数百个相互关联的 Memories，每一个都理解其上下文以及与你其他知识之间的关系。
+</Note>
+
+<div id="memory-relationships">
+  ## Memory 关系
+</div>
+
+![](/images/memories-inferred.png)
+
+该图通过三种关系类型将 Memories 连接起来：
+
+<div id="updates-information-changes">
+  ### 更新：信息变更
+</div>
+
+当新信息与现有知识相冲突或对其进行更新时，Supermemory 会创建一个“更新”关系。
+
+<CodeGroup>
+  ```text Original Memory
+  "You work at Supermemory as a content engineer"
+  ```
+
+  ```text New Memory (Updates Original)
+  "You now work at Supermemory as the CMO"
+  ```
+</CodeGroup>
+
+系统通过 `isLatest` 字段标记最新的 memory，确保搜索返回的是当前信息。
+
+<div id="extends-information-enriches">
+  ### 扩展：信息增益
+</div>
+
+当新信息在不替代现有知识的情况下进行补充时，Supermemory 会创建“扩展”关系。
+
+延续我们“在 supermemory 工作”的类比，关于你具体从事工作的 memory 会扩展上文关于你角色的 memory。
+
+<CodeGroup>
+  ```text Original Memory
+  "You work at Supermemory as the CMO"
+  ```
+
+  ```text New Memory (Extension) - Separate From Previous
+  "Your work consists of ensuring the docs are up to date, making marketing campaigns, SEO, etc."
+  ```
+</CodeGroup>
+
+这两条 Memories 都会保持有效且可被搜索，从而提供更丰富的上下文。
+
+<div id="derives-information-infers">
+  ### 推导：信息推断
+</div>
+
+最复杂的关系——当 Supermemory 从你的知识模式中推断出新的连接。
+
+<CodeGroup>
+  ```text Memory 1
+  "Dhravya 是 Supermemory 的创始人"
+  ```
+
+  ```text Memory 2
+  "Dhravya 经常讨论 AI 和机器学习方面的创新"
+  ```
+
+  ```text Derived Memory
+  "Supermemory 很可能是一家专注于 AI 的公司"
+  ```
+</CodeGroup>
+
+这些推断有助于挖掘你可能未明确表达的洞见。
+
+<div id="processing-pipeline">
+  ## 处理流水线
+</div>
+
+理解该流水线有助于你优化使用：
+
+| 阶段 | 具体内容 |
+|-------|-------------|
+| **已排队** | documents 正在等待处理 |
+| **提取中** | 正在提取内容 |
+| **内容切分** | 正在创建 memory chunk |
+| **Embedding** | 正在生成向量 |
+| **索引（indexing）** | 正在构建关系 |
+| **完成** | 可完整搜索 |
+
+<Note>
+  **提示**：更大的 documents 和视频需要更长时间。100 页的 PDF 大约需要 1–2 分钟，1 小时的视频可能需要 5–10 分钟。
+</Note>
+
+<div id="next-steps">
+  ## 下一步
+</div>
+
+既然你已经了解了 Supermemory 的工作原理：
+
+<CardGroup cols={2}>
+  <Card title="Add Memories" icon="plus" href="/zh/add-memories/overview">
+    开始将内容添加到你的知识图谱
+  </Card>
+
+  <Card title="Search Memories" icon="search" href="/zh/search/overview">
+    学习如何高效检索你的知识
+  </Card>
+</CardGroup>

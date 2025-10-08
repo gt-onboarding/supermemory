@@ -1,0 +1,71 @@
+---
+title: "Überblick — Was ist Supermemory?"
+sidebarTitle: "Überblick"
+description = "Erweitern Sie Ihre LLMs um langfristige Memory – über drei Integrationswege: AI SDK, Memory API oder Memory Router."
+---
+
+Supermemory verleiht Ihren LLMs langfristige Memory. Statt zustandsloser Textgenerierung greifen sie auf die richtigen Fakten aus Ihren Dateien, Chats und Tools zu, sodass Antworten konsistent, kontextbezogen und persönlich bleiben.
+
+<div id="how-does-it-work-at-a-glance">
+  ## Wie funktioniert das? (auf einen Blick)
+</div>
+
+![](/images/overview-image.png)
+
+* Sie senden Supermemory Text, Dateien und Chats.
+* Supermemory [indiziert diese intelligent](/de/how-it-works) und baut darauf einen semantischen Verständnisgraphen über eine Entität auf (z. B. einen Nutzer, ein Dokument, ein Projekt, eine Organisation).
+* Bei der Abfrage holen wir nur den relevantesten Kontext und übergeben ihn an Ihre Modelle.
+
+Wir bieten drei Möglichkeiten, Memory zu Ihren LLMs hinzuzufügen:
+
+<div id="memory-api-full-control">
+  ### Memory API — volle Kontrolle
+</div>
+
+* Text, Dateien und Chats aufnehmen (unterstützt multimodal); suchen und filtern; Ergebnisse neu bewerten.
+* Nach der Funktionsweise des menschlichen Gehirns modelliert: mit intelligentem Vergessen, Verfall, Aktualitätsbias, Kontextumschreiben usw.
+* API + SDKs für Node &amp; Python; für den produktiven Einsatz skalierbar ausgelegt.
+
+<Info>
+  Die vollständige API-Dokumentation zur Memory API finden Sie [hier](/de/api-reference/manage-memories/add-memory).
+</Info>
+
+<div id="ai-sdk">
+  ### AI SDK
+</div>
+
+* Native Vercel AI SDK-Integration mit `@supermemory/tools/ai-sdk`
+* Memory Tools für Agents oder Infinite Chat für automatischen Kontext
+* Funktioniert mit streamText, generateText und allen Funktionen des AI SDK
+
+```typescript
+import { streamText } from "ai"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const result = await streamText({
+  model: anthropic("claude-3"),
+  tools: supermemoryTools("IHR_SCHLÜSSEL")
+})
+```
+
+<Info>
+  Das AI SDK wird für neue Projekte mit der Vercel AI SDK empfohlen. Der Router eignet sich am besten für bestehende **Chat‑Anwendungen**, während die Memory API als **vollständige Memory‑Datenbank** mit granularer Kontrolle dient.
+</Info>
+
+<div id="memory-router-drop-in-proxy-with-minimal-code">
+  ### Memory Router — Drop-in-Proxy mit minimalem Code
+</div>
+
+* Behalten Sie Ihren vorhandenen LLM-Client bei; hängen Sie einfach `api.supermemory.ai/v3/` an Ihre Basis-URL an.
+* Automatisches Chunking und Token-Management, das zu Ihrem Kontextfenster passt.
+* Fügt bestehenden LLM-Anfragen nur minimale Latenz hinzu.
+
+<Note>
+  Alle drei Ansätze nutzen denselben **Memory-Pool**, wenn dieselbe Benutzer-id verwendet wird. Sie können je nach Bedarf frei kombinieren.
+</Note>
+
+<div id="next-steps">
+  ## Nächste Schritte
+</div>
+
+Öffnen Sie den Leitfaden [**Router vs API**](/de/routervsapi), um die technischen Unterschiede der beiden Ansätze zu verstehen und mithilfe eines einfachen 4‑Fragen‑Flows die für Sie beste Option auszuwählen.

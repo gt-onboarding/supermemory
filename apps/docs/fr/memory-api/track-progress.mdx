@@ -1,0 +1,299 @@
+---
+title: "Suivre l’état de traitement"
+description: "Surveiller en temps réel l’état de traitement des documents"
+icon: "activity"
+---
+
+Suivez vos documents tout au long du pipeline de traitement pour offrir une meilleure expérience utilisateur et gérer les cas limites.
+
+<div id="processing-pipeline">
+  ## Pipeline de traitement
+</div>
+
+![Processus de conversion des documents en memories](/images/pipeline.png)
+
+Chaque étape a un objectif spécifique :
+
+- **En attente** : Le document est en file d’attente de traitement
+- **Extraction** : Le contenu est en cours d’extraction (OCR pour les images, transcription pour les vidéos)
+- **Segmentation en chunks** : Le contenu est découpé en segments optimaux et interrogeables
+- **Embedding** : Chaque chunk est converti en représentations vectorielles
+- **Indexation** : Les vecteurs sont ajoutés à l’index de recherche
+- **Terminé** : Le document est entièrement traité et interrogeable
+
+<Note>
+Le temps de traitement varie selon le type de contenu. Le texte brut se traite en quelques secondes, tandis qu’une vidéo de 10 minutes peut prendre 2 à 3 minutes.
+</Note>
+
+<div id="processing-documents">
+  ## Traitement des documents
+</div>
+
+Surveillez tous les documents actuellement en cours de traitement sur votre compte.
+
+`GET /v3/documents/processing`
+
+<CodeGroup>
+
+```typescript
+// Appel direct à l'API (hors SDK)
+const response = await fetch('https://api.supermemory.ai/v3/documents/processing', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const processing = await response.json();
+console.log(`${processing.documents.length} documents en cours de traitement`);
+```
+
+```python
+# Appel direct à l'API (hors SDK)
+import requests
+
+response = requests.get(
+    'https://api.supermemory.ai/v3/documents/processing',
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+processing = response.json()
+print(f"{len(processing['documents'])} documents en cours de traitement")
+```
+
+```bash
+curl -X GET "https://api.supermemory.ai/v3/documents/processing" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### Format de la réponse
+</div>
+
+```json
+{
+  "documents": [
+    {
+      "id": "doc_abc123",
+      "status": "extracting",
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:15Z",
+      "container_tags": ["research"],
+      "metadata": {
+        "source": "upload",
+        "filename": "report.pdf",
+      }
+    },
+    {
+      "id": "doc_def456",
+      "status": "chunking",
+      "created_at": "2024-01-15T10:29:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "container_tags": ["articles"],
+      "metadata": {
+        "source": "url",
+        "url": "https://example.com/article"
+      }
+    }
+  ],
+  "total": 2
+}
+```
+
+
+<div id="individual-documents">
+  ## Documents individuels
+</div>
+
+Suivez l’état de traitement d’un document spécifique.
+
+`GET /v3/documents/{id}`
+
+<CodeGroup>
+
+```typescript
+const memory = await client.memories.get("doc_abc123");
+
+console.log(`Status: ${memory.status}`);
+
+// Interroger jusqu’à la fin du traitement
+while (memory.status !== 'done') {
+  await new Promise(r => setTimeout(r, 2000));
+  memory = await client.memories.get("doc_abc123");
+  console.log(`Status: ${memory.status}`);
+}
+```
+
+```python
+memory = client.memories.get("doc_abc123")
+
+print(f"Status: {memory['status']}")
+
+# Interroger jusqu’à la fin du traitement
+import time
+while memory['status'] != 'done':
+    time.sleep(2)
+    memory = client.memories.get("doc_abc123")
+    print(f"Status: {memory['status']}")
+```
+
+```bash
+curl -X GET "https://api.supermemory.ai/v3/documents/doc_abc123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### Format de la réponse
+</div>
+
+```json
+{
+  "id": "doc_abc123",
+  "status": "done",
+  "content": "Le contenu d’origine...",
+  "container_tags": ["research"],
+  "metadata": {
+    "source": "upload",
+    "filename": "report.pdf"
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:31:00Z"
+}
+```
+
+
+<div id="status-values">
+  ## Valeurs de status
+</div>
+
+| Status | Description | Durée typique |
+|--------|-------------|------------------|
+| `queued` | En attente de traitement | < 5 secondes |
+| `extracting` | Extraction du contenu depuis la source | 5‑30 secondes |
+| `chunking` | Segmentation en chunks recherchables | 5‑15 secondes |
+| `embedding` | Création d’embeddings (représentations vectorielles) | 10‑30 secondes |
+| `indexing` | Ajout à l’index de recherche | 5‑10 secondes |
+| `done` | Entièrement traité et interrogeable | - |
+| `failed` | Échec du traitement | - |
+
+<div id="polling-best-practices">
+  ## Bonnes pratiques de polling
+</div>
+
+Lors du polling pour les mises à jour de status :
+
+```typescript
+async function waitForProcessing(documentId: string, maxWaitMs = 300000) {
+  const startTime = Date.now();
+  const pollInterval = 2000; // 2 secondes
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const doc = await client.memories.get(documentId);
+
+    if (doc.status === 'done') {
+      return doc;
+    }
+
+    if (doc.status === 'failed') {
+      throw new Error(`Le traitement a échoué pour ${documentId}`);
+    }
+
+    await new Promise(r => setTimeout(r, pollInterval));
+  }
+
+  throw new Error(`Délai d’attente dépassé pour ${documentId}`);
+}
+```
+
+
+<div id="batch-processing">
+  ## Traitement par lots
+</div>
+
+Pour plusieurs documents, gérez le suivi efficacement :
+
+```typescript
+async function trackBatch(documentIds: string[]) {
+  const statuses = new Map();
+
+  // Vérification initiale
+  for (const id of documentIds) {
+    const doc = await client.memories.get(id);
+    statuses.set(id, doc.status);
+  }
+
+  // Sondage jusqu’à ce que tout soit terminé
+  while ([...statuses.values()].some(s => s !== 'done' && s !== 'failed')) {
+    await new Promise(r => setTimeout(r, 5000)); // intervalle de 5 secondes pour le lot
+
+    for (const id of documentIds) {
+      if (statuses.get(id) !== 'done' && statuses.get(id) !== 'failed') {
+        const doc = await client.memories.get(id);
+        statuses.set(id, doc.status);
+      }
+    }
+
+    // Journaliser l’avancement
+    const done = [...statuses.values()].filter(s => s === 'done').length;
+    console.log(`Avancement : ${done}/${documentIds.length} terminé(s)`)
+  }
+
+  return statuses;
+}
+```
+
+
+<div id="error-handling">
+  ## Gestion des erreurs
+</div>
+
+Gérez les échecs de traitement de manière élégante :
+
+```typescript
+async function addWithRetry(content: string, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const { id } = await client.memories.add({ content });
+
+    try {
+      const result = await waitForProcessing(id);
+      return result;
+    } catch (error) {
+      console.error(`Échec de la tentative ${attempt} :`, error);
+
+      if (attempt === maxRetries) {
+        throw error;
+      }
+
+      // Recul exponentiel
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
+  }
+}
+```
+
+
+<div id="processing-times-by-content-type">
+  ## Temps de traitement par type de contenu
+</div>
+
+Documents : Créés quasi instantanément (200–500 ms)
+
+Memories : Supermemory construit une compréhension sous forme de graphe de memory à partir d’analyses sémantiques et contextuelles.
+
+| Type de contenu | Temps de traitement de la memory | Remarques |
+|--------------|------------------------|-------|
+| Texte brut | 5–10 secondes | Traitement le plus rapide |
+| Markdown | 5–10 secondes | Similaire au texte brut |
+| PDF (< 10 pages) | 15–30 secondes | OCR si nécessaire |
+| PDF (> 100 pages) | 1–3 minutes | Dépend de la complexité |
+| Images | 10–20 secondes | Traitement OCR |
+| Vidéos YouTube | 1–2 min par 10 min de vidéo | Transcription requise |
+| Pages web | 10–20 secondes | Extraction de contenu |
+| Google Docs | 10–15 secondes | Extraction via API |
+
+<Note>
+**Astuce pro** : Utilisez l’endpoint du status de traitement pour fournir un retour en temps réel aux utilisateurs, en particulier pour les documents volumineux ou les importations par lot.
+</Note>

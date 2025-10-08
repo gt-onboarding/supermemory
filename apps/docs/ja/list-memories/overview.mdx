@@ -1,0 +1,163 @@
+---
+title: "メモリーの一覧"
+description: "フィルタやソートを指定して、ページネーション対応の保存メモリを取得する"
+sidebarTitle: "概要"
+---
+
+Supermemory アカウントから、フィルタやソートを指定してページネーション対応の保存メモリを取得します。
+
+<div id="quick-start">
+  ## クイックスタート
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const memories = await client.memories.list({ limit: 10 });
+    console.log(memories);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+    memories = client.memories.list(limit=10)
+    print(f"Found {len(memories.memories)} memories")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 10}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="response-schema">
+  ## レスポンススキーマ
+</div>
+
+このエンドポイントは、保存メモリとページネーション情報を含む構造化されたレスポンスを返します。
+
+```json
+{
+  "memories": [
+    {
+      "id": "abc123",
+      "connectionId": null,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:35:00.000Z",
+      "customId": "ml-basics-001",
+      "title": "機械学習入門",
+      "summary": "この文書では、人工知能のサブセットとしての機械学習について紹介します...",
+      "status": "done",
+      "type": "text",
+      "metadata": {
+        "category": "教育",
+        "priority": "高",
+        "source": "研究ノート"
+      },
+      "containerTags": ["user_123", "ai-research"]
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 3,
+    "totalItems": 25,
+    "limit": 10
+  }
+}
+```
+
+<div id="memory-object-fields">
+  ### メモリーオブジェクトのフィールド
+</div>
+
+<Accordion title="コアフィールド" defaultOpen>
+  | フィールド | 型 | 説明 |
+  |-------|------|-------------|
+  | `id` | string | メモリーの一意の識別子 |
+  | `status` | ProcessingStatus | 現在の処理ステータス（`queued`、`extracting`、`chunking`、`embedding`、`indexing`、`done`、`failed`） |
+  | `type` | MemoryType | コンテンツの種類（`text`、`pdf`、`webpage`、`video`、`image` など） |
+  | `title` | string | null | 自動生成またはカスタムのタイトル |
+  | `summary` | string | null | コンテンツのAI生成要約 |
+  | `createdAt` | string | ISO 8601 形式の作成タイムスタンプ |
+  | `updatedAt` | string | ISO 8601 形式の最終更新タイムスタンプ |
+</Accordion>
+
+<Accordion title="オプションフィールド">
+  | フィールド | 型 | 説明 |
+  |-------|------|-------------|
+  | `customId` | string | null | メモリー用のカスタム識別子 |
+  | `connectionId` | string | null | このメモリーを作成した連携のID |
+  | `metadata` | object | null | 提供したカスタムのキーと値のメタデータ |
+  | `containerTags` | string[] | 保存メモリの整理やフィルタリング用のタグ |
+</Accordion>
+
+<div id="key-parameters">
+  ## 主要パラメータ
+</div>
+
+このエンドポイントは`POST`を使用するため、すべてのパラメータは任意でリクエストボディに送信されます。
+
+<ParamField path="limit" type="number/string" default="50">
+  **1ページあたりの件数。** 1回のリクエストで返すメモリーの数を制御します。推奨上限: パフォーマンス最適化のため200。
+</ParamField>
+
+<ParamField path="page" type="number/string" default="1">
+  **取得するページ番号（1始まり）。** 大きな結果セットをページングするために`limit`と併用します。
+</ParamField>
+
+<ParamField path="containerTags" type="string[]">
+  **タグでフィルタリング。** 保存メモリは指定したすべてのタグに一致する必要があります。ユーザーID、プロジェクト、またはカスタム組織タグでの絞り込みに使用します。
+</ParamField>
+
+<ParamField path="sort" type="string" default="createdAt">
+  **ソート対象フィールド。** 選択肢: `"createdAt"`（メモリーの追加日時）または`"updatedAt"`（メモリーの最終更新日時）。
+</ParamField>
+
+<ParamField path="order" type="string" default="desc">
+  **ソート方向。** 新しい順は`"desc"`、古い順は`"asc"`を使用します。
+</ParamField>
+
+<ParamField path="filters" type="string">
+  **高度なフィルタリング。** メタデータに基づき、SQLライクな高度なロジックで絞り込みます。
+</ParamField>
+
+<div id="examples">
+  ## 例
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Basic Listing" icon="list" href="/ja/list-memories/examples/basic">
+    既定設定でのシンプルなメモリー一覧取得
+  </Card>
+
+  <Card title="Filtering" icon="filter" href="/ja/list-memories/examples/filtering">
+    タグ、status、その他の条件でのフィルタリング
+  </Card>
+
+  <Card title="Pagination" icon="arrow-right" href="/ja/list-memories/examples/pagination">
+    ページネーションで大規模データセットに対応
+  </Card>
+
+  <Card title="Status Monitoring" icon="chart-line" href="/ja/list-memories/examples/monitoring">
+    保存メモリ全体の処理 status を追跡
+  </Card>
+</CardGroup>
+
+<Note>
+  `/v3/documents/list` エンドポイントは **POST** メソッドを使用し、GET ではありません。これにより、リクエストボディで複雑なフィルタリングパラメータを指定できます。
+</Note>

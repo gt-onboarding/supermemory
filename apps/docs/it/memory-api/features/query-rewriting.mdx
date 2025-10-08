@@ -1,0 +1,54 @@
+---
+title: "Riformulazione della query"
+description: "Riformulazione della query in supermemory"
+icon: "blend"
+---
+
+La Riformulazione della query è una funzionalità che permette di riformulare le query per migliorarne l’accuratezza.
+
+![Riformulazione della query](/images/query-rewriting.png)
+
+<div id="usage">
+  ### Utilizzo
+</div>
+
+In Supermemory puoi abilitare la Riformulazione della query impostando il parametro `rewriteQuery` su `true` nell’API di ricerca.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --header 'Content-Type: application/json' \
+  -d '{
+    "q": "What is the capital of France?",
+    "rewriteQuery": true
+  }'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rewriteQuery: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rewriteQuery=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### Note e limitazioni
+</div>
+
+- supermemory genera più riformulazioni ed esegue la ricerca su ciascuna di esse.
+- I risultati vengono poi uniti e restituiti.
+- Non ci sono costi aggiuntivi associati alla Riformulazione della query.
+- Sebbene la Riformulazione della query migliori notevolmente la qualità, **comporta anche latenza aggiuntiva**.
+- Tutte le altre funzionalità, come il filtraggio, la ricerca ibrida, il bias di recenza, ecc., funzionano anche con i risultati riformulati.

@@ -1,0 +1,163 @@
+---
+title: "Memory Tools"
+description: "Añade capacidades de memory a tus agentes de IA con las herramientas de Vercel AI SDK"
+sidebarTitle: "Memory Tools"
+---
+
+Las herramientas de memory permiten a los agentes de IA buscar, añadir y obtener memories.
+
+<div id="setup">
+  ## Configuración
+</div>
+
+```typescript
+import { streamText } from "ai"
+import { createOpenAI } from "@ai-sdk/openai"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const openai = createOpenAI({
+  apiKey: "YOUR_OPENAI_KEY"
+})
+
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "Recuerda que mi nombre es Alice",
+  tools: supermemoryTools("YOUR_SUPERMEMORY_KEY")
+})
+```
+
+<div id="available-tools">
+  ## Herramientas disponibles
+</div>
+
+<div id="search-memories">
+  ### Buscar memories
+</div>
+
+Búsqueda semántica en las memories del usuario:
+
+```typescript
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "¿Cuáles son mis preferencias alimentarias?",
+  tools: supermemoryTools("API_KEY")
+})
+
+// La IA llamará automáticamente a la herramienta searchMemories
+// Ejemplo de llamada a herramienta:
+// searchMemories({ informationToGet: "preferencias y restricciones alimentarias" })
+```
+
+<div id="add-memory">
+  ### Agregar memory
+</div>
+
+Almacenar información nueva:
+
+```typescript
+const result = await streamText({
+  model: anthropic("claude-3-sonnet"),
+  prompt: "Recuerda que soy alérgico a los cacahuetes",
+  tools: supermemoryTools("API_KEY")
+})
+
+// La IA llamará automáticamente a la herramienta addMemory
+// Ejemplo de llamada a herramienta:
+// addMemory({ memory: "El usuario es alérgico a los cacahuetes" })
+```
+
+<div id="fetch-memory">
+  ### Obtener memory
+</div>
+
+Recupera una memory específica por id:
+
+```typescript
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "Obtén los detalles del memory abc123",
+  tools: supermemoryTools("API_KEY")
+})
+
+// La IA llamará automáticamente a la herramienta fetchMemory
+// Ejemplo de llamada a herramienta:
+// fetchMemory({ memoryId: "abc123" })
+```
+
+<div id="using-individual-tools">
+  ## Uso de herramientas individuales
+</div>
+
+Para contar con más control, importa las herramientas por separado:
+
+```typescript
+import {
+  searchMemoriesTool,
+  addMemoryTool,
+  fetchMemoryTool
+} from "@supermemory/tools/ai-sdk"
+
+// Usar solo la herramienta de búsqueda
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "¿Qué sabes sobre mí?",
+  tools: {
+    searchMemories: searchMemoriesTool("API_KEY", {
+      projectId: "personal"
+    })
+  }
+})
+
+// Combinar con herramientas personalizadas
+const result = await streamText({
+  model: anthropic("claude-3"),
+  prompt: "Ayúdame con mi calendario",
+  tools: {
+    searchMemories: searchMemoriesTool("API_KEY"),
+    // Tus herramientas personalizadas
+    createEvent: yourCustomTool,
+    sendEmail: anotherCustomTool
+  }
+})
+```
+
+<div id="tool-results">
+  ## Resultados de las herramientas
+</div>
+
+Cada herramienta devuelve un objeto de resultados:
+
+```typescript
+// resultado de searchMemories
+{
+  success: true,
+  results: [...],  // Array de memories
+  count: 5
+}
+
+// resultado de addMemory
+{
+  success: true,
+  memory: { id: "mem_123", ... }
+}
+
+// resultado de fetchMemory
+{
+  success: true,
+  memory: { id: "mem_123", content: "...", ... }
+}
+```
+
+<div id="next-steps">
+  ## Próximos pasos
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Infinite Chat" icon="infinity" href="/es/ai-sdk/infinite-chat">
+    Prueba la gestión automática de memory
+  </Card>
+
+  <Card title="Ejemplos" icon="code" href="/es/cookbook/ai-sdk-integration">
+    Consulta ejemplos más completos
+  </Card>
+</CardGroup>

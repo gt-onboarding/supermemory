@@ -1,0 +1,305 @@
+---
+title: "Organisationseinstellungen"
+description: "Organisationweite Einstellungen und Inhaltsfilterung für Supermemory konfigurieren"
+icon: "settings"
+---
+
+Organisationseinstellungen steuern, wie Supermemory Inhalte in Ihrer gesamten Organisation verarbeitet. Diese Einstellungen gelten für alle Memories und Connectoren und helfen Ihnen dabei:
+
+* Inhalte vor der Indexierung zu filtern
+* Benutzerdefinierte OAuth-Anwendungen für Connectoren zu konfigurieren
+* Organisationweite Verarbeitungsregeln festzulegen
+* Zu steuern, was indexiert und was ausgeschlossen wird
+
+<Note>
+  Die Einstellungen gelten organisationweit und für alle Benutzer und Memories innerhalb Ihrer Organisation.
+</Note>
+
+<div id="why-settings-matter">
+  ## Warum Einstellungen wichtig sind
+</div>
+
+Der Settings-Endpoint ist entscheidend, um Supermemory auf Ihren spezifischen Anwendungsfall auszurichten. Er hilft Supermemory zu verstehen:
+
+* **Wer Sie sind**: Der spezifische Anwendungsfall und Zweck Ihrer Organisation
+* **Was zu erwarten ist**: Welche Arten von Inhalten und Informationen durch Ihr System fließen
+* **Wie zu interpretieren ist**: Kontext zum Verständnis von Anfragen in Ihrem spezifischen Anwendungsfall
+* **Was zu priorisieren ist**: Welche Inhalte für Ihre Nutzer am wichtigsten sind
+
+<div id="example-brand-guidelines-use-case">
+  ### Beispiel: Anwendungsfall Markenrichtlinien
+</div>
+
+Ohne passende Einstellungen könnte Supermemory bei einer Suche nach „What are our values?“ beliebige Dokumente zurückgeben, in denen „values“ erwähnt wird. Mit der richtigen Konfiguration jedoch:
+
+```typescript
+await client.settings.update({
+  shouldLLMFilter: true,
+  filterPrompt: `Sie verwalten Markenrichtlinien für Brand.ai.
+    Sie erhalten alle ausgehenden Inhalte unserer Organisation.
+    
+    Wenn Nutzer suchen, suchen sie nach:
+    - „Was sind unsere Werte?" → Offizielles Markenwerte-Dokument zurückgeben
+    - „Wie ist unser Tonfall?" → Marken-Tonfall-Richtlinien zurückgeben
+    - „Wie beschreiben wir unsere Mission?" → Genehmigte Missionserklärungen zurückgeben
+    
+    Konzentrieren Sie sich auf die neuesten genehmigten Markenmaterialien, nicht auf Entwürfe oder veraltete Versionen.`
+});
+```
+
+Jetzt versteht Supermemory, dass:
+
+* Suchanfragen zu „values“ sich auf Markenwerte beziehen, nicht auf finanzielle Werte
+* „Tone“ die Markenstimme meint, nicht die Audioeinstellungen
+* offiziell freigegebenen Inhalten Priorität eingeräumt werden sollte
+
+Dieser Kontext verbessert die Suchrelevanz erheblich und stellt sicher, dass Nutzer die richtigen Informationen für ihren spezifischen Anwendungsfall erhalten.
+
+<div id="api-endpoints">
+  ## API-Endpunkte
+</div>
+
+<div id="get-current-settings">
+  ### Aktuelle Einstellungen abrufen
+</div>
+
+Rufen Sie die aktuellen Einstellungen Ihrer Organisation ab.
+
+<CodeGroup>
+  ```typescript TypeScript
+  const settings = await client.settings.get();
+  console.log('Current settings:', settings);
+  ```
+
+  ```python Python
+  settings = client.settings.get()
+  print(f'Current settings: {settings}')
+  ```
+
+  ```bash cURL
+  curl -X GET "https://api.supermemory.ai/v3/settings" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+  ```
+</CodeGroup>
+
+<div id="update-settings">
+  ### Einstellungen aktualisieren
+</div>
+
+Aktualisieren Sie die Einstellungen Ihrer Organisation. Geben Sie nur die Felder an, die Sie ändern möchten.
+
+<CodeGroup>
+  ```typescript TypeScript
+  const updatedSettings = await client.settings.update({
+    shouldLLMFilter: true,
+    filterPrompt: "Nur technische Dokumentation und Code indexieren",
+    includeItems: ["*.md", "*.ts", "*.py"],
+    excludeItems: ["node_modules", ".git", "*.test.*"]
+  });
+
+  console.log('Aktualisierte Felder:', updatedSettings.updated);
+  ```
+
+  ```python Python
+  updated_settings = client.settings.update(
+      should_llm_filter=True,
+      filter_prompt="Nur technische Dokumentation und Code indexieren",
+      include_items=["*.md", "*.ts", "*.py"],
+      exclude_items=["node_modules", ".git", "*.test.*"]
+  )
+
+  print(f'Aktualisierte Felder: {updated_settings.updated}')
+  ```
+
+  ```bash cURL
+  curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "shouldLLMFilter": true,
+      "filterPrompt": "Nur technische Dokumentation und Code indexieren",
+      "includeItems": ["*.md", "*.ts", "*.py"],
+      "excludeItems": ["node_modules", ".git", "*.test.*"]
+    }'
+  ```
+</CodeGroup>
+
+<div id="content-filtering-settings">
+  ## Einstellungen zur Inhaltsfilterung
+</div>
+
+Bestimmen Sie, welche Inhalte in Supermemory indiziert werden.
+
+<div id="basic-filtering">
+  ### Grundlegendes Filtern
+</div>
+
+Verwenden Sie Include-/Exclude-Muster, um Inhalte zu filtern:
+
+```typescript
+await client.settings.update({
+  includeItems: [
+    "*.md",           // Alle Markdown-Dateien
+    "*.mdx",          // MDX-Dokumentation
+    "docs/**",        // Alles im docs-Ordner
+    "src/**/*.ts"     // TypeScript-Dateien in src
+  ],
+  excludeItems: [
+    "node_modules",   // Abhängigkeiten
+    ".git",           // Versionskontrolle
+    "*.test.*",       // Testdateien
+    "build/**",       // Build-Ausgaben
+    "*.tmp"           // Temporäre Dateien
+  ]
+});
+```
+
+<div id="intelligent-llm-filtering">
+  ### Intelligentes LLM-Filtering
+</div>
+
+Aktiviere KI-gestütztes Inhaltsfiltern für semantisches Verständnis:
+
+```typescript
+await client.settings.update({
+  shouldLLMFilter: true,
+  filterPrompt: `Sie filtern Inhalte für ein technisches Dokumentationssystem.
+    
+    Einschließen:
+    - API-Dokumentation
+    - Codebeispiele und Tutorials
+    - Technische Leitfäden und Referenzen
+    - Architekturdokumentation
+    
+    Ausschließen:
+    - Marketingmaterialien
+    - Interne Besprechungsnotizen
+    - Persönliche Informationen
+    - Veraltete oder nicht mehr unterstützte Inhalte
+    
+    Konzentrieren Sie sich auf Inhalte, die Entwicklern helfen, unsere APIs zu verstehen und zu verwenden.`
+});
+```
+
+<div id="connector-oauth-settings">
+  ## OAuth-Einstellungen für Connectors
+</div>
+
+Konfigurieren Sie benutzerdefinierte OAuth-Anwendungen für Connector-Integrationen.
+
+<div id="google-drive-custom-oauth">
+  ### Benutzerdefiniertes OAuth für Google Drive
+</div>
+
+```typescript
+await client.settings.update({
+  googleDriveCustomKeyEnabled: true,
+  googleDriveClientId: "your-client-id.apps.googleusercontent.com",
+  googleDriveClientSecret: "your-client-secret"
+});
+```
+
+<div id="notion-custom-oauth">
+  ### Benutzerdefiniertes OAuth für Notion
+</div>
+
+```typescript
+await client.settings.update({
+  notionCustomKeyEnabled: true,
+  notionClientId: "ihre-notion-oauth-client-id",
+  notionClientSecret: "ihr-notion-oauth-client-secret"
+});
+```
+
+<div id="onedrive-custom-oauth">
+  ### Benutzerdefiniertes OAuth für OneDrive
+</div>
+
+```typescript
+await client.settings.update({
+  onedriveCustomKeyEnabled: true,
+  onedriveClientId: "ihre-azure-app-id",
+  onedriveClientSecret: "ihr-azure-app-secret"
+});
+```
+
+<div id="best-practices">
+  ## Best Practices
+</div>
+
+<div id="1-set-before-bulk-import">
+  ### 1. Vor dem Massenimport festlegen
+</div>
+
+Konfigurieren Sie die Einstellungen, bevor Sie große Mengen an Inhalten importieren. Änderungen wirken sich nicht rückwirkend auf bestehende Memories aus.
+
+<div id="2-be-specific-in-filter-prompts">
+  ### 2. Seien Sie präzise bei Filter-Prompts
+</div>
+
+Geben Sie klaren Kontext zu Ihrer Organisation und den erwarteten Suchmustern:
+
+```typescript
+// Gut - Spezifisch und kontextuell
+filterPrompt: `Technische Dokumentation für Entwickler.
+  Einschließen: API-Referenzen, Code-Beispiele, Fehlerlösungen.
+  Ausschließen: Marketing-Inhalte, persönliche Daten, Testdateien.
+  Benutzer suchen nach: Implementierungsdetails, Fehlerbehebung, Best Practices.`
+
+// Schlecht - Zu vage
+filterPrompt: "Nur wichtige Inhalte"
+```
+
+<div id="3-test-oauth-credentials">
+  ### 3. OAuth-Anmeldedaten testen
+</div>
+
+Testen Sie benutzerdefinierte OAuth-Anmeldedaten stets in der Entwicklungsumgebung, bevor Sie sie in der Produktion einsetzen:
+
+```typescript
+// Verknüpftes Konto nach Aktualisierung der OAuth-Einstellungen testen
+const testConnection = await client.connections.create('google-drive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['test-connection']
+});
+```
+
+<div id="4-monitor-filter-effectiveness">
+  ### 4. Wirksamkeit von filters überwachen
+</div>
+
+Überprüfen, was indexiert wird, um sicherzustellen, dass filters wie erwartet funktionieren:
+
+```typescript
+const memories = await client.memories.list({
+  containerTags: ['your-tags'],
+  limit: 10
+});
+
+// Überprüfen, was tatsächlich indexiert wird
+memories.memories.forEach(memory => {
+  console.log(`Indexiert: ${memory.title} - ${memory.type}`);
+});
+```
+
+<div id="important-notes">
+  ## Wichtige Hinweise
+</div>
+
+<Warning>
+  **Einschränkungen der Einstellungen:**
+
+  * Änderungen gelten organisationsweit, nicht pro Benutzer
+  * Einstellungen werden nicht rückwirkend auf bestehende Memories angewendet
+  * OAuth-Anmeldedaten müssen auf den jeweiligen Plattformen korrekt konfiguriert sein
+  * Filtermuster werden während der Inhaltserfassung angewendet
+</Warning>
+
+<div id="related-documentation">
+  ## Verwandte Dokumentation
+</div>
+
+* [Connectors-Überblick](/de/connectors/overview) - Externe Integrationen einrichten
+* [Google-Drive-Einrichtung](/de/connectors/google-drive) - Google Drive OAuth konfigurieren
+* [Notion-Einrichtung](/de/connectors/notion) - Notion OAuth konfigurieren
+* [OneDrive-Einrichtung](/de/connectors/onedrive) - OneDrive OAuth konfigurieren

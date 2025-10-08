@@ -1,0 +1,75 @@
+---
+title: "Configurazione e utilizzo"
+description: "Come configurare e utilizzare supermemory MCP"
+---
+
+<div id="hosted-setup-recommended">
+  ### Configurazione hosted (consigliata)
+</div>
+
+1. **Visita** https://mcp.supermemory.ai
+2. **Ottieni** un URL univoco generato automaticamente (es. `https://mcp.supermemory.ai/TN-IKxAcDdHWTJkMhtGLF/sse`)
+3. **Seleziona** il tuo client MCP dal menu a discesa
+4. **Copia** il comando di installazione generato
+5. **Esegui** il comando: `npx install-mcp [YOUR_URL] --client [CLIENT_NAME]`
+
+Oppure segui l'esempio di configurazione del client qui sotto.
+
+<div id="self-hosted-configuration">
+  ### Configurazione self-hosted
+</div>
+
+Per gli utenti che necessitano del pieno controllo dei dati:
+
+1. **Ottieni la chiave API** da https://console.supermemory.ai
+2. **Crea il file `.env`** con `SUPERMEMORY_API_KEY=your_key`
+3. **Clona il repository**: `git clone https://github.com/supermemoryai/supermemory-mcp.git`
+4. **Configura il client MCP** per connettersi a un'istanza del server locale
+
+<div id="client-configuration-example">
+  ### Esempio di configurazione del client
+</div>
+
+1. Per i client che supportano la configurazione `url`:
+
+```json
+{
+  "mcpServers": {
+    "supermemory": {
+      "transport": "sse",
+      "url": "https://mcp.supermemory.ai/[USER_ID]/sse"
+    }
+  }
+}
+```
+
+2. Uso di `supergateway` con `npx`:
+
+```json
+{
+    "command": "npx",
+    "args": ["-y", "supergateway", "--sse", "YOUR_URL"]
+}
+```
+
+3. Uso di `supergateway` con `docker`:
+
+Il comando MCP equivalente sarebbe:
+
+```json
+{
+  "mcpServers": {
+    "supermachineExampleDocker": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "supercorp/supergateway",
+        "--sse",
+        "IL_TUO_URL_SUPERMEMORY"
+      ]
+    }
+  }
+}
+```

@@ -1,0 +1,333 @@
+---
+title: "分析与监控"
+description: "通过查看使用情况、错误和日志来监控你的 Supermemory 集成"
+icon: "chart-line"
+---
+
+借助详细的分析数据监控你的 Supermemory 使用情况，包括 API 调用、错误和性能指标。
+
+<div id="overview">
+  ## 概览
+</div>
+
+Analytics API 为你的 Supermemory 使用情况提供全面洞察：
+
+- **使用统计**：按类型跟踪 API 调用、小时级趋势，以及按 API 密钥的拆分
+- **错误监控**：识别主要错误类型与模式
+- **详细日志**：获取完整的请求/响应日志用于调试
+- **性能指标**：监控平均响应时间和处理时长
+
+<Note>
+Analytics 数据覆盖你的整个组织，并可按时间范围进行筛选。
+</Note>
+
+<div id="usage-statistics">
+  ## 使用统计
+</div>
+
+获取全面的使用统计数据，包括按小时的明细和按密钥的指标。
+
+<div id="endpoint">
+  ### 接口端点
+</div>
+
+`GET /v3/analytics/usage`
+
+<div id="parameters">
+  ### 参数
+</div>
+
+| 参数 | 类型 | 描述 |
+|-----------|------|-------------|
+| `from` | string (ISO 8601) | 时段开始的日期/时间 |
+| `to` | string (ISO 8601) | 时段结束的日期/时间 |
+| `period` | string | `from` 的替代：`1h`、`24h`、`7d`、`30d` |
+| `page` | integer | 分页页码（默认：1） |
+| `limit` | integer | 每页数量（默认：20，最大：100） |
+
+<div id="example-request">
+  ### 示例请求
+</div>
+
+<CodeGroup>
+
+```typescript TypeScript
+// 获取过去 24 小时的用量
+const usage = await fetch('https://api.supermemory.ai/v3/analytics/usage?period=24h', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const data = await usage.json();
+```
+
+```python Python
+import requests
+from datetime import datetime, timedelta
+
+# 获取过去 7 天的用量
+response = requests.get(
+    'https://api.supermemory.ai/v3/analytics/usage',
+    params={'period': '7d'},
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+data = response.json()
+```
+
+```bash cURL
+# 获取特定日期范围内的用量
+curl -X GET "https://api.supermemory.ai/v3/analytics/usage?from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-schema">
+  ### 响应架构
+</div>
+
+```json
+{
+  "usage": [
+    {
+      "type": "add",
+      "count": 1523,
+      "avgDuration": 245.5,
+      "lastUsed": "2024-01-15T14:30:00Z"
+    },
+    {
+      "type": "search",
+      "count": 3421,
+      "avgDuration": 89.2,
+      "lastUsed": "2024-01-15T14:35:00Z"
+    }
+  ],
+  "hourly": [
+    {
+      "hour": "2024-01-15T14:00:00Z",
+      "count": 156,
+      "avgDuration": 125.3
+    }
+  ],
+  "byKey": [
+    {
+      "keyId": "key_abc123",
+      "keyName": "生产环境 API",
+      "count": 2341,
+      "avgDuration": 98.7,
+      "lastUsed": "2024-01-15T14:35:00Z"
+    }
+  ],
+  "totalMemories": 45678,
+  "pagination": {
+    "currentPage": 1,
+    "limit": 20,
+    "totalItems": 150,
+    "totalPages": 8
+  }
+}
+```
+
+
+<div id="error-monitoring">
+  ## 错误监控
+</div>
+
+跟踪和分析错误，定位问题并提升可靠性。
+
+<div id="endpoint">
+  ### 接口端点
+</div>
+
+`GET /v3/analytics/errors`
+
+<div id="parameters">
+  ### 参数
+</div>
+
+与 usage 端点相同，支持 `from`、`to`、`period`、`page` 和 `limit`。
+
+<div id="example-request">
+  ### 示例请求
+</div>
+
+<CodeGroup>
+
+```typescript TypeScript
+// 获取最近 24 小时的错误
+const errors = await fetch('https://api.supermemory.ai/v3/analytics/errors?period=24h', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const data = await errors.json();
+```
+
+```python Python
+# 监控错误并在激增时告警
+response = requests.get(
+    'https://api.supermemory.ai/v3/analytics/errors?period=1h',
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+data = response.json()
+```
+
+```bash cURL
+# 获取最近 7 天的错误
+curl -X GET "https://api.supermemory.ai/v3/analytics/errors?period=7d" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-schema">
+  ### 响应模式
+</div>
+
+```json
+{
+  "totalErrors": 234,
+  "errorRate": 0.023,
+  "topErrors": [
+    {
+      "type": "ValidationError",
+      "count": 89,
+      "statusCodes": [400],
+      "lastOccurred": "2024-01-15T14:30:00Z"
+    },
+    {
+      "type": "RateLimitError",
+      "count": 45,
+      "statusCodes": [429],
+      "lastOccurred": "2024-01-15T13:15:00Z"
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2024-01-15T14:00:00Z",
+      "count": 12,
+      "types": ["ValidationError", "NotFoundError"]
+    }
+  ],
+  "byStatusCode": {
+    "400": 89,
+    "404": 34,
+    "429": 45,
+    "500": 66
+  }
+}
+```
+
+
+<div id="detailed-logs">
+  ## 详细日志
+</div>
+
+可访问完整的请求/响应日志，用于调试与审计。
+
+<div id="endpoint">
+  ### 接口
+</div>
+
+`GET /v3/analytics/logs`
+
+<div id="parameters">
+  ### 参数
+</div>
+
+与 usage 端点相同，另有可选 filters：
+
+- `type`: 按请求类型筛选（add、search、update、delete）
+- `statusCode`: 按 HTTP status 码筛选
+- `keyId`: 按指定的 API 密钥筛选
+
+<div id="example-request">
+  ### 示例请求
+</div>
+
+<CodeGroup>
+
+```typescript TypeScript
+// 获取最近失败的请求
+const logs = await fetch('https://api.supermemory.ai/v3/analytics/logs?period=1h&statusCode=500', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const data = await logs.json();
+```
+
+```python Python
+# 调试特定 API 密钥的使用
+response = requests.get(
+    'https://api.supermemory.ai/v3/analytics/logs',
+    params={
+        'keyId': 'key_abc123',
+        'period': '24h'
+    },
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+logs = response.json()['logs']
+
+```
+
+```bash cURL
+# 获取所有日志用于调试
+curl -X GET "https://api.supermemory.ai/v3/analytics/logs?period=1h&limit=50" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-schema">
+  ### 响应架构
+</div>
+
+```json
+{
+  "logs": [
+    {
+      "id": "req_xyz789",
+      "createdAt": "2024-01-15T14:30:00Z",
+      "type": "search",
+      "statusCode": 200,
+      "duration": 89,
+      "input": {
+        "q": "用户查询",
+        "limit": 10
+      },
+      "output": {
+        "results": 10,
+        "processingTime": 85
+      }
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "limit": 20,
+    "totalItems": 500,
+    "totalPages": 25
+  }
+}
+```
+
+
+<div id="rate-limits">
+  ## 速率限制
+</div>
+
+Analytics 端点具有以下速率限制：
+
+- 每个组织每分钟最多 100 次请求
+- 最大时间范围：90 天
+- 最大分页大小：100 项
+
+<Warning>
+Analytics 数据仅保留 90 天。若需更长的保留期，请导出数据并存储在您自己的系统中。
+</Warning>

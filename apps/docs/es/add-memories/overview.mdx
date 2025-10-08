@@ -1,0 +1,235 @@
+---
+title: "Descripción general para agregar memorias"
+description: "Agrega contenido a Supermemory mediante texto, archivos o URL"
+sidebarTitle: "Descripción general"
+---
+
+Agrega cualquier tipo de contenido a Supermemory: texto, archivos, URL, imágenes, videos y más. Todo se procesa automáticamente en memorias que se pueden buscar y que pasan a formar parte de tu grafo de conocimiento inteligente.
+
+<div id="quick-start">
+  ## Guía rápida
+</div>
+
+<CodeGroup>
+  ```typescript TypeScript
+  // Añadir contenido de texto
+  const result = await client.memories.add({
+    content: "Machine learning enables computers to learn from data",
+    containerTag: "ai-research",
+    metadata: { priority: "high" }
+  });
+
+  console.log(result);
+  // Salida: { id: "abc123", status: "queued" }
+  ```
+
+  ```python Python
+  # Añadir contenido de texto
+  result = client.memories.add(
+      content="Machine learning enables computers to learn from data",
+      container_tags=["ai-research"],
+      metadata={"priority": "high"}
+  )
+
+  print(result)
+  # Salida: {"id": "abc123", "status": "queued"}
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "content": "Machine learning enables computers to learn from data",
+      "containerTag": "ai-research",
+      "metadata": {"priority": "high"}
+    }'
+
+  # Respuesta: {"id": "abc123", "status": "queued"}
+  ```
+</CodeGroup>
+
+<div id="key-concepts">
+  ## Conceptos clave
+</div>
+
+<Note>
+  **¿Eres nuevo en Supermemory?** Lee [Cómo funciona Supermemory](/es/how-it-works) para comprender la arquitectura del grafo de conocimiento y la diferencia entre documentos y memorias.
+</Note>
+
+<div id="quick-overview">
+  ### Resumen rápido
+</div>
+
+* **Documentos**: Contenido sin procesar que subes (PDF, url, texto)
+* **Memorias**: chunks buscables creados automáticamente con relaciones
+* **Etiquetas de contenedor**: Agrupa contenido relacionado para mejorar el contexto
+* **Metadata**: Información adicional para el filtrado
+
+<div id="content-sources">
+  ### Fuentes de contenido
+</div>
+
+Agrega contenido de tres maneras:
+
+1. **Texto directo**: Envía contenido de texto directamente vía API
+2. **Carga de archivos**: Sube PDFs, imágenes y videos para su extracción
+3. **Procesamiento de URL**: Extracción automática de páginas web y plataformas
+
+<div id="endpoints">
+  ## Endpoints
+</div>
+
+<Warning>
+  Recuerda: estos endpoints añaden documentos. Las memorias las infiere Supermemory.
+</Warning>
+
+<div id="add-content">
+  ### Agregar contenido
+</div>
+
+`POST /v3/documents`
+
+Agrega contenido de texto, URL o cualquier formato compatible.
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.add({
+    content: "Your content here",
+    containerTag: "project"
+  });
+  ```
+
+  ```python Python
+  client.memories.add(
+    content="Your content here",
+    container_tags=["project"]
+  )
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"content": "Your content here", "containerTag": "project"}'
+  ```
+</CodeGroup>
+
+<div id="upload-file">
+  ### Cargar archivo
+</div>
+
+`POST /v3/documents/file`
+
+Carga archivos directamente para su procesamiento.
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.uploadFile({
+    file: fileStream,
+    containerTag: "project"
+  });
+  ```
+
+  ```python Python
+  client.memories.upload_file(
+    file=open('file.pdf', 'rb'),
+    container_tags='project'
+  )
+  ```
+
+  ```bash cURL
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -F "file=@document.pdf" \
+    -F "containerTags=project"
+  ```
+</CodeGroup>
+
+<div id="update-memory">
+  ### Actualizar memory
+</div>
+
+`PATCH /v3/documents/{id}`
+
+Actualiza el contenido de un documento existente.
+
+<CodeGroup>
+  ```typescript TypeScript
+  await client.memories.update("doc_id", {
+    content: "Updated content"
+  });
+  ```
+
+  ```python Python
+  client.memories.update("doc_id", {
+    "content": "Updated content"
+  })
+  ```
+
+  ```bash cURL
+  curl -X PATCH "https://api.supermemory.ai/v3/documents/doc_id" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"content": "Updated content"}'
+  ```
+</CodeGroup>
+
+<div id="supported-content-types">
+  ## Tipos de contenido compatibles
+</div>
+
+<div id="documents">
+  ### Documentos
+</div>
+
+* PDF con soporte de OCR (Reconocimiento Óptico de Caracteres)
+* Google Docs, Sheets y Slides
+* Páginas de Notion
+* Archivos de Microsoft Office
+
+<div id="media">
+  ### Medios
+</div>
+
+* Imágenes (JPG, PNG, GIF, WebP) con OCR (Reconocimiento Óptico de Caracteres)
+
+<div id="web-content">
+  ### Contenido web
+</div>
+
+* Publicaciones de Twitter/X
+* Vídeos de YouTube con subtítulos
+
+<div id="text-formats">
+  ### Formatos de texto
+</div>
+
+* Texto sin formato
+* Markdown
+* Archivos CSV
+
+<Note> Consulta la [guía de conectores](/es/connectors/overview) para ver cómo conectar Google Drive, Notion y OneDrive y sincronizar archivos en tiempo real. </Note>
+
+<div id="response-format">
+  ## Formato de la respuesta
+</div>
+
+```json
+{
+  "id": "D2Ar7Vo7ub83w3PRPZcaP1",
+  "status": "queued"
+}
+```
+
+* **`id`**: Identificador único del documento
+* **`status`**: Estado de procesamiento (`queued`, `processing`, `done`)
+
+<div id="next-steps">
+  ## Próximos pasos
+</div>
+
+* [Seguir el estado de procesamiento](/es/api/track-progress) - Supervisa el procesamiento de documentos
+* [Buscar memorias](/es/search/overview) - Busca tu contenido
+* [Listar memorias](/es/list-memories/overview) - Explora las memorias almacenadas
+* [Actualizar y eliminar](/es/update-delete-memories/overview) - Administra las memorias

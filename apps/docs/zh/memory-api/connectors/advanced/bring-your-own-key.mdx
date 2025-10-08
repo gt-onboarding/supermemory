@@ -1,0 +1,140 @@
+---
+title: "自带密钥（BYOK）"
+description: "配置您自己的 OAuth 应用凭据，以提升安全性与可控性"
+---
+
+默认情况下，supermemory 使用其自有的 OAuth 应用与第三方 provider 连接。不过，您也可以配置自己的 OAuth 应用凭据，以获得更高的安全性和可控性。对于希望对数据访问保持掌控的企业客户而言，这尤其有用。
+
+<Danger>
+  某些 provider（如 Google Drive）在使用自定义密钥前需要经过严格的验证和审批。
+</Danger>
+
+<div id="setting-up-custom-provider-keys">
+  ### 设置自定义 provider 密钥
+</div>
+
+要为你的组织配置自定义 OAuth（开放授权协议）凭据，请使用 `PATCH /v3/settings` 端点：
+
+1. 在 provider 的开发者控制台中创建并配置你的 OAuth 应用。
+
+Google: https://console.developers.google.com/apis/credentials/oauthclient \
+Notion: https://www.notion.so/my-integrations \
+OneDrive: https://portal.azure.com/#view/Microsoft&#95;AAD&#95;RegisteredApps/ApplicationsMenu
+
+2. 如果使用 Google Drive：
+
+* 将应用类型选择为 `Web application`
+* 在 Cloud Console 的 “APIs and Services” 中启用 Google Drive API
+
+3. 配置重定向 URL，将其设置为：
+
+```
+https://api.supermemory.ai/v3/connections/auth/callback/{provider}
+```
+
+例如，如果你使用 Google Drive，重定向 url 将为：
+
+```
+https://api.supermemory.ai/v3/connections/auth/callback/google-drive
+```
+
+4. 在 `PATCH /v3/settings` 端点中配置 client ID 和 client secret。
+
+<CodeGroup>
+  ```typescript Typescript
+  import Supermemory from 'supermemory';
+
+  const client = new Supermemory({
+    apiKey: process.env['SUPERMEMORY_API_KEY'],
+  });
+
+  // 示例：配置 Google Drive 自定义 OAuth 凭据
+  const settings = await client.settings.update({
+    googleCustomKeyEnabled: true,
+    googleDriveClientId: "your-google-client-id",
+    googleDriveClientSecret: "your-google-client-secret"
+  });
+
+  // 示例：配置 Notion 自定义 OAuth 凭据
+  const settings = await client.settings.update({
+    notionCustomKeyEnabled: true,
+    notionClientId: "your-notion-client-id",
+    notionClientSecret: "your-notion-client-secret"
+  });
+
+  // 示例：配置 OneDrive 自定义 OAuth 凭据
+  const settings = await client.settings.update({
+    onedriveCustomKeyEnabled: true,
+    onedriveClientId: "your-onedrive-client-id",
+    onedriveClientSecret: "your-onedrive-client-secret"
+  });
+  ```
+
+  ```python Python
+  from supermemory import supermemory
+
+  client = supermemory(
+      api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # 这是默认值，可省略
+  )
+
+  # 示例：配置 Google Drive 自定义 OAuth 凭据
+  settings = client.settings.update(
+      google_custom_key_enabled=True,
+      google_client_id="your-google-client-id",
+      google_client_secret="your-google-client-secret"
+  )
+
+  # 示例：配置 Notion 自定义 OAuth 凭据
+  settings = client.settings.update(
+      notion_custom_key_enabled=True,
+      notion_client_id="your-notion-client-id",
+      notion_client_secret="your-notion-client-secret"
+  )
+
+  # 示例：配置 OneDrive 自定义 OAuth 凭据
+  settings = client.settings.update(
+      onedrive_custom_key_enabled=True,
+      onedrive_client_id="your-onedrive-client-id",
+      onedrive_client_secret="your-onedrive-client-secret"
+  )
+  ```
+
+  ```bash cURL
+  # 示例：配置 Google Drive 自定义 OAuth 凭据
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "googleDriveCustomKeyEnabled": true,
+    "googleDriveClientId": "your-google-client-id",
+    "googleDriveClientSecret": "your-google-client-secret"
+  }'
+
+  # 示例：配置 Notion 自定义 OAuth 凭据
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "notionCustomKeyEnabled": true,
+    "notionClientId": "your-notion-client-id",
+    "notionClientSecret": "your-notion-client-secret"
+  }'
+
+  # 示例：配置 OneDrive 自定义 OAuth 凭据
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "onedriveCustomKeyEnabled": true,
+    "onedriveClientId": "your-onedrive-client-id",
+    "onedriveClientSecret": "your-onedrive-client-secret"
+  }'
+  ```
+</CodeGroup>
+
+<Warning>
+  一旦为某个 provider 启用了自定义密钥，该 provider 的所有新链接账户都会使用你的自定义 OAuth 应用。现有链接账户需要重新授权。
+</Warning>

@@ -1,0 +1,54 @@
+---
+title: "查询重写"
+description: "supermemory 中的查询重写"
+icon: "blend"
+---
+
+查询重写是一项功能，能够自动改写你的查询，以提升准确性。
+
+![查询重写](/images/query-rewriting.png)
+
+<div id="usage">
+  ### 用法
+</div>
+
+在 Supermemory 中，你可以在搜索 API 中将参数 `rewriteQuery` 设置为 `true` 来启用查询重写。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --header 'Content-Type: application/json' \
+  -d '{
+    "q": "What is the capital of France?",
+    "rewriteQuery": true
+  }'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rewriteQuery: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rewriteQuery=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### 注意事项与限制
+</div>
+
+- supermemory 会生成多个查询重写版本，并针对每个版本执行搜索。
+- 随后会合并结果并返回给你。
+- 查询重写不收取额外费用。
+- 虽然查询重写能显著提升结果质量，但也会**带来额外的 Latency**。
+- 其他功能（如过滤、混合搜索、时间新近性偏置等）同样适用于重写后的结果。

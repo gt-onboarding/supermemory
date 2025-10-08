@@ -1,0 +1,130 @@
+---
+title: "搭配 Memory API 使用"
+description: "将 Memory Router 与 Memory API 结合以获得最大程度的控制"
+sidebarTitle: "搭配 Memory API 使用"
+---
+
+Memory Router 和 Memory API 共享同一 memory 池。使用相同的 `user_id` 时，记忆存储会在两个系统之间自动共享。
+
+<div id="how-they-work-together">
+  ## 它们如何协同工作
+</div>
+
+<Note>
+**关键要点**：当使用相同的 `user_id` 值时，Router 和 API 将访问同一套记忆存储，从而支持强大的混合式实现。
+</Note>
+
+<div id="shared-memory-pool">
+  ### 共享 memory 池
+</div>
+
+```python
+# 通过 API 创建的 memory
+from supermemory import Client
+
+api_client = Client(api_key="YOUR_SUPERMEMORY_KEY")
+
+# 通过 API 添加 memory
+api_client.memories.add({
+    "content": "用户偏好使用 Python 而非 JavaScript 进行后端开发",
+    "user_id": "user123"
+})
+
+# 稍后，在使用 Router 的聊天应用中
+from openai import OpenAI
+
+router_client = OpenAI(
+    api_key="YOUR_OPENAI_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+    default_headers={
+        "x-supermemory-api-key": "YOUR_SUPERMEMORY_KEY",
+        "x-sm-user-id": "user123"  # 相同的 user_id
+    }
+)
+
+# Router 自动访问通过 API 创建的 memory
+response = router_client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "我应该为新的后端使用什么语言？"}]
+)
+# 响应将考虑 Python 偏好
+```
+
+
+<div id="pre-load-context-via-api">
+  ## 通过 API 预先加载上下文
+</div>
+
+使用 API 在对话开始前添加 Documents 和上下文：
+
+```python
+# 步骤 1：通过 API 加载用户的 documents
+api_client.memories.add({
+    "content": "https://company.com/product-docs.pdf",
+    "user_id": "support_agent_123",
+    "metadata": {"type": "product_documentation"}
+})
+
+# 步骤 2：客服代理使用 Router 进行聊天
+router_client = OpenAI(
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+    default_headers={"x-sm-user-id": "support_agent_123"}
+)
+
+# 代理自动获取产品文档访问权限
+response = router_client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "企业定价是如何运作的？"}]
+)
+```
+
+
+<div id="best-practices">
+  ## 最佳实践
+</div>
+
+<div id="1-consistent-user-ids">
+  ### 1. 一致的用户 ID
+</div>
+
+在两个系统中始终使用相同的 `user_id` 格式：
+
+```python
+# ✅ 正确 - 一致的 user_id
+api_client.memories.add({"user_id": "user_123"})
+router_headers = {"x-sm-user-id": "user_123"}
+
+# ❌ 错误 - 不一致的 user_id
+api_client.memories.add({"user_id": "user-123"})
+router_headers = {"x-sm-user-id": "user_123"}  # 格式不同！
+```
+
+
+<div id="2-use-container-tags-for-organization">
+  ### 2. 使用容器标签进行组织结构化
+</div>
+
+```python
+# API: 添加带标签的记忆存储
+api_client.memories.add({
+    "content": "第三季度收入报告",
+    "user_id": "analyst_1",
+    "containerTag": "financial_reports"
+})
+
+# Router: 记忆存储会自动组织
+# Router 会智能地从正确的容器中检索
+```
+
+
+<div id="3-leverage-each-systems-strengths">
+  ### 3. 发挥各系统的优势
+</div>
+
+| 用例 | 最佳选择 | 原因 |
+|----------|------------|-----|
+| 聊天对话 | Router | 自动上下文管理 |
+| 文档上传 | API | 批量处理，自定义 id |
+| 搜索与筛选 | API | 高级查询能力 |
+| 快速原型 | Router | 无需改动代码 |
+| memory 管理 | API | 完整的 CRUD 操作 |

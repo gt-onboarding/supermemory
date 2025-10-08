@@ -1,0 +1,54 @@
+---
+title: "Query Rewriting"
+description: "Query Rewriting in supermemory"
+icon: "blend"
+---
+
+Query Rewriting ist ein Feature, mit dem du Suchanfragen umformulieren kannst, um ihre Genauigkeit zu erhöhen.
+
+![Query Rewriting](/images/query-rewriting.png)
+
+<div id="usage">
+  ### Verwendung
+</div>
+
+In supermemory können Sie Query Rewriting aktivieren, indem Sie den Parameter `rewriteQuery` in der Search-API auf `true` setzen.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --header 'Content-Type: application/json' \
+  -d '{
+    "q": "What is the capital of France?",
+    "rewriteQuery": true
+  }'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rewriteQuery: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rewriteQuery=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### Hinweise und Einschränkungen
+</div>
+
+- supermemory erzeugt mehrere Umschreibungen und führt die Suche für alle aus.
+- Die Ergebnisse werden anschließend zusammengeführt und zurückgegeben.
+- Für Query Rewriting fallen keine zusätzlichen Kosten an.
+- Obwohl Query Rewriting die Qualität deutlich verbessert, **führt es zu zusätzlicher Latenz**.
+- Alle anderen Funktionen wie Filtering, Hybrid Search, Recency Bias usw. funktionieren auch mit umgeschriebenen Ergebnissen.

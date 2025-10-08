@@ -1,0 +1,436 @@
+---
+title: "Claude Memory 工具"
+description: "以 Supermemory 作为后端，为 Claude 启用持久化 memory 功能"
+---
+
+借助 Supermemory 作为持久化存储后端，启用 Claude 的原生 memory 工具功能。Claude 可通过熟悉的文件系统操作，在跨会话中自动存储和检索信息。
+
+<Card title="Supermemory 工具（npm）" icon="npm" href="https://www.npmjs.com/package/@supermemory/tools">
+  前往 npm 页面了解更多
+</Card>
+
+<div id="installation">
+  ## 安装
+</div>
+
+```bash
+npm install @supermemory/tools @anthropic-ai/sdk
+```
+
+<div id="quick-start">
+  ## 快速上手
+</div>
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk"
+import { createClaudeMemoryTool } from "@supermemory/tools/claude-memory"
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+})
+
+const memoryTool = createClaudeMemoryTool(process.env.SUPERMEMORY_API_KEY!, {
+  projectId: 'my-app',
+  projectId: 'my-app',
+
+async function chatWithMemory(userMessage: string) {
+  const response = await anthropic.beta.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 8096,
+    tools: [{ type: 'memory_20250818', name: 'memory' }],
+    betas: ['context-management-2025-06-27'],
+    messages: [{ role: 'user', content: userMessage }],
+  })
+
+  // 处理 memory 工具的调用
+  for (const block of response.content) {
+    if (block.type === 'tool_use' && block.name === 'memory') {
+      const result = await memoryTool.handleCommandForToolResult(
+        block.input as MemoryCommand,
+        block.id
+      )
+      console.log('Memory 操作结果：', result)
+    }
+  }
+
+  return response
+}
+```
+
+<div id="how-it-works">
+  ## 工作原理
+</div>
+
+Claude 的 memory 工具采用文件系统的类比来管理持久化信息：
+
+* **文件**：作为 Supermemory Documents 存储的单个 memory 项
+* **目录**：通过路径结构进行组织（例如：`/memories/user-preferences`）
+* **操作**：查看、创建、编辑、删除和重命名文件
+* **路径标准化**：像 `/memories/preferences` 这样的路径会存储为 `--memories--preferences`
+
+<div id="configuration">
+  ## 配置
+</div>
+
+<div id="basic-configuration">
+  ### 基础配置
+</div>
+
+```typescript
+import { createClaudeMemoryTool } from "@supermemory/tools/claude-memory"
+
+const memoryTool = createClaudeMemoryTool(
+  process.env.SUPERMEMORY_API_KEY!,
+  {
+    projectId: 'my-app',           // 项目标识
+    baseUrl: 'https://api.supermemory.ai', // 可选：自定义 API 端点
+  }
+)
+```
+
+<div id="using-container-tags">
+  ### 使用容器标签
+</div>
+
+```typescript
+const memoryTool = createClaudeMemoryTool(
+  process.env.SUPERMEMORY_API_KEY!,
+  {
+    containerTags: ['user:alice', 'app:chat'],
+  }
+)
+```
+
+<div id="memory-operations">
+  ## memory 操作
+</div>
+
+Claude 在管理 memory 时会自动执行这些操作：
+
+<div id="view-files">
+  ### 查看文件
+</div>
+
+列出目录内容或读取文件：
+
+```typescript
+// Claude 会自动检查 /memories/ 目录
+// 这相当于在 Supermemory 中按路径前缀搜索 Documents
+```
+
+<div id="create-files">
+  ### 创建文件
+</div>
+
+保存新信息：
+
+```typescript
+// Claude 创建：/memories/user-preferences.txt
+// 以文档形式存储，customId："--memories--user-preferences.txt"
+```
+
+<div id="edit-files">
+  ### 编辑文件
+</div>
+
+通过字符串替换来更新现有的记忆存储：
+
+```typescript
+// Claude 在文件内容上执行 str_replace
+// 更新对应的 Supermemory 文档
+```
+
+<div id="delete-files">
+  ### 删除文件
+</div>
+
+删除信息：
+
+```typescript
+// Claude 删除：/memories/old-data.txt
+// 从 Supermemory 中移除文档
+```
+
+<div id="rename-files">
+  ### 重命名文件
+</div>
+
+重构 memory 结构：
+
+```typescript
+// Claude 重命名：/memories/temp.txt -> /memories/final.txt
+// 在 Supermemory 中更新文档 customId
+```
+
+<div id="complete-chat-example">
+  ## 完整聊天示例
+</div>
+
+以下是一个包含会话处理的完整示例：
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk"
+import { createClaudeMemoryTool, type MemoryCommand } from "@supermemory/tools/claude-memory"
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+})
+
+const memoryTool = createClaudeMemoryTool(process.env.SUPERMEMORY_API_KEY!, {
+  projectId: 'chat-app',
+})
+
+async function chat() {
+  const messages: Anthropic.MessageParam[] = []
+
+  // 第一条消息：存储信息
+  messages.push({
+    role: 'user',
+    content: '记住我偏好暗色模式并使用 TypeScript'
+  })
+
+  let response = await anthropic.beta.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 8096,
+    tools: [{ type: 'memory_20250818', name: 'memory' }],
+    betas: ['context-management-2025-06-27'],
+    messages,
+  })
+
+  // 处理工具调用
+  const toolResults: Anthropic.ToolResultBlockParam[] = []
+
+  for (const block of response.content) {
+    if (block.type === 'tool_use' && block.name === 'memory') {
+      const result = await memoryTool.handleCommandForToolResult(
+        block.input as MemoryCommand,
+        block.id
+      )
+      toolResults.push(result)
+    }
+  }
+
+  // 使用工具结果继续对话
+  if (toolResults.length > 0) {
+    messages.push({ role: 'assistant', content: response.content })
+    messages.push({ role: 'user', content: toolResults })
+
+    response = await anthropic.beta.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 8096,
+      tools: [{ type: 'memory_20250818', name: 'memory' }],
+      betas: ['context-management-2025-06-27'],
+      messages,
+    })
+  }
+
+  console.log(response.content)
+}
+
+chat()
+```
+
+<div id="advanced-usage">
+  ## 进阶用法
+</div>
+
+<div id="custom-path-management">
+  ### 自定义路径管理
+</div>
+
+控制 Claude 的信息存储位置：
+
+```typescript
+// Claude 自动按路径组织
+// /memories/preferences/editor.txt
+// /memories/projects/current.txt
+// /memories/notes/meeting-2024.txt
+
+// 每个路径都会被规范化并存储相应的 metadata
+```
+
+<div id="error-handling">
+  ### 错误处理
+</div>
+
+以优雅方式处理各类操作：
+
+```typescript
+const result = await memoryTool.handleCommandForToolResult(command, toolUseId)
+
+if (result.is_error) {
+  console.error('Memory 操作失败:', result.content)
+  // 适当处理错误
+} else {
+  console.log('成功:', result.content)
+}
+```
+
+<div id="monitoring-operations">
+  ### 监控运维
+</div>
+
+跟踪 memory 操作：
+
+```typescript
+for (const block of response.content) {
+  if (block.type === 'tool_use' && block.name === 'memory') {
+    console.log('操作：', block.input.command)
+    console.log('路径：', block.input.path)
+
+    const result = await memoryTool.handleCommandForToolResult(
+      block.input as MemoryCommand,
+      block.id
+    )
+
+    console.log('结果：', result.is_error ? '失败' : '成功')
+  }
+}
+```
+
+<div id="memory-organization">
+  ## memory 组织架构
+</div>
+
+<div id="best-practices">
+  ### 最佳实践
+</div>
+
+1. **使用具描述性的路径**：`/memories/user-preferences/theme.txt` 比 `/mem1.txt` 更好
+2. **按类别组织**：将相关信息归入相应目录
+3. **保持文件专注**：将具体信息存放在独立文件中
+4. **使用清晰命名**：让文件名一目了然
+
+<div id="path-structure-examples">
+  ### 路径结构示例
+</div>
+
+```
+/memories/
+  ├── 用户档案/
+  │   ├── 姓名.txt
+  │   ├── 偏好.txt
+  │   └── 设置.txt
+  ├── 项目/
+  │   ├── 当前任务.txt
+  │   └── 目标.txt
+  └── 笔记/
+      ├── 会议纪要.txt
+      └── 点子.txt
+```
+
+<div id="api-reference">
+  ## API 参考文档
+</div>
+
+<div id="createclaudememorytoolapikey-config">
+  ### `createClaudeMemoryTool(apiKey, config)`
+</div>
+
+为 Claude 创建一个 memory 工具实例。
+
+**参数：**
+
+* `apiKey` (string): 你的 Supermemory API 密钥
+* `config` (optional):
+  * `projectId` (string): 项目标识
+  * `containerTags` (string[]): `projectId` 的替代选项
+  * `baseUrl` (string): 自定义 API 端点
+
+**返回：** `ClaudeMemoryTool` 实例
+
+<div id="handlecommandfortoolresultcommand-tooluseid">
+  ### `handleCommandForToolResult(command, toolUseId)`
+</div>
+
+处理 memory 命令并返回格式化结果。
+
+**参数：**
+
+* `command` (MemoryCommand): 来自 Claude 的 memory 操作
+* `toolUseId` (string): Claude 响应中的工具使用 ID
+
+**返回：** `Promise<MemoryToolResult>`，包含：
+
+* `type`: &quot;tool&#95;result&quot;
+* `tool_use_id`: 工具使用 ID
+* `content`: 操作结果或错误消息
+* `is_error`: 指示成功/失败的布尔值
+
+<div id="memory-commands">
+  ## Memory 命令
+</div>
+
+Claude 在内部使用以下命令类型：
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `view` | 列出目录或读取文件 | `/memories/` 或 `/memories/file.txt` |
+| `create` | 创建新文件 | 创建带内容的 `/memories/new.txt` |
+| `str_replace` | 编辑文件内容 | 将“old text”替换为“new text” |
+| `insert` | 在指定行插入内容 | 在第 5 行插入 |
+| `delete` | 删除文件 | 删除 `/memories/old.txt` |
+| `rename` | 重命名/移动文件 | 将 `old.txt` 重命名为 `new.txt` |
+
+<div id="environment-variables">
+  ## 环境变量
+</div>
+
+```bash
+ANTHROPIC_API_KEY=your_anthropic_key
+SUPERMEMORY_API_KEY=your_supermemory_key
+```
+
+<div id="when-to-use">
+  ## 适用场景
+</div>
+
+Claude Memory Tool 非常适合：
+
+* **会话式 AI**：Claude 会自动记住用户偏好和上下文
+* **个人助理**：存储与检索用户特定的信息
+* **文档助手**：在多轮对话中持续保有相关知识
+* **项目管理**：跟踪任务与项目状态
+* **笔记应用**：为会议记录和创意提供持久的 memory
+
+<div id="comparison-with-other-approaches">
+  ## 与其他方案对比
+</div>
+
+| 功能 | Claude Memory 工具 | OpenAI SDK 工具 | AI SDK 工具 |
+|---------|-------------------|------------------|--------------|
+| 自动 memory | ✅ 由 Claude 决定 | ❌ 手动控制 | ❌ 手动控制 |
+| 文件系统类比 | ✅ 文件/目录 | ❌ 扁平存储 | ❌ 扁平存储 |
+| 路径组织 | ✅ 分层结构 | ❌ 仅支持标签 | ❌ 仅支持标签 |
+| 集成 | 仅限 Anthropic SDK | 仅限 OpenAI SDK | Vercel AI SDK |
+
+<div id="limitations">
+  ## 限制
+</div>
+
+* 需要启用测试版功能的 Anthropic SDK
+* 路径分隔符（`/`）在存储时会被规范化为 `--`
+* 每个目录列表最多包含 100 个文件
+* 文件操作为异步
+
+<div id="next-steps">
+  ## 后续步骤
+</div>
+
+<CardGroup cols={2}>
+  <Card title="OpenAI SDK 工具" icon="sparkles" href="/zh/memory-api/sdks/openai-plugins">
+    将 Memory Tools 与 OpenAI 函数调用配合使用
+  </Card>
+
+  <Card title="AI SDK 集成" icon="triangle" href="/zh/ai-sdk/overview">
+    集成 Vercel AI SDK
+  </Card>
+
+  <Card title="Memory API" icon="database" href="/zh/memory-api/overview">
+    通过直接访问 API 实现更精细的控制
+  </Card>
+
+  <Card title="Cookbook" icon="chef-hat" href="/zh/cookbook/overview">
+    查看真实场景示例
+  </Card>
+</CardGroup>

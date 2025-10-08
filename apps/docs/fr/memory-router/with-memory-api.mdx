@@ -1,0 +1,130 @@
+---
+title: "Utilisation avec la Memory API"
+description: "Combinez le Memory Router avec la Memory API pour un contrôle maximal"
+sidebarTitle: "Utilisation avec la Memory API"
+---
+
+Le Memory Router et la Memory API partagent le même pool de memories. Lorsque vous utilisez le même `user_id`, les memories sont automatiquement partagées entre les deux systèmes.
+
+<div id="how-they-work-together">
+  ## Fonctionnement conjoint
+</div>
+
+<Note>
+**Point clé** : Le Router et l’API accèdent tous deux aux mêmes memories lorsqu’ils utilisent des valeurs de `user_id` identiques. Cela permet des implémentations hybrides puissantes.
+</Note>
+
+<div id="shared-memory-pool">
+  ### Pool de memory partagé
+</div>
+
+```python
+# memory créée via l’API
+from supermemory import Client
+
+api_client = Client(api_key="YOUR_SUPERMEMORY_KEY")
+
+# Ajouter une memory via l’API
+api_client.memories.add({
+    "content": "L’utilisateur préfère Python à JavaScript pour le développement back-end",
+    "user_id": "user123"
+})
+
+# Plus tard, dans votre application de chat utilisant le Router
+from openai import OpenAI
+
+router_client = OpenAI(
+    api_key="YOUR_OPENAI_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+    default_headers={
+        "x-supermemory-api-key": "YOUR_SUPERMEMORY_KEY",
+        "x-sm-user-id": "user123"  # Même user_id
+    }
+)
+
+# Le Router a automatiquement accès à la memory créée via l’API
+response = router_client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "Quel langage devrais-je utiliser pour mon nouveau back-end ?"}]
+)
+# La réponse tiendra compte de la préférence pour Python
+```
+
+
+<div id="pre-load-context-via-api">
+  ## Précharger le contexte via l’API
+</div>
+
+Utilisez l’API pour ajouter des documents et du contexte avant une conversation :
+
+```python
+# Étape 1 : Charger les documents de l’utilisateur via l’API
+api_client.memories.add({
+    "content": "https://company.com/product-docs.pdf",
+    "user_id": "support_agent_123",
+    "metadata": {"type": "product_documentation"}
+})
+
+# Étape 2 : L’agent du support utilise le chat avec le Router
+router_client = OpenAI(
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+    default_headers={"x-sm-user-id": "support_agent_123"}
+)
+
+# L’agent a automatiquement accès à la documentation produit
+response = router_client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "Comment fonctionne la tarification entreprise ?"}]
+)
+```
+
+
+<div id="best-practices">
+  ## Bonnes pratiques
+</div>
+
+<div id="1-consistent-user-ids">
+  ### 1. Cohérence des identifiants utilisateur
+</div>
+
+Utilisez toujours le même format de `user_id` dans les deux systèmes :
+
+```python
+# ✅ Bon : user_id cohérent
+api_client.memories.add({"user_id": "user_123"})
+router_headers = {"x-sm-user-id": "user_123"}
+
+# ❌ Mauvais : user_id incohérent
+api_client.memories.add({"user_id": "user-123"})
+router_headers = {"x-sm-user-id": "user_123"}  # Format différent !
+```
+
+
+<div id="2-use-container-tags-for-organization">
+  ### 2. Utilisez des balises de conteneur pour organiser
+</div>
+
+```python
+# API : ajouter des memories avec des tags
+api_client.memories.add({
+    "content": "Rapport de revenus du T3",
+    "user_id": "analyst_1",
+    "containerTag": "financial_reports"
+})
+
+# Router : les memories sont automatiquement organisées
+# Le Router récupérera intelligemment dans les bons conteneurs
+```
+
+
+<div id="3-leverage-each-systems-strengths">
+  ### 3. Tirer parti des points forts de chaque système
+</div>
+
+| Cas d’usage | Meilleur choix | Pourquoi |
+|----------|------------|-----|
+| Conversations de chat | Router | Gestion automatique du contexte |
+| Import de documents | API | Traitement par lots, id personnalisés |
+| Recherche et filtrage | API | Capacités de requête avancées |
+| Prototypes rapides | Router | Aucun changement de code |
+| Gestion des memory | API | Opérations CRUD complètes |

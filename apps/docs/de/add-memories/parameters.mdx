@@ -1,0 +1,170 @@
+---
+title: "Parameter"
+description: "Vollständige Referenz zu Parametern für das Hinzufügen von Speicher"
+---
+
+Ausführliche Parameterdokumentation zum Hinzufügen von Speicher‑Einträgen zu Supermemory.
+
+<div id="request-parameters">
+  ## Request-Parameter
+</div>
+
+<div id="required-parameters">
+  ### Erforderliche Parameter
+</div>
+
+<ParamField body="content" type="string" required>
+  Der Inhalt, der in Speicher-Einträge verarbeitet werden soll. Mögliche Formate:
+  - Reiner Text
+  - Zu verarbeitende url
+  - HTML
+  - Markdown
+
+  ```json
+  {
+    "content": "Machine learning is a subset of AI..."
+  }
+  ```
+
+  **Beispiele für URLs:**
+  ```json
+  {
+    "content": "https://youtube.com/watch?v=dQw4w9WgXcQ"
+  }
+  ```
+</ParamField>
+
+<div id="optional-parameters">
+  ### Optionale Parameter
+</div>
+
+<ParamField body="containerTag" type="string">
+  **Empfohlen.** Einzelnes Tag zum Gruppieren zusammengehöriger Speicher-Einträge. Verbessert die Suchperformance.
+
+  Standard: `"sm_project_default"`
+
+  ```json
+  {
+    "containerTag": "project_alpha"
+  }
+  ```
+
+  <Note>
+  Verwenden Sie `containerTag` (Singular) für bessere Performance als `containerTags` (Array).
+  </Note>
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Zusätzliche Metadata als Schlüssel-Wert-Paare. Werte müssen Zeichenfolgen, Zahlen oder Booleans sein.
+
+  ```json
+  {
+    "metadata": {
+      "source": "research-paper",
+      "author": "John Doe",
+      "priority": 1,
+      "reviewed": true
+    }
+  }
+  ```
+
+  **Einschränkungen:**
+  - Keine verschachtelten Objekte
+  - Keine Arrays als Werte
+  - Schlüssel müssen Zeichenfolgen sein
+  - Werte: nur string, number oder boolean
+</ParamField>
+
+<ParamField body="customId" type="string">
+  Eigener Bezeichner für das Dokument. Ermöglicht Deduplizierung und Aktualisierungen.
+
+  **Maximale Länge:** 255 Zeichen
+
+  ```json
+  {
+    "customId": "doc_2024_01_research_ml"
+  }
+  ```
+
+  **Anwendungsfälle:**
+  - Doppelte Uploads verhindern
+  - Bestehende documents aktualisieren
+  - Synchronisierung mit externen Systemen
+</ParamField>
+
+<ParamField body="raw" type="string">
+  Rohinhalt, der zusammen mit verarbeitetem Inhalt gespeichert wird. Nützlich, um die ursprüngliche Formatierung zu bewahren.
+
+  ```json
+  {
+    "content": "# Machine Learning\n\nML is a subset of AI...",
+    "raw": "# Machine Learning\n\nML is a subset of AI..."
+  }
+  ```
+</ParamField>
+
+<div id="file-upload-parameters">
+  ## Parameter für Datei-Uploads
+</div>
+
+Für den Endpunkt `POST /v3/documents/file`:
+
+<ParamField body="file" type="file" required>
+  Die hochzuladende Datei. Unterstützte Formate:
+  - **Dokumente:** PDF, DOC, DOCX, TXT, MD
+  - **Bilder:** JPG, PNG, GIF, WebP
+  - **Videos:** MP4, WebM, AVI
+
+  **Maximale Größe:** 50 MB
+</ParamField>
+
+<ParamField body="containerTags" type="string">
+  Container-Tag für die hochgeladene Datei (als Formularfeld gesendet).
+
+  ```bash
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -F "file=@document.pdf" \
+    -F "containerTags=research"
+  ```
+</ParamField>
+
+<div id="container-tag-patterns">
+  ## Container-Tag-Pattern
+</div>
+
+<div id="recommended-patterns">
+  ### Empfohlene Patterns
+</div>
+
+```typescript
+// Nach Benutzer
+"user_123"
+
+// Nach Projekt
+"project_alpha"
+
+// Nach Organisation und Typ
+"org_456_research"
+
+// Nach Zeitraum
+"2024_q1_reports"
+
+// Nach Datenquelle
+"slack_channel_general"
+```
+
+
+<div id="performance-considerations">
+  ### Leistungsaspekte
+</div>
+
+```typescript
+// ✅ SCHNELL: Einzelner Tag
+{ "containerTag": "project_alpha" }
+
+// ⚠️ LANGSAMER: Mehrere Tags
+{ "containerTags": ["project_alpha", "backend", "auth"] }
+
+// ❌ VERMEIDEN: Zu viele Tags
+{ "containerTags": ["tag1", "tag2", "tag3", "tag4", "tag5"] }
+```

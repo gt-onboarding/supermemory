@@ -1,0 +1,408 @@
+---
+title: "Reranking"
+description: "Melhore a relevância dos resultados com algoritmos de ranqueamento secundário"
+---
+
+Reranking aplica um algoritmo de ranqueamento secundário para melhorar a ordem de relevância dos resultados de busca. Após a busca inicial retornar resultados, o reranker analisa a relação entre sua consulta e cada resultado para oferecer uma ordenação mais adequada.
+
+<div id="how-reranking-works">
+  ## Como o Reranking Funciona
+</div>
+
+O processo de Reranking da Supermemory:
+
+1. **Busca inicial** retorna resultados usando similaridade semântica padrão
+2. **Modelo de reranker** analisa pares de consulta–resultado
+3. **Os scores são recalculados** com base em uma compreensão semântica mais profunda
+4. **Os resultados são reordenados** pelos novos scores de relevância
+5. **Os resultados finais** mantêm a mesma estrutura, mas com uma ordenação aprimorada
+
+O reranker é particularmente eficaz em:
+
+- **Entender o contexto** e relações sutis
+- **Lidar com consultas ambíguas** com múltiplos significados possíveis
+- **Aprimorar a precisão** em tópicos técnicos complexos
+- **Melhorar a ordenação** quando os resultados têm scores iniciais semelhantes
+
+<div id="basic-reranking-comparison">
+  ## Comparação básica de Reranking
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    // Busca sem reranking
+    const standardResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: false,
+      limit: 5
+    });
+
+    // Busca com reranking
+    const rerankedResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: true,
+      limit: 5
+    });
+
+    console.log("Melhor resultado (padrão):", standardResults.results[0].score);
+    console.log("Melhor resultado (reranking):", rerankedResults.results[0].score);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    # Busca sem reranking
+    standard_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=False,
+        limit=5
+    )
+
+    # Busca com reranking
+    reranked_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=True,
+        limit=5
+    )
+
+    print("Melhor resultado (padrão):", standard_results.results[0].score)
+    print("Melhor resultado (reranking):", reranked_results.results[0].score)
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # Sem reranking
+    echo "Ordenação padrão:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": false,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+
+    # Com reranking
+    echo "Resultados reranqueados:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": true,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+    ```
+  </Tab>
+</Tabs>
+
+**Comparação de saída de exemplo:**
+
+```json
+// Sem rerank - resultados ordenados por similaridade semântica
+{
+  "results": [
+    {
+      "title": "Deep Learning Optimization Methods",
+      "score": 0.82,
+      "chunks": [
+        {
+          "content": "Vários algoritmos de otimização como Adam, RMSprop e SGD são usados no treinamento de redes neurais...",
+          "score": 0.79
+        }
+      ]
+    },
+    {
+      "title": "Neural Network Training Techniques",
+      "score": 0.81,
+      "chunks": [
+        {
+          "content": "Normalização em lote e dropout são técnicas comuns de regularização para redes neurais...",
+          "score": 0.78
+        }
+      ]
+    }
+  ],
+  "timing": 145
+}
+
+// Com rerank - resultados reordenados por relevância contextual
+{
+  "results": [
+    {
+      "title": "Neural Network Training Techniques",
+      "score": 0.89,  // Aumentado pelo reranker
+      "chunks": [
+        {
+          "content": "Normalização em lote e dropout são técnicas comuns de regularização para redes neurais...",
+          "score": 0.85
+        }
+      ]
+    },
+    {
+      "title": "Deep Learning Optimization Methods",
+      "score": 0.86,  // Ligeiramente ajustado
+      "chunks": [
+        {
+          "content": "Vários algoritmos de otimização como Adam, RMSprop e SGD são usados no treinamento de redes neurais...",
+          "score": 0.83
+        }
+      ]
+    }
+  ],
+  "timing": 267  // Aproximadamente 120ms adicionais para rerank
+}
+```
+
+
+<div id="complex-query-reranking">
+  ## Reranking para Consultas Complexas
+</div>
+
+O Reranking se destaca em consultas complexas e multifacetadas:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "sustainable machine learning carbon footprint energy efficiency",
+      rerank: true,
+      containerTags: ["research", "sustainability"],
+      limit: 8
+    });
+
+    // O Reranking entende as relações entre:
+    // - Custos computacionais de machine learning
+    // - Impacto ambiental do treinamento de IA
+    // - Arquiteturas de modelos energeticamente eficientes
+    // - Práticas de computação verde em ML
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="sustainable machine learning carbon footprint energy efficiency",
+        rerank=True,
+        container_tags=["research", "sustainability"],
+        limit=8
+    )
+
+    # O Reranking entende as relações entre:
+    # - Custos computacionais de machine learning
+    # - Impacto ambiental do treinamento de IA
+    # - Arquiteturas de modelos energeticamente eficientes
+    # - Práticas de computação verde em ML
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "sustainable machine learning carbon footprint energy efficiency",
+        "rerank": true,
+        "containerTags": ["research", "sustainability"],
+        "limit": 8
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Exemplo de resultado:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_green_ai",
+      "title": "IA Verde: Reduzindo a Pegada de Carbono do Machine Learning",
+      "score": 0.94,  // Altamente relevante após rerank
+      "chunks": [
+        {
+          "content": "Treinar grandes redes neurais pode consumir tanta energia quanto vários carros ao longo de sua vida útil. Práticas de ML sustentável focam na eficiência do modelo, poda e quantização para reduzir demandas computacionais...",
+          "score": 0.92,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_efficient_models",
+      "title": "Arquiteturas de Redes Neurais com Eficiência Energética",
+      "score": 0.91,  // Aumentado por forte relevância temática
+      "chunks": [
+        {
+          "content": "MobileNets e EfficientNets são projetadas especificamente para ambientes com restrições de energia, alcançando alta precisão com overhead computacional mínimo...",
+          "score": 0.88,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 12,
+  "timing": 298
+}
+```
+
+
+<div id="memory-search-reranking">
+  ## Reranking na busca de memórias
+</div>
+
+O Reranking também melhora os resultados da busca por memórias:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const memoryResults = await client.search.memories({
+      q: "explain transformer architecture attention mechanism",
+      rerank: true,
+      containerTag: "ai_notes",
+      threshold: 0.6,
+      limit: 5
+    });
+
+    // O Reranker identifica as memórias que melhor explicam
+    // a relação entre transformers e attention
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    memory_results = client.search.memories(
+        q="explain transformer architecture attention mechanism",
+        rerank=True,
+        container_tag="ai_notes",
+        threshold=0.6,
+        limit=5
+    )
+
+    # O Reranker identifica as memórias que melhor explicam
+    # a relação entre transformers e attention
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "explain transformer architecture attention mechanism",
+        "rerank": true,
+        "containerTag": "ai_notes",
+        "threshold": 0.6,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Exemplo de saída:**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_transformer_intro",
+      "memory": "A arquitetura transformer revolucionou o NLP ao substituir camadas recorrentes por mecanismos de self-attention. O mecanismo de atenção permite que o modelo se concentre em diferentes partes da sequência de entrada ao processar cada token, possibilitando processamento paralelo e melhor modelagem de dependências de longo alcance.",
+      "similarity": 0.93,  // Reranqueado mais alto por explicação abrangente
+      "title": "Visão Geral da Arquitetura Transformer",
+      "metadata": {
+        "topic": "deep-learning",
+        "subtopic": "transformers"
+      }
+    },
+    {
+      "id": "mem_attention_detail",
+      "memory": "Self-attention calcula pesos de atenção através de produtos escalares entre vetores de query, key e value derivados dos embeddings de entrada. Isso permite que cada posição atenda a todas as posições na camada anterior, capturando relacionamentos complexos nos dados.",
+      "similarity": 0.91,  // Aumentado por detalhe técnico
+      "title": "Detalhes do Mecanismo de Self-Attention"
+    }
+  ],
+  "total": 8,
+  "timing": 198
+}
+```
+
+
+<div id="domain-specific-reranking">
+  ## Reranking específico por domínio
+</div>
+
+O Reranking compreende relações específicas de domínio:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Consulta no domínio médico
+    const medicalResults = await client.search.documents({
+      q: "diabetes treatment insulin resistance metformin",
+      rerank: true,
+      filters: {
+        AND: [
+          { key: "domain", value: "medical", negate: false }
+        ]
+      },
+      limit: 10
+    });
+
+    // O Reranking entende relações médicas:
+    // - Tipos de diabetes e tratamentos
+    // - Mecanismos de resistência à insulina
+    // - Papel da metformina no manejo do diabetes
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Consulta no domínio médico
+    medical_results = client.search.documents(
+        q="diabetes treatment insulin resistance metformin",
+        rerank=True,
+        filters={
+            "AND": [
+                {"key": "domain", "value": "medical", "negate": False}
+            ]
+        },
+        limit=10
+    )
+
+    # O Reranking entende relações médicas:
+    # - Tipos de diabetes e tratamentos
+    # - Mecanismos de resistência à insulina
+    # - Papel da metformina no manejo do diabetes
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "diabetes treatment insulin resistance metformin",
+        "rerank": true,
+        "filters": {
+          "AND": [
+            {"key": "domain", "value": "medical", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>

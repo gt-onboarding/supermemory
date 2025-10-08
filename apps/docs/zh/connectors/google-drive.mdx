@@ -1,0 +1,459 @@
+---
+title: "Google Drive 连接器"
+description: "连接 Google Drive，将 Documents 同步到你的 Supermemory 知识库"
+icon: "google-drive"
+---
+
+通过 OAuth（开放授权协议）认证与自定义应用支持，连接 Google Drive，将 Documents 同步到你的 Supermemory 知识库。
+
+<div id="quick-setup">
+  ## 快速上手
+</div>
+
+<div id="1-create-google-drive-connection">
+  ### 1. 创建 Google Drive 链接账户
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const connection = await client.connections.create('google-drive', {
+      redirectUrl: 'https://yourapp.com/auth/google-drive/callback',
+      containerTags: ['user-123', 'gdrive-sync'],
+      documentLimit: 3000,
+      metadata: {
+        source: 'google-drive',
+        department: 'engineering'
+      }
+    });
+
+    // 将用户重定向至 Google OAuth（开放授权协议）
+    window.location.href = connection.authLink;
+    console.log('授权将在以下时间后过期：', connection.expiresIn);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    connection = client.connections.create(
+        'google-drive',
+        redirect_url='https://yourapp.com/auth/google-drive/callback',
+        container_tags=['user-123', 'gdrive-sync'],
+        document_limit=3000,
+        metadata={
+            'source': 'google-drive',
+            'department': 'engineering'
+        }
+    )
+
+    # 将用户重定向至 Google OAuth（开放授权协议）
+    print(f'重定向至：{connection.auth_link}')
+    print(f'将在以下时间后过期：{connection.expires_in}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/connections/google-drive" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "redirectUrl": "https://yourapp.com/auth/google-drive/callback",
+        "containerTags": ["user-123", "gdrive-sync"],
+        "documentLimit": 3000,
+        "metadata": {
+          "source": "google-drive",
+          "department": "engineering"
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="2-handle-oauth-callback">
+  ### 2. 处理 OAuth 回调
+</div>
+
+用户授予权限后，Google 会将请求重定向到你的回调 URL，并自动建立链接账户。
+
+<div id="3-check-connection-status">
+  ### 3. 检查链接账户状态
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 获取链接账户详情
+    const connection = await client.connections.getByTags('google-drive', {
+      containerTags: ['user-123', 'gdrive-sync']
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 获取链接账户详情
+    connection = client.connections.get_by_tags(
+        'google-drive',
+        container_tags=['user-123', 'gdrive-sync']
+    )
+
+    # 列出已同步的 Documents
+    documents = client.connections.list_documents(
+        'google-drive',
+        container_tags=['user-123', 'gdrive-sync']
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 按 provider 与标签获取链接账户
+    curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "gdrive-sync"],
+        "provider": "google-drive"
+      }'
+
+    # 列出已同步的 Documents
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "gdrive-sync"],
+        "source": "google-drive"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="supported-document-types">
+  ## 支持的 Documents 类型
+</div>
+
+基于 API 的类型定义，Google Drive 中的 Documents 使用以下类型标识：
+
+- `google_doc` - Google Docs
+- `google_slide` - Google Slides
+- `google_sheet` - Google Sheets
+
+<div id="connection-management">
+  ## 链接账户管理
+</div>
+
+<div id="list-all-connections">
+  ### 列出所有链接账户
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 按特定 container tags 列出所有链接账户
+    const connections = await client.connections.list({
+      containerTags: ['user-123']
+    });
+
+    connections.forEach(conn => {
+      console.log(`Provider: ${conn.provider}`);
+      console.log(`ID: ${conn.id}`);
+      console.log(`Email: ${conn.email}`);
+      console.log(`Created: ${conn.createdAt}`);
+      console.log(`Document limit: ${conn.documentLimit}`);
+      console.log('---');
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 按特定 container tags 列出所有链接账户
+    connections = client.connections.list(
+        container_tags=['user-123']
+    )
+
+    for conn in connections:
+        print(f'Provider: {conn.provider}')
+        print(f'ID: {conn.id}')
+        print(f'Email: {conn.email}')
+        print(f'Created: {conn.created_at}')
+        print(f'Document limit: {conn.document_limit}')
+        print('---')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 按特定 container tags 列出所有链接账户
+    curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123"]
+      }'
+
+    # 响应示例：
+    # [
+    #   {
+    #     "id": "conn_gd123",
+    #     "provider": "google-drive",
+    #     "email": "user@example.com",
+    #     "createdAt": "2024-01-15T10:30:00.000Z",
+    #     "documentLimit": 3000
+    #   }
+    # ]
+    ```
+  </Tab>
+</Tabs>
+
+<div id="delete-connection">
+  ### 删除链接账户
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 按链接账户 ID 删除
+    const result = await client.connections.deleteByID('connection_id_123');
+    console.log('已删除的链接账户：', result.id);
+
+    // 按 provider 和 container tags 删除
+    const providerResult = await client.connections.deleteByProvider('google-drive', {
+      containerTags: ['user-123']
+    });
+    console.log('已删除的 provider 链接账户：', providerResult.id);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 按链接账户 ID 删除
+    result = client.connections.delete_by_id('connection_id_123')
+    print(f'已删除的链接账户: {result.id}')
+
+    # 按 provider 和 container tags 删除
+    provider_result = client.connections.delete_by_provider(
+        'google-drive',
+        container_tags=['user-123']
+    )
+    print(f'已删除的 provider 链接账户: {provider_result.id}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 按链接账户 ID 删除
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+    # 响应：{"id": "connection_id_123", "provider": "google-drive"}
+
+    # 按 provider 和 container tags 删除
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/google-drive" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123"]
+      }'
+
+    # 响应：{"id": "conn_gd123", "provider": "google-drive"}
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+删除链接账户将：
+- 停止来自 Google Drive 的后续同步
+- 移除 OAuth（开放授权协议）授权
+- 在 Supermemory 中保留已同步的 Documents（不会被删除）
+</Note>
+
+<div id="manual-sync">
+  ### 手动同步
+</div>
+
+发起一次手动同步：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 触发所有 Google Drive 链接账户的同步
+    await client.connections.import('google-drive');
+
+    // 按指定 container tags 触发同步
+    await client.connections.import('google-drive', {
+      containerTags: ['user-123']
+    });
+
+    console.log('已发起手动同步');
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 触发所有 Google Drive 链接账户的同步
+    client.connections.import_('google-drive')
+
+    # 按指定 container tags 触发同步
+    client.connections.import_(
+        'google-drive',
+        container_tags=['user-123']
+    )
+
+    print('已发起手动同步')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 触发所有 Google Drive 链接账户的同步
+    curl -X POST "https://api.supermemory.ai/v3/connections/google-drive/import" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+    # 按指定 container tags 触发同步
+    curl -X POST "https://api.supermemory.ai/v3/connections/google-drive/import" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123"]
+      }'
+
+    # 响应: {"message": "Manual sync initiated", "provider": "google-drive"}
+    ```
+  </Tab>
+</Tabs>
+
+<div id="advanced-configuration">
+  ## 高级配置
+</div>
+
+<div id="custom-oauth-application">
+  ### 自定义 OAuth 应用
+</div>
+
+使用设置 API 配置你的 Google OAuth 应用：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 使用你的 Google OAuth 应用更新组织设置
+    await client.settings.update({
+      googleDriveCustomKeyEnabled: true,
+      googleDriveClientId: 'your-google-client-id.googleusercontent.com',
+      googleDriveClientSecret: 'your-google-client-secret'
+    });
+
+    // 获取当前设置
+    const settings = await client.settings.get();
+    console.log('已启用 Google Drive 自定义密钥：', settings.googleDriveCustomKeyEnabled);
+    console.log('Client ID 是否已配置：', !!settings.googleDriveClientId);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 使用你的 Google OAuth 应用更新组织设置
+    client.settings.update(
+        google_drive_custom_key_enabled=True,
+        google_drive_client_id='your-google-client-id.googleusercontent.com',
+        google_drive_client_secret='your-google-client-secret'
+    )
+
+    # 获取当前设置
+    settings = client.settings.get()
+    print(f'已启用 Google Drive 自定义密钥: {settings.google_drive_custom_key_enabled}')
+    print(f'Client ID 是否已配置: {bool(settings.google_drive_client_id)}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 更新组织设置
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "googleDriveCustomKeyEnabled": true,
+        "googleDriveClientId": "your-google-client-id.googleusercontent.com",
+        "googleDriveClientSecret": "your-google-client-secret"
+      }'
+
+    # 获取当前设置
+    curl -X GET "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+    ```
+  </Tab>
+</Tabs>
+
+<div id="document-filtering">
+  ### 文档筛选
+</div>
+
+使用 settings API 配置筛选：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    await client.settings.update({
+      shouldLLMFilter: true,
+      filterPrompt: "Only sync important business documents",
+      includeItems: {
+        // Your include patterns
+      },
+      excludeItems: {
+        // Your exclude patterns
+      }
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    client.settings.update(
+        should_llm_filter=True,
+        filter_prompt="Only sync important business documents",
+        include_items={
+            # Your include patterns
+        },
+        exclude_items={
+            # Your exclude patterns
+        }
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 配置文档筛选
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "filterPrompt": "Only sync important business documents",
+        "includeItems": {
+          "patterns": ["*.pdf", "*.docx"],
+          "folders": ["Important Documents", "Projects"]
+        },
+        "excludeItems": {
+          "patterns": ["*.tmp", "*.backup"],
+          "folders": ["Archive", "Trash"]
+        }
+      }'
+
+    # 响应：
+    # {
+    #   "shouldLLMFilter": true,
+    #   "filterPrompt": "Only sync important business documents",
+    #   "includeItems": {...},
+    #   "excludeItems": {...}
+    # }
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+**重要提示：**
+- OAuth tokens 可能会过期——请检查 `expiresAt` 字段
+- 文档处理为异步执行
+- 进行筛选时请一致使用容器标签
+- 监控文档 status 以排查同步失败
+</Warning>

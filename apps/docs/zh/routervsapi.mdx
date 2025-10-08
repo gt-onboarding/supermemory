@@ -1,0 +1,64 @@
+---
+title: "Memory API 与 Router —— 我该用哪一个？"
+sidebarTitle: "Memory API vs Router"
+description: "为你的 LLM 添加长期 memory 的两种方式。底层同一引擎。可选速度（Router）或可控性（Memory API），也可以两者一起用。"
+---
+
+<Tip>
+### <strong>要点速览</strong>
+- <strong>Memory API：</strong> 你自行摄取/搜索/过滤存储的记忆，并精确决定哪些内容进入 prompt。为生产应用和自定义检索提供最大控制权。<br/>
+- <strong>Memory Router：</strong> 保持你现有的 LLM 客户端，只需将其指向 Supermemory。我们会自动获取相关的存储的记忆并附加到你的 prompt。<br />
+
+两者都使用相同的 memory 引擎，并共享一个公共键（`user_id`）。因此，只要 `user_id` 匹配，你通过 API 存储的任何内容对 Router 可用，反之亦然。
+</Tip>
+
+我们先解释 Router 的工作方式，因为 API 本身相对直观。
+
+![](./images/infinite-context.png)
+
+你向 LLM 发送请求，Supermemory 充当代理。Router 会自动从消息中移除不必要的上下文，搜索用户的存储的记忆以获取额外的相关上下文，将其附加到 prompt，然后发送给 LLM。 
+
+它还会异步写入新的 memory，因此你的上下文会持续扩展且不会阻塞。Router 专为聊天应用中的会话 memory 构建，当会话变得很长时，它的作用尤为明显。
+
+对你而言，这将带来：
+
+- 无需重构代码——只需将基础 URL 替换为 Supermemory 提供的地址。阅读快速上手了解更多。
+- 当对话超出模型上下文窗口时，通过长线程检索获得更好的聊天机器人性能。
+- 借助我们的自动内容分块与上下文管理降低成本。
+
+另一方面，API 是一个功能完整的 API，你可以在应用中调用以摄取 documents、创建 memory、搜索、重排等，并获得非常细粒度的控制。Router 构建于我们的 API 之上。
+
+从技术上讲，你也可以基于我们的 API 自行构建 Memory Router，但它不具备相同的一行集成、易用性、极低的延迟（latency）以及智能的 token 预算。
+
+同样，两者都使用相同的 memory 引擎，因此你的存储的记忆可在两种产品之间共享。
+
+下面是一个 30 秒的快速决策流程，帮助你根据具体用例选择：
+
+- <strong> 已经有可用的 LLM 聊天，只想让它会“记忆”？ </strong> 从 Router 开始。
+
+
+- <strong> 正在构建新应用，或需要严格租户隔离、filters、排序或自定义 prompts？ </strong> 选择 Memory API。
+
+
+- <strong> 两者都需要？ </strong> 通过 API 摄取，使用 Router 聊天；保持 user_id 一致。
+
+
+- <strong> 仍不确定？ </strong> 先用 Router 试点，随后在需要更多控制时将部分流程迁移到 API。
+
+现在，前往快速上手，在 5 分钟内将 API/Router 集成到你的应用中。
+
+<div id="faqs">
+  ## 常见问题
+</div>
+
+<AccordionGroup>
+  <Accordion title="Router 只是幕后调用 Memory API 吗？">
+    从概念上讲，是的。Router 会编排相同的 Supermemory 引擎操作（retrieve、re-rank、budget、cite），并把它们封装到你的模型调用中。
+  </Accordion>
+  <Accordion title="Router 会自动存储新的 memory 吗？">
+    可以。create-memory 步骤是异步的，因此不会阻塞用户的响应。
+  </Accordion>
+  <Accordion title="在 Router 和 API 之间，是什么标识用户的 memory？">
+    <code>user_id</code>。在 Router 和 API 调用中保持一致，以共享同一个 memory 池。
+  </Accordion>
+</AccordionGroup>

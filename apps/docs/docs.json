@@ -1,264 +1,1817 @@
 {
-	"$schema": "https://mintlify.com/docs.json",
-	"api": {
-		"examples": {
-			"defaults": "required",
-			"languages": ["javascript", "python", "curl"]
-		},
-		"openapi": "https://api.supermemory.ai/v3/openapi"
-	},
-	"colors": {
-		"dark": "#1E3A8A",
-		"light": "#3B82F6",
-		"primary": "#1E3A8A"
-	},
-	"contextual": {
-		"options": ["copy", "view", "chatgpt", "claude"]
-	},
-	"favicon": "/favicon.png",
-	"fonts": {
-		"body": {
-			"family": "Space Grotesk",
-			"format": "woff2"
-		},
-		"heading": {
-			"family": "Space Grotesk",
-			"format": "woff2"
-		}
-	},
-	"footer": {
-		"socials": {
-			"github": "https://github.com/supermemoryai",
-			"linkedin": "https://linkedin.com/company/supermemoryai",
-			"x": "https://x.com/supermemoryai"
-		}
-	},
-	"icons": { "library": "lucide" },
-	"logo": {
-		"dark": "/logo/dark.svg",
-		"light": "/logo/light.svg"
-	},
-	"name": "supermemory | Memory API for the AI era",
-	"navbar": {
-		"links": [
-			{
-				"href": "mailto:dhravya@supermemory.com",
-				"label": "Support"
-			}
-		],
-		"primary": {
-			"href": "https://console.supermemory.ai",
-			"label": "Dashboard",
-			"type": "button"
-		}
-	},
-	"navigation": {
-		"tabs": [
-			{
-				"pages": ["introduction"],
-				"tab": "Welcome"
-			},
-			{
-				"icon": "code",
-				"anchors": [
-					{
-						"anchor": "Your Dashboard",
-						"href": "https://console.supermemory.ai",
-						"icon": "play"
-					},
-					{
-						"anchor": "Developer Platform",
-						"pages": [
-							{
-								"group": "Getting Started",
-								"pages": ["intro", "routervsapi", "quickstart", "memory-vs-rag"]
-							},
-							{
-								"group": "Memory API",
-								"pages": [
-									"how-it-works",
-									{
-										"group": "Add Memories",
-										"icon": "plus",
-										"pages": [
-											"add-memories/overview",
-											"add-memories/parameters",
-											"memory-api/ingesting",
-											{
-												"group": "Examples",
-												"pages": [
-													"add-memories/examples/basic",
-													"add-memories/examples/file-upload"
-												]
-											}
-										]
-									},
-									{
-										"group": "Search Memories",
-										"icon": "search",
-										"pages": [
-											"search/overview",
-											"search/parameters",
-											"search/response-schema",
-											"search/query-rewriting",
-											"search/reranking",
-											{
-												"group": "Examples",
-												"pages": [
-													"search/examples/document-search",
-													"search/examples/memory-search"
-												]
-											}
-										]
-									},
-									"search/filtering",
-									"memory-api/track-progress",
-									{
-										"group": "List Memories",
-										"icon": "list",
-										"pages": [
-											"list-memories/overview",
-											{
-												"group": "Examples",
-												"pages": [
-													"list-memories/examples/basic",
-													"list-memories/examples/filtering",
-													"list-memories/examples/pagination",
-													"list-memories/examples/monitoring"
-												]
-											}
-										]
-									},
-									"update-delete-memories/overview",
-									{
-										"group": "Connectors",
-										"icon": "link",
-										"pages": [
-											"connectors/overview",
-											"connectors/notion",
-											"connectors/google-drive",
-											"connectors/onedrive",
-											"connectors/troubleshooting"
-										]
-									},
-									"/org-settings",
-									"/analytics",
-									"overview/use-cases"
-								]
-							},
-							{
-								"group": "Memory Router",
-								"icon": "route",
-								"pages": [
-									"memory-router/overview",
-									"memory-router/usage",
-									"memory-router/with-memory-api"
-								]
-							},
-							{
-								"group": "Migration Guides",
-								"pages": ["migration/from-mem0"]
-							},
-							{
-								"group": "Deployment",
-								"pages": ["deployment/self-hosting"]
-							}
-						]
-					}
-				],
-				"tab": "Developer Platform"
-			},
-			{
-				"icon": "plug",
-				"anchors": [
-					{
-						"anchor": "SDKs",
-						"pages": [
-							"memory-api/sdks/overview",
-							{
-								"group": "Supermemory SDKs",
-								"pages": [
-									"memory-api/sdks/native",
-									"memory-api/sdks/supermemory-npm",
-									"memory-api/sdks/supermemory-pypi"
-								]
-							},
-							{
-								"group": "OpenAI SDK",
-								"icon": "sparkles",
-								"pages": ["memory-api/sdks/openai-plugins", "ai-sdk/npm"]
-							},
-							{
-								"group": "AI SDK",
-								"icon": "triangle",
-								"pages": [
-									"ai-sdk/overview",
-									"ai-sdk/memory-tools",
-									"ai-sdk/infinite-chat",
-									"ai-sdk/npm"
-								]
-							}
-						]
-					}
-				],
-				"tab": "SDKs"
-			},
-			{
-				"icon": "book-open",
-				"anchors": [
-					{
-						"anchor": "API Reference",
-						"icon": "unplug",
-						"openapi": "https://api.supermemory.ai/v3/openapi"
-					}
-				],
-				"tab": "API Reference"
-			},
-			{
-				"icon": "chef-hat",
-				"anchors": [
-					{
-						"anchor": "Cookbook",
-						"icon": "chef-hat",
-						"pages": [
-							"cookbook/overview",
-							{
-								"group": "Quick Start Recipes",
-								"pages": [
-									"cookbook/personal-assistant",
-									"cookbook/document-qa",
-									"cookbook/customer-support",
-									"cookbook/ai-sdk-integration",
-									"cookbook/perplexity-supermemory",
-									"cookbook/chat-with-gdrive",
-									"cookbook/inf-chat-blog"
-								]
-							}
-						]
-					}
-				],
-				"tab": "Cookbook"
-			},
-
-			{
-				"icon": "list-ordered",
-				"anchors": [
-					{
-						"anchor": "Changelog",
-						"pages": ["changelog/overview", "changelog/developer-platform"]
-					}
-				],
-				"tab": "Changelog"
-			}
-		]
-	},
-	"redirects": [
-		{
-			"destination": "/introduction",
-			"permanent": false,
-			"source": "/"
-		}
-	],
-	"styling": { "eyebrows": "breadcrumbs" },
-	"theme": "mint"
+  "$schema": "https://mintlify.com/docs.json",
+  "api": {
+    "examples": {
+      "defaults": "required",
+      "languages": [
+        "javascript",
+        "python",
+        "curl"
+      ]
+    },
+    "openapi": "https://api.supermemory.ai/v3/openapi"
+  },
+  "colors": {
+    "dark": "#1E3A8A",
+    "light": "#3B82F6",
+    "primary": "#1E3A8A"
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
+  },
+  "favicon": "/favicon.png",
+  "fonts": {
+    "body": {
+      "family": "Space Grotesk",
+      "format": "woff2"
+    },
+    "heading": {
+      "family": "Space Grotesk",
+      "format": "woff2"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/supermemoryai",
+      "linkedin": "https://linkedin.com/company/supermemoryai",
+      "x": "https://x.com/supermemoryai"
+    }
+  },
+  "icons": {
+    "library": "lucide"
+  },
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "name": "supermemory | Memory API for the AI era",
+  "navbar": {
+    "links": [
+      {
+        "href": "mailto:dhravya@supermemory.com",
+        "label": "Support"
+      }
+    ],
+    "primary": {
+      "href": "https://console.supermemory.ai",
+      "label": "Dashboard",
+      "type": "button"
+    }
+  },
+  "navigation": {
+    "languages": [
+      {
+        "tabs": [
+          {
+            "pages": [
+              "introduction"
+            ],
+            "tab": "Welcome"
+          },
+          {
+            "icon": "code",
+            "anchors": [
+              {
+                "anchor": "Your Dashboard",
+                "href": "https://console.supermemory.ai",
+                "icon": "play"
+              },
+              {
+                "anchor": "Developer Platform",
+                "pages": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "intro",
+                      "routervsapi",
+                      "quickstart",
+                      "memory-vs-rag"
+                    ]
+                  },
+                  {
+                    "group": "Memory API",
+                    "pages": [
+                      "how-it-works",
+                      {
+                        "group": "Add Memories",
+                        "icon": "plus",
+                        "pages": [
+                          "add-memories/overview",
+                          "add-memories/parameters",
+                          "memory-api/ingesting",
+                          {
+                            "group": "Examples",
+                            "pages": [
+                              "add-memories/examples/basic",
+                              "add-memories/examples/file-upload"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Search Memories",
+                        "icon": "search",
+                        "pages": [
+                          "search/overview",
+                          "search/parameters",
+                          "search/response-schema",
+                          "search/query-rewriting",
+                          "search/reranking",
+                          {
+                            "group": "Examples",
+                            "pages": [
+                              "search/examples/document-search",
+                              "search/examples/memory-search"
+                            ]
+                          }
+                        ]
+                      },
+                      "search/filtering",
+                      "memory-api/track-progress",
+                      {
+                        "group": "List Memories",
+                        "icon": "list",
+                        "pages": [
+                          "list-memories/overview",
+                          {
+                            "group": "Examples",
+                            "pages": [
+                              "list-memories/examples/basic",
+                              "list-memories/examples/filtering",
+                              "list-memories/examples/pagination",
+                              "list-memories/examples/monitoring"
+                            ]
+                          }
+                        ]
+                      },
+                      "update-delete-memories/overview",
+                      {
+                        "group": "Connectors",
+                        "icon": "link",
+                        "pages": [
+                          "connectors/overview",
+                          "connectors/notion",
+                          "connectors/google-drive",
+                          "connectors/onedrive",
+                          "connectors/troubleshooting"
+                        ]
+                      },
+                      "/org-settings",
+                      "/analytics",
+                      "overview/use-cases"
+                    ]
+                  },
+                  {
+                    "group": "Memory Router",
+                    "icon": "route",
+                    "pages": [
+                      "memory-router/overview",
+                      "memory-router/usage",
+                      "memory-router/with-memory-api"
+                    ]
+                  },
+                  {
+                    "group": "Migration Guides",
+                    "pages": [
+                      "migration/from-mem0"
+                    ]
+                  },
+                  {
+                    "group": "Deployment",
+                    "pages": [
+                      "deployment/self-hosting"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Developer Platform"
+          },
+          {
+            "icon": "plug",
+            "anchors": [
+              {
+                "anchor": "SDKs",
+                "pages": [
+                  "memory-api/sdks/overview",
+                  {
+                    "group": "Supermemory SDKs",
+                    "pages": [
+                      "memory-api/sdks/native",
+                      "memory-api/sdks/supermemory-npm",
+                      "memory-api/sdks/supermemory-pypi"
+                    ]
+                  },
+                  {
+                    "group": "OpenAI SDK",
+                    "icon": "sparkles",
+                    "pages": [
+                      "memory-api/sdks/openai-plugins",
+                      "ai-sdk/npm"
+                    ]
+                  },
+                  {
+                    "group": "AI SDK",
+                    "icon": "triangle",
+                    "pages": [
+                      "ai-sdk/overview",
+                      "ai-sdk/memory-tools",
+                      "ai-sdk/infinite-chat",
+                      "ai-sdk/npm"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "SDKs"
+          },
+          {
+            "icon": "book-open",
+            "anchors": [
+              {
+                "anchor": "API Reference",
+                "icon": "unplug",
+                "openapi": "https://api.supermemory.ai/v3/openapi"
+              }
+            ],
+            "tab": "API Reference"
+          },
+          {
+            "icon": "chef-hat",
+            "anchors": [
+              {
+                "anchor": "Cookbook",
+                "icon": "chef-hat",
+                "pages": [
+                  "cookbook/overview",
+                  {
+                    "group": "Quick Start Recipes",
+                    "pages": [
+                      "cookbook/personal-assistant",
+                      "cookbook/document-qa",
+                      "cookbook/customer-support",
+                      "cookbook/ai-sdk-integration",
+                      "cookbook/perplexity-supermemory",
+                      "cookbook/chat-with-gdrive",
+                      "cookbook/inf-chat-blog"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Cookbook"
+          },
+          {
+            "icon": "list-ordered",
+            "anchors": [
+              {
+                "anchor": "Changelog",
+                "pages": [
+                  "changelog/overview",
+                  "changelog/developer-platform"
+                ]
+              }
+            ],
+            "tab": "Changelog"
+          }
+        ],
+        "language": "en"
+      },
+      {
+        "tabs": [
+          {
+            "pages": [
+              "it/introduction"
+            ],
+            "tab": "Benvenuto"
+          },
+          {
+            "icon": "code",
+            "anchors": [
+              {
+                "anchor": "La tua dashboard",
+                "href": "https://console.supermemory.ai",
+                "icon": "play"
+              },
+              {
+                "anchor": "Developer Platform",
+                "pages": [
+                  {
+                    "group": "Guida introduttiva",
+                    "pages": [
+                      "it/intro",
+                      "it/routervsapi",
+                      "it/quickstart",
+                      "it/memory-vs-rag"
+                    ]
+                  },
+                  {
+                    "group": "Memory API",
+                    "pages": [
+                      "it/how-it-works",
+                      {
+                        "group": "Aggiungi memorie",
+                        "icon": "plus",
+                        "pages": [
+                          "it/add-memories/overview",
+                          "it/add-memories/parameters",
+                          "it/memory-api/ingesting",
+                          {
+                            "group": "Esempi",
+                            "pages": [
+                              "it/add-memories/examples/basic",
+                              "it/add-memories/examples/file-upload"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Cerca memorie",
+                        "icon": "search",
+                        "pages": [
+                          "it/search/overview",
+                          "it/search/parameters",
+                          "it/search/response-schema",
+                          "it/search/query-rewriting",
+                          "it/search/reranking",
+                          {
+                            "group": "Esempi",
+                            "pages": [
+                              "it/search/examples/document-search",
+                              "it/search/examples/memory-search"
+                            ]
+                          }
+                        ]
+                      },
+                      "it/search/filtering",
+                      "it/memory-api/track-progress",
+                      {
+                        "group": "Elenca memorie",
+                        "icon": "list",
+                        "pages": [
+                          "it/list-memories/overview",
+                          {
+                            "group": "Esempi",
+                            "pages": [
+                              "it/list-memories/examples/basic",
+                              "it/list-memories/examples/filtering",
+                              "it/list-memories/examples/pagination",
+                              "it/list-memories/examples/monitoring"
+                            ]
+                          }
+                        ]
+                      },
+                      "it/update-delete-memories/overview",
+                      {
+                        "group": "Connettori",
+                        "icon": "link",
+                        "pages": [
+                          "it/connectors/overview",
+                          "it/connectors/notion",
+                          "it/connectors/google-drive",
+                          "it/connectors/onedrive",
+                          "it/connectors/troubleshooting"
+                        ]
+                      },
+                      "it//org-settings",
+                      "it//analytics",
+                      "it/overview/use-cases"
+                    ]
+                  },
+                  {
+                    "group": "Memory Router",
+                    "icon": "route",
+                    "pages": [
+                      "it/memory-router/overview",
+                      "it/memory-router/usage",
+                      "it/memory-router/with-memory-api"
+                    ]
+                  },
+                  {
+                    "group": "Guide di migrazione",
+                    "pages": [
+                      "it/migration/from-mem0"
+                    ]
+                  },
+                  {
+                    "group": "Distribuzione",
+                    "pages": [
+                      "it/deployment/self-hosting"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Developer Platform"
+          },
+          {
+            "icon": "plug",
+            "anchors": [
+              {
+                "anchor": "SDK",
+                "pages": [
+                  "it/memory-api/sdks/overview",
+                  {
+                    "group": "SDK di Supermemory",
+                    "pages": [
+                      "it/memory-api/sdks/native",
+                      "it/memory-api/sdks/supermemory-npm",
+                      "it/memory-api/sdks/supermemory-pypi"
+                    ]
+                  },
+                  {
+                    "group": "OpenAI SDK",
+                    "icon": "sparkles",
+                    "pages": [
+                      "it/memory-api/sdks/openai-plugins",
+                      "it/ai-sdk/npm"
+                    ]
+                  },
+                  {
+                    "group": "AI SDK",
+                    "icon": "triangle",
+                    "pages": [
+                      "it/ai-sdk/overview",
+                      "it/ai-sdk/memory-tools",
+                      "it/ai-sdk/infinite-chat",
+                      "it/ai-sdk/npm"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "SDK"
+          },
+          {
+            "icon": "book-open",
+            "anchors": [
+              {
+                "anchor": "Riferimento API",
+                "icon": "unplug",
+                "openapi": "https://api.supermemory.ai/v3/openapi"
+              }
+            ],
+            "tab": "Riferimento API"
+          },
+          {
+            "icon": "chef-hat",
+            "anchors": [
+              {
+                "anchor": "Ricettario",
+                "icon": "chef-hat",
+                "pages": [
+                  "it/cookbook/overview",
+                  {
+                    "group": "Ricette per un avvio rapido",
+                    "pages": [
+                      "it/cookbook/personal-assistant",
+                      "it/cookbook/document-qa",
+                      "it/cookbook/customer-support",
+                      "it/cookbook/ai-sdk-integration",
+                      "it/cookbook/perplexity-supermemory",
+                      "it/cookbook/chat-with-gdrive",
+                      "it/cookbook/inf-chat-blog"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Ricettario"
+          },
+          {
+            "icon": "list-ordered",
+            "anchors": [
+              {
+                "anchor": "Registro delle modifiche",
+                "pages": [
+                  "it/changelog/overview",
+                  "it/changelog/developer-platform"
+                ]
+              }
+            ],
+            "tab": "Registro delle modifiche"
+          }
+        ],
+        "language": "it"
+      },
+      {
+        "tabs": [
+          {
+            "pages": [
+              "ja/introduction"
+            ],
+            "tab": "ようこそ"
+          },
+          {
+            "icon": "code",
+            "anchors": [
+              {
+                "anchor": "ダッシュボード",
+                "href": "https://console.supermemory.ai",
+                "icon": "play"
+              },
+              {
+                "anchor": "Developer Platform",
+                "pages": [
+                  {
+                    "group": "はじめに",
+                    "pages": [
+                      "ja/intro",
+                      "ja/routervsapi",
+                      "ja/quickstart",
+                      "ja/memory-vs-rag"
+                    ]
+                  },
+                  {
+                    "group": "Memory API",
+                    "pages": [
+                      "ja/how-it-works",
+                      {
+                        "group": "保存済みメモリを追加",
+                        "icon": "plus",
+                        "pages": [
+                          "ja/add-memories/overview",
+                          "ja/add-memories/parameters",
+                          "ja/memory-api/ingesting",
+                          {
+                            "group": "例",
+                            "pages": [
+                              "ja/add-memories/examples/basic",
+                              "ja/add-memories/examples/file-upload"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "保存済みメモリを検索",
+                        "icon": "search",
+                        "pages": [
+                          "ja/search/overview",
+                          "ja/search/parameters",
+                          "ja/search/response-schema",
+                          "ja/search/query-rewriting",
+                          "ja/search/reranking",
+                          {
+                            "group": "例",
+                            "pages": [
+                              "ja/search/examples/document-search",
+                              "ja/search/examples/memory-search"
+                            ]
+                          }
+                        ]
+                      },
+                      "ja/search/filtering",
+                      "ja/memory-api/track-progress",
+                      {
+                        "group": "保存済みメモリを一覧表示",
+                        "icon": "list",
+                        "pages": [
+                          "ja/list-memories/overview",
+                          {
+                            "group": "例",
+                            "pages": [
+                              "ja/list-memories/examples/basic",
+                              "ja/list-memories/examples/filtering",
+                              "ja/list-memories/examples/pagination",
+                              "ja/list-memories/examples/monitoring"
+                            ]
+                          }
+                        ]
+                      },
+                      "ja/update-delete-memories/overview",
+                      {
+                        "group": "コネクタ",
+                        "icon": "link",
+                        "pages": [
+                          "ja/connectors/overview",
+                          "ja/connectors/notion",
+                          "ja/connectors/google-drive",
+                          "ja/connectors/onedrive",
+                          "ja/connectors/troubleshooting"
+                        ]
+                      },
+                      "ja//org-settings",
+                      "ja//analytics",
+                      "ja/overview/use-cases"
+                    ]
+                  },
+                  {
+                    "group": "Memory Router",
+                    "icon": "route",
+                    "pages": [
+                      "ja/memory-router/overview",
+                      "ja/memory-router/usage",
+                      "ja/memory-router/with-memory-api"
+                    ]
+                  },
+                  {
+                    "group": "移行ガイド",
+                    "pages": [
+                      "ja/migration/from-mem0"
+                    ]
+                  },
+                  {
+                    "group": "デプロイ",
+                    "pages": [
+                      "ja/deployment/self-hosting"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Developer Platform"
+          },
+          {
+            "icon": "plug",
+            "anchors": [
+              {
+                "anchor": "SDK",
+                "pages": [
+                  "ja/memory-api/sdks/overview",
+                  {
+                    "group": "Supermemory SDK",
+                    "pages": [
+                      "ja/memory-api/sdks/native",
+                      "ja/memory-api/sdks/supermemory-npm",
+                      "ja/memory-api/sdks/supermemory-pypi"
+                    ]
+                  },
+                  {
+                    "group": "OpenAI SDK",
+                    "icon": "sparkles",
+                    "pages": [
+                      "ja/memory-api/sdks/openai-plugins",
+                      "ja/ai-sdk/npm"
+                    ]
+                  },
+                  {
+                    "group": "AI SDK",
+                    "icon": "triangle",
+                    "pages": [
+                      "ja/ai-sdk/overview",
+                      "ja/ai-sdk/memory-tools",
+                      "ja/ai-sdk/infinite-chat",
+                      "ja/ai-sdk/npm"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "SDK"
+          },
+          {
+            "icon": "book-open",
+            "anchors": [
+              {
+                "anchor": "APIリファレンス",
+                "icon": "unplug",
+                "openapi": "https://api.supermemory.ai/v3/openapi"
+              }
+            ],
+            "tab": "APIリファレンス"
+          },
+          {
+            "icon": "chef-hat",
+            "anchors": [
+              {
+                "anchor": "クックブック",
+                "icon": "chef-hat",
+                "pages": [
+                  "ja/cookbook/overview",
+                  {
+                    "group": "クイックスタートレシピ",
+                    "pages": [
+                      "ja/cookbook/personal-assistant",
+                      "ja/cookbook/document-qa",
+                      "ja/cookbook/customer-support",
+                      "ja/cookbook/ai-sdk-integration",
+                      "ja/cookbook/perplexity-supermemory",
+                      "ja/cookbook/chat-with-gdrive",
+                      "ja/cookbook/inf-chat-blog"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "クックブック"
+          },
+          {
+            "icon": "list-ordered",
+            "anchors": [
+              {
+                "anchor": "変更履歴",
+                "pages": [
+                  "ja/changelog/overview",
+                  "ja/changelog/developer-platform"
+                ]
+              }
+            ],
+            "tab": "変更履歴"
+          }
+        ],
+        "language": "ja"
+      },
+      {
+        "tabs": [
+          {
+            "pages": [
+              "fr/introduction"
+            ],
+            "tab": "Bienvenue"
+          },
+          {
+            "icon": "code",
+            "anchors": [
+              {
+                "anchor": "Votre tableau de bord",
+                "href": "https://console.supermemory.ai",
+                "icon": "play"
+              },
+              {
+                "anchor": "Plateforme développeur",
+                "pages": [
+                  {
+                    "group": "Prise en main",
+                    "pages": [
+                      "fr/intro",
+                      "fr/routervsapi",
+                      "fr/quickstart",
+                      "fr/memory-vs-rag"
+                    ]
+                  },
+                  {
+                    "group": "Memory API",
+                    "pages": [
+                      "fr/how-it-works",
+                      {
+                        "group": "Ajouter des memories",
+                        "icon": "plus",
+                        "pages": [
+                          "fr/add-memories/overview",
+                          "fr/add-memories/parameters",
+                          "fr/memory-api/ingesting",
+                          {
+                            "group": "Exemples",
+                            "pages": [
+                              "fr/add-memories/examples/basic",
+                              "fr/add-memories/examples/file-upload"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Rechercher des memories",
+                        "icon": "search",
+                        "pages": [
+                          "fr/search/overview",
+                          "fr/search/parameters",
+                          "fr/search/response-schema",
+                          "fr/search/query-rewriting",
+                          "fr/search/reranking",
+                          {
+                            "group": "Exemples",
+                            "pages": [
+                              "fr/search/examples/document-search",
+                              "fr/search/examples/memory-search"
+                            ]
+                          }
+                        ]
+                      },
+                      "fr/search/filtering",
+                      "fr/memory-api/track-progress",
+                      {
+                        "group": "Lister les memories",
+                        "icon": "list",
+                        "pages": [
+                          "fr/list-memories/overview",
+                          {
+                            "group": "Exemples",
+                            "pages": [
+                              "fr/list-memories/examples/basic",
+                              "fr/list-memories/examples/filtering",
+                              "fr/list-memories/examples/pagination",
+                              "fr/list-memories/examples/monitoring"
+                            ]
+                          }
+                        ]
+                      },
+                      "fr/update-delete-memories/overview",
+                      {
+                        "group": "Connecteurs",
+                        "icon": "link",
+                        "pages": [
+                          "fr/connectors/overview",
+                          "fr/connectors/notion",
+                          "fr/connectors/google-drive",
+                          "fr/connectors/onedrive",
+                          "fr/connectors/troubleshooting"
+                        ]
+                      },
+                      "fr//org-settings",
+                      "fr//analytics",
+                      "fr/overview/use-cases"
+                    ]
+                  },
+                  {
+                    "group": "Memory Router",
+                    "icon": "route",
+                    "pages": [
+                      "fr/memory-router/overview",
+                      "fr/memory-router/usage",
+                      "fr/memory-router/with-memory-api"
+                    ]
+                  },
+                  {
+                    "group": "Guides de migration",
+                    "pages": [
+                      "fr/migration/from-mem0"
+                    ]
+                  },
+                  {
+                    "group": "Déploiement",
+                    "pages": [
+                      "fr/deployment/self-hosting"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Plateforme développeur"
+          },
+          {
+            "icon": "plug",
+            "anchors": [
+              {
+                "anchor": "SDKs",
+                "pages": [
+                  "fr/memory-api/sdks/overview",
+                  {
+                    "group": "SDKs Supermemory",
+                    "pages": [
+                      "fr/memory-api/sdks/native",
+                      "fr/memory-api/sdks/supermemory-npm",
+                      "fr/memory-api/sdks/supermemory-pypi"
+                    ]
+                  },
+                  {
+                    "group": "SDK OpenAI",
+                    "icon": "sparkles",
+                    "pages": [
+                      "fr/memory-api/sdks/openai-plugins",
+                      "fr/ai-sdk/npm"
+                    ]
+                  },
+                  {
+                    "group": "SDK d’IA",
+                    "icon": "triangle",
+                    "pages": [
+                      "fr/ai-sdk/overview",
+                      "fr/ai-sdk/memory-tools",
+                      "fr/ai-sdk/infinite-chat",
+                      "fr/ai-sdk/npm"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "SDKs"
+          },
+          {
+            "icon": "book-open",
+            "anchors": [
+              {
+                "anchor": "Référence de l’API",
+                "icon": "unplug",
+                "openapi": "https://api.supermemory.ai/v3/openapi"
+              }
+            ],
+            "tab": "Référence de l’API"
+          },
+          {
+            "icon": "chef-hat",
+            "anchors": [
+              {
+                "anchor": "Livre de recettes",
+                "icon": "chef-hat",
+                "pages": [
+                  "fr/cookbook/overview",
+                  {
+                    "group": "Recettes de démarrage rapide",
+                    "pages": [
+                      "fr/cookbook/personal-assistant",
+                      "fr/cookbook/document-qa",
+                      "fr/cookbook/customer-support",
+                      "fr/cookbook/ai-sdk-integration",
+                      "fr/cookbook/perplexity-supermemory",
+                      "fr/cookbook/chat-with-gdrive",
+                      "fr/cookbook/inf-chat-blog"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Recettes pratiques"
+          },
+          {
+            "icon": "list-ordered",
+            "anchors": [
+              {
+                "anchor": "Journal des modifications",
+                "pages": [
+                  "fr/changelog/overview",
+                  "fr/changelog/developer-platform"
+                ]
+              }
+            ],
+            "tab": "Journal des modifications"
+          }
+        ],
+        "language": "fr"
+      },
+      {
+        "tabs": [
+          {
+            "pages": [
+              "de/introduction"
+            ],
+            "tab": "Willkommen"
+          },
+          {
+            "icon": "code",
+            "anchors": [
+              {
+                "anchor": "Dein Dashboard",
+                "href": "https://console.supermemory.ai",
+                "icon": "play"
+              },
+              {
+                "anchor": "Developer Platform",
+                "pages": [
+                  {
+                    "group": "Erste Schritte",
+                    "pages": [
+                      "de/intro",
+                      "de/routervsapi",
+                      "de/quickstart",
+                      "de/memory-vs-rag"
+                    ]
+                  },
+                  {
+                    "group": "Memory API",
+                    "pages": [
+                      "de/how-it-works",
+                      {
+                        "group": "Memories hinzufügen",
+                        "icon": "plus",
+                        "pages": [
+                          "de/add-memories/overview",
+                          "de/add-memories/parameters",
+                          "de/memory-api/ingesting",
+                          {
+                            "group": "Beispiele",
+                            "pages": [
+                              "de/add-memories/examples/basic",
+                              "de/add-memories/examples/file-upload"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Memories durchsuchen",
+                        "icon": "search",
+                        "pages": [
+                          "de/search/overview",
+                          "de/search/parameters",
+                          "de/search/response-schema",
+                          "de/search/query-rewriting",
+                          "de/search/reranking",
+                          {
+                            "group": "Beispiele",
+                            "pages": [
+                              "de/search/examples/document-search",
+                              "de/search/examples/memory-search"
+                            ]
+                          }
+                        ]
+                      },
+                      "de/search/filtering",
+                      "de/memory-api/track-progress",
+                      {
+                        "group": "Memories auflisten",
+                        "icon": "list",
+                        "pages": [
+                          "de/list-memories/overview",
+                          {
+                            "group": "Beispiele",
+                            "pages": [
+                              "de/list-memories/examples/basic",
+                              "de/list-memories/examples/filtering",
+                              "de/list-memories/examples/pagination",
+                              "de/list-memories/examples/monitoring"
+                            ]
+                          }
+                        ]
+                      },
+                      "de/update-delete-memories/overview",
+                      {
+                        "group": "Connectoren",
+                        "icon": "link",
+                        "pages": [
+                          "de/connectors/overview",
+                          "de/connectors/notion",
+                          "de/connectors/google-drive",
+                          "de/connectors/onedrive",
+                          "de/connectors/troubleshooting"
+                        ]
+                      },
+                      "de//org-settings",
+                      "de//analytics",
+                      "de/overview/use-cases"
+                    ]
+                  },
+                  {
+                    "group": "Memory Router",
+                    "icon": "route",
+                    "pages": [
+                      "de/memory-router/overview",
+                      "de/memory-router/usage",
+                      "de/memory-router/with-memory-api"
+                    ]
+                  },
+                  {
+                    "group": "Migrationsleitfäden",
+                    "pages": [
+                      "de/migration/from-mem0"
+                    ]
+                  },
+                  {
+                    "group": "Bereitstellung",
+                    "pages": [
+                      "de/deployment/self-hosting"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Developer Platform"
+          },
+          {
+            "icon": "plug",
+            "anchors": [
+              {
+                "anchor": "SDKs",
+                "pages": [
+                  "de/memory-api/sdks/overview",
+                  {
+                    "group": "Supermemory SDKs",
+                    "pages": [
+                      "de/memory-api/sdks/native",
+                      "de/memory-api/sdks/supermemory-npm",
+                      "de/memory-api/sdks/supermemory-pypi"
+                    ]
+                  },
+                  {
+                    "group": "OpenAI SDK",
+                    "icon": "sparkles",
+                    "pages": [
+                      "de/memory-api/sdks/openai-plugins",
+                      "de/ai-sdk/npm"
+                    ]
+                  },
+                  {
+                    "group": "AI SDK",
+                    "icon": "triangle",
+                    "pages": [
+                      "de/ai-sdk/overview",
+                      "de/ai-sdk/memory-tools",
+                      "de/ai-sdk/infinite-chat",
+                      "de/ai-sdk/npm"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "SDKs"
+          },
+          {
+            "icon": "book-open",
+            "anchors": [
+              {
+                "anchor": "API-Referenz",
+                "icon": "unplug",
+                "openapi": "https://api.supermemory.ai/v3/openapi"
+              }
+            ],
+            "tab": "API-Referenz"
+          },
+          {
+            "icon": "chef-hat",
+            "anchors": [
+              {
+                "anchor": "Kochbuch",
+                "icon": "chef-hat",
+                "pages": [
+                  "de/cookbook/overview",
+                  {
+                    "group": "Schnellstart-Rezepte",
+                    "pages": [
+                      "de/cookbook/personal-assistant",
+                      "de/cookbook/document-qa",
+                      "de/cookbook/customer-support",
+                      "de/cookbook/ai-sdk-integration",
+                      "de/cookbook/perplexity-supermemory",
+                      "de/cookbook/chat-with-gdrive",
+                      "de/cookbook/inf-chat-blog"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Kochbuch"
+          },
+          {
+            "icon": "list-ordered",
+            "anchors": [
+              {
+                "anchor": "Änderungsprotokoll",
+                "pages": [
+                  "de/changelog/overview",
+                  "de/changelog/developer-platform"
+                ]
+              }
+            ],
+            "tab": "Änderungsprotokoll"
+          }
+        ],
+        "language": "de"
+      },
+      {
+        "tabs": [
+          {
+            "pages": [
+              "pt-BR/introduction"
+            ],
+            "tab": "Bem-vindo"
+          },
+          {
+            "icon": "code",
+            "anchors": [
+              {
+                "anchor": "Seu painel",
+                "href": "https://console.supermemory.ai",
+                "icon": "play"
+              },
+              {
+                "anchor": "Plataforma do Desenvolvedor",
+                "pages": [
+                  {
+                    "group": "Primeiros passos",
+                    "pages": [
+                      "pt-BR/intro",
+                      "pt-BR/routervsapi",
+                      "pt-BR/quickstart",
+                      "pt-BR/memory-vs-rag"
+                    ]
+                  },
+                  {
+                    "group": "Memory API",
+                    "pages": [
+                      "pt-BR/how-it-works",
+                      {
+                        "group": "Adicionar Memories",
+                        "icon": "plus",
+                        "pages": [
+                          "pt-BR/add-memories/overview",
+                          "pt-BR/add-memories/parameters",
+                          "pt-BR/memory-api/ingesting",
+                          {
+                            "group": "Exemplos",
+                            "pages": [
+                              "pt-BR/add-memories/examples/basic",
+                              "pt-BR/add-memories/examples/file-upload"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Buscar Memories",
+                        "icon": "search",
+                        "pages": [
+                          "pt-BR/search/overview",
+                          "pt-BR/search/parameters",
+                          "pt-BR/search/response-schema",
+                          "pt-BR/search/query-rewriting",
+                          "pt-BR/search/reranking",
+                          {
+                            "group": "Exemplos",
+                            "pages": [
+                              "pt-BR/search/examples/document-search",
+                              "pt-BR/search/examples/memory-search"
+                            ]
+                          }
+                        ]
+                      },
+                      "pt-BR/search/filtering",
+                      "pt-BR/memory-api/track-progress",
+                      {
+                        "group": "Listar Memories",
+                        "icon": "list",
+                        "pages": [
+                          "pt-BR/list-memories/overview",
+                          {
+                            "group": "Exemplos",
+                            "pages": [
+                              "pt-BR/list-memories/examples/basic",
+                              "pt-BR/list-memories/examples/filtering",
+                              "pt-BR/list-memories/examples/pagination",
+                              "pt-BR/list-memories/examples/monitoring"
+                            ]
+                          }
+                        ]
+                      },
+                      "pt-BR/update-delete-memories/overview",
+                      {
+                        "group": "Conectores",
+                        "icon": "link",
+                        "pages": [
+                          "pt-BR/connectors/overview",
+                          "pt-BR/connectors/notion",
+                          "pt-BR/connectors/google-drive",
+                          "pt-BR/connectors/onedrive",
+                          "pt-BR/connectors/troubleshooting"
+                        ]
+                      },
+                      "pt-BR//org-settings",
+                      "pt-BR//analytics",
+                      "pt-BR/overview/use-cases"
+                    ]
+                  },
+                  {
+                    "group": "Memory Router",
+                    "icon": "route",
+                    "pages": [
+                      "pt-BR/memory-router/overview",
+                      "pt-BR/memory-router/usage",
+                      "pt-BR/memory-router/with-memory-api"
+                    ]
+                  },
+                  {
+                    "group": "Guias de migração",
+                    "pages": [
+                      "pt-BR/migration/from-mem0"
+                    ]
+                  },
+                  {
+                    "group": "Implantação",
+                    "pages": [
+                      "pt-BR/deployment/self-hosting"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Plataforma do Desenvolvedor"
+          },
+          {
+            "icon": "plug",
+            "anchors": [
+              {
+                "anchor": "SDKs",
+                "pages": [
+                  "pt-BR/memory-api/sdks/overview",
+                  {
+                    "group": "SDKs da Supermemory",
+                    "pages": [
+                      "pt-BR/memory-api/sdks/native",
+                      "pt-BR/memory-api/sdks/supermemory-npm",
+                      "pt-BR/memory-api/sdks/supermemory-pypi"
+                    ]
+                  },
+                  {
+                    "group": "SDK da OpenAI",
+                    "icon": "sparkles",
+                    "pages": [
+                      "pt-BR/memory-api/sdks/openai-plugins",
+                      "pt-BR/ai-sdk/npm"
+                    ]
+                  },
+                  {
+                    "group": "AI SDK",
+                    "icon": "triangle",
+                    "pages": [
+                      "pt-BR/ai-sdk/overview",
+                      "pt-BR/ai-sdk/memory-tools",
+                      "pt-BR/ai-sdk/infinite-chat",
+                      "pt-BR/ai-sdk/npm"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "SDKs"
+          },
+          {
+            "icon": "book-open",
+            "anchors": [
+              {
+                "anchor": "Referência da API",
+                "icon": "unplug",
+                "openapi": "https://api.supermemory.ai/v3/openapi"
+              }
+            ],
+            "tab": "Referência da API"
+          },
+          {
+            "icon": "chef-hat",
+            "anchors": [
+              {
+                "anchor": "Receitas",
+                "icon": "chef-hat",
+                "pages": [
+                  "pt-BR/cookbook/overview",
+                  {
+                    "group": "Receitas de Início Rápido",
+                    "pages": [
+                      "pt-BR/cookbook/personal-assistant",
+                      "pt-BR/cookbook/document-qa",
+                      "pt-BR/cookbook/customer-support",
+                      "pt-BR/cookbook/ai-sdk-integration",
+                      "pt-BR/cookbook/perplexity-supermemory",
+                      "pt-BR/cookbook/chat-with-gdrive",
+                      "pt-BR/cookbook/inf-chat-blog"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Receitas"
+          },
+          {
+            "icon": "list-ordered",
+            "anchors": [
+              {
+                "anchor": "Registro de alterações",
+                "pages": [
+                  "pt-BR/changelog/overview",
+                  "pt-BR/changelog/developer-platform"
+                ]
+              }
+            ],
+            "tab": "Registro de alterações"
+          }
+        ],
+        "language": "pt-BR"
+      },
+      {
+        "tabs": [
+          {
+            "pages": [
+              "zh/introduction"
+            ],
+            "tab": "欢迎"
+          },
+          {
+            "icon": "code",
+            "anchors": [
+              {
+                "anchor": "您的仪表盘",
+                "href": "https://console.supermemory.ai",
+                "icon": "play"
+              },
+              {
+                "anchor": "开发者平台",
+                "pages": [
+                  {
+                    "group": "快速入门",
+                    "pages": [
+                      "zh/intro",
+                      "zh/routervsapi",
+                      "zh/quickstart",
+                      "zh/memory-vs-rag"
+                    ]
+                  },
+                  {
+                    "group": "Memory API",
+                    "pages": [
+                      "zh/how-it-works",
+                      {
+                        "group": "添加存储的记忆",
+                        "icon": "plus",
+                        "pages": [
+                          "zh/add-memories/overview",
+                          "zh/add-memories/parameters",
+                          "zh/memory-api/ingesting",
+                          {
+                            "group": "示例",
+                            "pages": [
+                              "zh/add-memories/examples/basic",
+                              "zh/add-memories/examples/file-upload"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "搜索存储的记忆",
+                        "icon": "search",
+                        "pages": [
+                          "zh/search/overview",
+                          "zh/search/parameters",
+                          "zh/search/response-schema",
+                          "zh/search/query-rewriting",
+                          "zh/search/reranking",
+                          {
+                            "group": "示例",
+                            "pages": [
+                              "zh/search/examples/document-search",
+                              "zh/search/examples/memory-search"
+                            ]
+                          }
+                        ]
+                      },
+                      "zh/search/filtering",
+                      "zh/memory-api/track-progress",
+                      {
+                        "group": "列出存储的记忆",
+                        "icon": "list",
+                        "pages": [
+                          "zh/list-memories/overview",
+                          {
+                            "group": "示例",
+                            "pages": [
+                              "zh/list-memories/examples/basic",
+                              "zh/list-memories/examples/filtering",
+                              "zh/list-memories/examples/pagination",
+                              "zh/list-memories/examples/monitoring"
+                            ]
+                          }
+                        ]
+                      },
+                      "zh/update-delete-memories/overview",
+                      {
+                        "group": "连接器",
+                        "icon": "link",
+                        "pages": [
+                          "zh/connectors/overview",
+                          "zh/connectors/notion",
+                          "zh/connectors/google-drive",
+                          "zh/connectors/onedrive",
+                          "zh/connectors/troubleshooting"
+                        ]
+                      },
+                      "zh//org-settings",
+                      "zh//analytics",
+                      "zh/overview/use-cases"
+                    ]
+                  },
+                  {
+                    "group": "Memory Router",
+                    "icon": "route",
+                    "pages": [
+                      "zh/memory-router/overview",
+                      "zh/memory-router/usage",
+                      "zh/memory-router/with-memory-api"
+                    ]
+                  },
+                  {
+                    "group": "迁移指南",
+                    "pages": [
+                      "zh/migration/from-mem0"
+                    ]
+                  },
+                  {
+                    "group": "部署",
+                    "pages": [
+                      "zh/deployment/self-hosting"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "开发者平台"
+          },
+          {
+            "icon": "plug",
+            "anchors": [
+              {
+                "anchor": "SDK（软件开发工具包）",
+                "pages": [
+                  "zh/memory-api/sdks/overview",
+                  {
+                    "group": "Supermemory SDK（软件开发工具包）",
+                    "pages": [
+                      "zh/memory-api/sdks/native",
+                      "zh/memory-api/sdks/supermemory-npm",
+                      "zh/memory-api/sdks/supermemory-pypi"
+                    ]
+                  },
+                  {
+                    "group": "OpenAI SDK",
+                    "icon": "sparkles",
+                    "pages": [
+                      "zh/memory-api/sdks/openai-plugins",
+                      "zh/ai-sdk/npm"
+                    ]
+                  },
+                  {
+                    "group": "AI SDK",
+                    "icon": "triangle",
+                    "pages": [
+                      "zh/ai-sdk/overview",
+                      "zh/ai-sdk/memory-tools",
+                      "zh/ai-sdk/infinite-chat",
+                      "zh/ai-sdk/npm"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "SDK（软件开发工具包）"
+          },
+          {
+            "icon": "book-open",
+            "anchors": [
+              {
+                "anchor": "API 参考",
+                "icon": "unplug",
+                "openapi": "https://api.supermemory.ai/v3/openapi"
+              }
+            ],
+            "tab": "API 参考"
+          },
+          {
+            "icon": "chef-hat",
+            "anchors": [
+              {
+                "anchor": "实用手册",
+                "icon": "chef-hat",
+                "pages": [
+                  "zh/cookbook/overview",
+                  {
+                    "group": "快速开始配方",
+                    "pages": [
+                      "zh/cookbook/personal-assistant",
+                      "zh/cookbook/document-qa",
+                      "zh/cookbook/customer-support",
+                      "zh/cookbook/ai-sdk-integration",
+                      "zh/cookbook/perplexity-supermemory",
+                      "zh/cookbook/chat-with-gdrive",
+                      "zh/cookbook/inf-chat-blog"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "实用手册"
+          },
+          {
+            "icon": "list-ordered",
+            "anchors": [
+              {
+                "anchor": "更新日志",
+                "pages": [
+                  "zh/changelog/overview",
+                  "zh/changelog/developer-platform"
+                ]
+              }
+            ],
+            "tab": "更新日志"
+          }
+        ],
+        "language": "zh"
+      },
+      {
+        "tabs": [
+          {
+            "pages": [
+              "es/introduction"
+            ],
+            "tab": "Bienvenido"
+          },
+          {
+            "icon": "code",
+            "anchors": [
+              {
+                "anchor": "Tu panel",
+                "href": "https://console.supermemory.ai",
+                "icon": "play"
+              },
+              {
+                "anchor": "Plataforma para desarrolladores",
+                "pages": [
+                  {
+                    "group": "Primeros pasos",
+                    "pages": [
+                      "es/intro",
+                      "es/routervsapi",
+                      "es/quickstart",
+                      "es/memory-vs-rag"
+                    ]
+                  },
+                  {
+                    "group": "Memory API",
+                    "pages": [
+                      "es/how-it-works",
+                      {
+                        "group": "Agregar memories",
+                        "icon": "plus",
+                        "pages": [
+                          "es/add-memories/overview",
+                          "es/add-memories/parameters",
+                          "es/memory-api/ingesting",
+                          {
+                            "group": "Ejemplos",
+                            "pages": [
+                              "es/add-memories/examples/basic",
+                              "es/add-memories/examples/file-upload"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Buscar memories",
+                        "icon": "search",
+                        "pages": [
+                          "es/search/overview",
+                          "es/search/parameters",
+                          "es/search/response-schema",
+                          "es/search/query-rewriting",
+                          "es/search/reranking",
+                          {
+                            "group": "Ejemplos",
+                            "pages": [
+                              "es/search/examples/document-search",
+                              "es/search/examples/memory-search"
+                            ]
+                          }
+                        ]
+                      },
+                      "es/search/filtering",
+                      "es/memory-api/track-progress",
+                      {
+                        "group": "Listar memories",
+                        "icon": "list",
+                        "pages": [
+                          "es/list-memories/overview",
+                          {
+                            "group": "Ejemplos",
+                            "pages": [
+                              "es/list-memories/examples/basic",
+                              "es/list-memories/examples/filtering",
+                              "es/list-memories/examples/pagination",
+                              "es/list-memories/examples/monitoring"
+                            ]
+                          }
+                        ]
+                      },
+                      "es/update-delete-memories/overview",
+                      {
+                        "group": "Conectores",
+                        "icon": "link",
+                        "pages": [
+                          "es/connectors/overview",
+                          "es/connectors/notion",
+                          "es/connectors/google-drive",
+                          "es/connectors/onedrive",
+                          "es/connectors/troubleshooting"
+                        ]
+                      },
+                      "es//org-settings",
+                      "es//analytics",
+                      "es/overview/use-cases"
+                    ]
+                  },
+                  {
+                    "group": "Memory Router",
+                    "icon": "route",
+                    "pages": [
+                      "es/memory-router/overview",
+                      "es/memory-router/usage",
+                      "es/memory-router/with-memory-api"
+                    ]
+                  },
+                  {
+                    "group": "Guías de migración",
+                    "pages": [
+                      "es/migration/from-mem0"
+                    ]
+                  },
+                  {
+                    "group": "Implementación",
+                    "pages": [
+                      "es/deployment/self-hosting"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Plataforma para desarrolladores"
+          },
+          {
+            "icon": "plug",
+            "anchors": [
+              {
+                "anchor": "SDKs",
+                "pages": [
+                  "es/memory-api/sdks/overview",
+                  {
+                    "group": "SDKs de Supermemory",
+                    "pages": [
+                      "es/memory-api/sdks/native",
+                      "es/memory-api/sdks/supermemory-npm",
+                      "es/memory-api/sdks/supermemory-pypi"
+                    ]
+                  },
+                  {
+                    "group": "SDK de OpenAI",
+                    "icon": "sparkles",
+                    "pages": [
+                      "es/memory-api/sdks/openai-plugins",
+                      "es/ai-sdk/npm"
+                    ]
+                  },
+                  {
+                    "group": "AI SDK",
+                    "icon": "triangle",
+                    "pages": [
+                      "es/ai-sdk/overview",
+                      "es/ai-sdk/memory-tools",
+                      "es/ai-sdk/infinite-chat",
+                      "es/ai-sdk/npm"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "SDKs"
+          },
+          {
+            "icon": "book-open",
+            "anchors": [
+              {
+                "anchor": "Referencia de la API",
+                "icon": "unplug",
+                "openapi": "https://api.supermemory.ai/v3/openapi"
+              }
+            ],
+            "tab": "Referencia de la API"
+          },
+          {
+            "icon": "chef-hat",
+            "anchors": [
+              {
+                "anchor": "Recetario",
+                "icon": "chef-hat",
+                "pages": [
+                  "es/cookbook/overview",
+                  {
+                    "group": "Recetas de inicio rápido",
+                    "pages": [
+                      "es/cookbook/personal-assistant",
+                      "es/cookbook/document-qa",
+                      "es/cookbook/customer-support",
+                      "es/cookbook/ai-sdk-integration",
+                      "es/cookbook/perplexity-supermemory",
+                      "es/cookbook/chat-with-gdrive",
+                      "es/cookbook/inf-chat-blog"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "tab": "Recetario"
+          },
+          {
+            "icon": "list-ordered",
+            "anchors": [
+              {
+                "anchor": "Registro de cambios",
+                "pages": [
+                  "es/changelog/overview",
+                  "es/changelog/developer-platform"
+                ]
+              }
+            ],
+            "tab": "Registro de cambios"
+          }
+        ],
+        "language": "es"
+      }
+    ]
+  },
+  "redirects": [
+    {
+      "destination": "/introduction",
+      "permanent": false,
+      "source": "/"
+    }
+  ],
+  "styling": {
+    "eyebrows": "breadcrumbs"
+  },
+  "theme": "mint"
 }

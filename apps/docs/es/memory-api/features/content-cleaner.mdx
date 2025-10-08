@@ -1,0 +1,114 @@
+---
+title: "Limpieza y categorización"
+description: "Resúmenes de limpieza de documentos en supermemory"
+icon: "washing-machine"
+---
+
+supermemory ofrece opciones de configuración avanzadas para personalizar tu flujo de procesamiento de contenido. En el núcleo hay un sistema con IA que puede analizar, categorizar y filtrar automáticamente tu contenido según tus necesidades específicas.
+
+<div id="configuration-schema">
+  ## Esquema de configuración
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["feature-request", "bug-report", "positive", "negative"],
+  "filterPrompt": "Analiza el sentimiento de los comentarios e identifica solicitudes de funcionalidades",
+  "includeItems": ["critical", "high-priority"],
+  "excludeItems": ["spam", "irrelevant"]
+}
+```
+
+
+<div id="core-settings">
+  ## Configuración básica
+</div>
+
+<div id="shouldllmfilter">
+  ### shouldLLMFilter
+</div>
+
+- **Tipo**: `boolean`
+- **Obligatorio**: No (por defecto `false`)
+- **Descripción**: Interruptor maestro para el análisis de contenido con IA. Debe estar activado para usar cualquiera de las funciones de filtrado avanzadas.
+
+<div id="categories">
+  ### categories
+</div>
+
+- **Tipo**: `string[]`
+- **Límites**: Cada categoría debe tener entre 1 y 50 caracteres
+- **Obligatorio**: No
+- **Descripción**: Define categorías personalizadas para la clasificación de contenido. Si se especifican, la IA solo usará estas categorías. Si no se especifican, generará automáticamente entre 3 y 5 categorías relevantes.
+
+<div id="filterprompt">
+  ### filterPrompt
+</div>
+
+- **Tipo**: `string`
+- **Límites**: 1-750 caracteres
+- **Obligatorio**: No
+- **Descripción**: Instrucciones personalizadas para la IA sobre cómo analizar y categorizar el contenido. Úsalo para orientar el proceso de categorización según tus necesidades específicas.
+
+<div id="includeitems-excludeitems">
+  ### includeItems & excludeItems
+</div>
+
+- **Tipo**: `string[]`
+- **Límites**: Cada elemento debe tener entre 1 y 20 caracteres
+- **Obligatorio**: No
+- **Descripción**: Ajusta el filtrado de contenido especificando elementos que se incluirán o excluirán explícitamente durante el procesamiento.
+
+<div id="content-processing-pipeline">
+  ## Flujo de procesamiento de contenido
+</div>
+
+Cuando se ingiere contenido con el filtrado por LLM habilitado:
+
+1. **Procesamiento inicial**
+   - Se extrae y normaliza el contenido
+   - Se capturan metadata básicas (título, descripción)
+
+2. **Análisis con IA**
+   - El contenido se analiza según tu `filterPrompt`
+   - Se asignan categorías (de tu lista predefinida o generadas automáticamente)
+   - Se evalúan y puntúan las etiquetas
+
+3. **Segmentación en chunks e indexación**
+   - El contenido se divide en chunks semánticos
+   - Cada chunk se embebe para una búsqueda eficiente
+   - Se almacenan la metadata y las clasificaciones
+
+<div id="example-use-cases">
+  ## Ejemplos de casos de uso
+</div>
+
+<div id="1-customer-feedback-system">
+  ### 1. Sistema de feedback de clientes
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["positive", "negative", "neutral"],
+  "filterPrompt": "Analiza el sentimiento del cliente e identifica temas clave",
+}
+```
+
+
+<div id="2-content-moderation">
+  ### 2. Moderación de contenido
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["seguro", "necesita-revisión", "marcado"],
+  "filterPrompt": "Identificar contenido potencialmente inapropiado o sensible",
+  "excludeItems": ["spam", "ofensivo"],
+  "includeItems": ["generado-por-usuario"]
+}
+```
+
+> **Importante**: Todas las funciones de filtrado (`categories`, `filterPrompt`, `includeItems`, `excludeItems`) requieren que `shouldLLMFilter` esté activado. Intentar usar estas funciones sin activar `shouldLLMFilter` provocará un error 400.

@@ -1,0 +1,232 @@
+---
+title: "Utilizzo"
+description: "Come implementare il Memory Router nella tua applicazione"
+sidebarTitle: "Utilizzo"
+---
+
+Aggiungi memoria illimitata alle tue applicazioni LLM con una semplice modifica dell’URL.
+
+<div id="prerequisites">
+  ## Prerequisiti
+</div>
+
+Ti serviranno:
+
+1. Una [chiave API di Supermemory](https://console.supermemory.ai)
+2. La chiave API del tuo provider LLM
+
+<div id="basic-setup">
+  ## Configurazione di base
+</div>
+
+<Steps>
+  <Step title="Ottieni le tue chiavi API">
+    **Chiave API di Supermemory:**
+    1. Registrati su [console.supermemory.ai](https://console.supermemory.ai)
+    2. Vai su **API Keys** → **Create API Key**
+    3. Copia la tua chiave
+
+    **Chiave API del provider:**
+    - [OpenAI](https://platform.openai.com/api-keys)
+    - [Anthropic](https://console.anthropic.com/settings/keys)
+    - [Google Gemini](https://aistudio.google.com/app/apikey)
+    - [Groq](https://console.groq.com/keys)
+  </Step>
+
+  <Step title="Aggiorna la base URL">
+    Anteponi `https://api.supermemory.ai/v3/` all'URL del tuo provider:
+
+    ```
+    https://api.supermemory.ai/v3/[PROVIDER_URL]
+    ```
+  </Step>
+
+  <Step title="Aggiungi l'autenticazione">
+    Includi entrambe le chiavi API nelle richieste (vedi gli esempi sotto)
+  </Step>
+</Steps>
+
+<div id="provider-urls">
+  ## URL dei provider
+</div>
+
+<CodeGroup>
+
+```text OpenAI
+https://api.supermemory.ai/v3/https://api.openai.com/v1/
+```
+
+```text Anthropic
+https://api.supermemory.ai/v3/https://api.anthropic.com/v1/
+```
+
+```text Google Gemini
+https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai/
+```
+
+```text Groq
+https://api.supermemory.ai/v3/https://api.groq.com/openai/v1/
+```
+
+</CodeGroup>
+
+<div id="implementation-examples">
+  ## Esempi di implementazione
+</div>
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_OPENAI_API_KEY",
+        base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+        default_headers={
+            "x-supermemory-api-key": "YOUR_SUPERMEMORY_API_KEY",
+            "x-sm-user-id": "user123"  # Identificatore univoco dell'utente
+        }
+    )
+
+    # Utilizzo standard
+    response = client.chat.completions.create(
+        model="gpt-5",
+        messages=[
+            {"role": "user", "content": "Hello!"}
+        ]
+    )
+
+    print(response.choices[0].message.content)
+    ```
+  </Tab>
+
+  <Tab title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/',
+      defaultHeaders: {
+        'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY,
+        'x-sm-user-id': 'user123'  // Identificatore univoco dell'utente
+      }
+    });
+
+    // Utilizzo standard
+    const response = await client.chat.completions.create({
+      model: 'gpt-5',
+      messages: [
+        { role: 'user', content: 'Hello!' }
+      ]
+    });
+
+    console.log(response.choices[0].message.content);
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions" \
+      -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+      -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user123" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "gpt-5",
+        "messages": [{"role": "user", "content": "Hello!"}]
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="alternative-url-parameters">
+  ## Alternativa: parametri URL
+</div>
+
+Se non puoi modificare gli header, passa l'autenticazione tramite parametri URL:
+
+<CodeGroup>
+
+```python Python
+client = OpenAI(
+    api_key="YOUR_OPENAI_API_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123"
+)
+
+# Quindi imposta la chiave API di Supermemory come variabile d'ambiente:
+# export SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```typescript TypeScript
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123'
+});
+
+// Imposta quindi la chiave API di Supermemory come variabile d'ambiente:
+// SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123" \
+  -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+  -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-5", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+</CodeGroup>
+
+<div id="conversation-management">
+  ## Gestione conversazioni
+</div>
+
+<div id="managing-conversations">
+  ### Gestione delle conversazioni
+</div>
+
+Utilizza `x-sm-conversation-id` per mantenere il contesto della conversazione tra le richieste:
+
+```python
+# Avvia una nuova conversazione
+response1 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "My name is Alice"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+
+# Continua la stessa conversazione più tardi
+response2 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "Come mi chiamo?"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+# La risposta ricorderà "Alice"
+```
+
+
+<div id="user-identification">
+  ### Identificazione utente
+</div>
+
+Fornisci sempre un ID utente univoco per isolare le memories tra gli utenti:
+
+```python
+# Utenti diversi hanno spazi di memory separati
+client_alice = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "alice_123"}
+)
+
+client_bob = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "bob_456"}
+)
+```

@@ -1,0 +1,114 @@
+---
+title: "分页"
+description: "通过分页高效处理大型 memory 集合"
+---
+
+通过分页高效处理大型 memory 集合，将数据按可管理的 chunk（文档片段）分批处理。
+
+<div id="basic-pagination">
+  ## 基础分页
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 获取第一页
+    const page1 = await client.memories.list({
+      limit: 20,
+      page: 1
+    });
+
+    // 获取下一页
+    const page2 = await client.memories.list({
+      limit: 20,
+      page: 2
+    });
+
+    console.log(`第 1 页：${page1.memories.length} 条记忆存储`);
+    console.log(`第 2 页：${page2.memories.length} 条记忆存储`);
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 获取第一页
+    page1 = client.memories.list(limit=20, page=1)
+
+    # 获取下一页
+    page2 = client.memories.list(limit=20, page=2)
+
+    print(f"第 1 页：{len(page1.memories)} 条记忆存储")
+    print(f"第 2 页：{len(page2.memories)} 条记忆存储")
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 获取第一页
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 20, "page": 1}'
+
+    # 获取下一页
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 20, "page": 2}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="loop-through-pages">
+  ## 分页遍历
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    let currentPage = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const response = await client.memories.list({
+        page: currentPage,
+        limit: 50
+      });
+
+      console.log(`Page ${currentPage}: ${response.memories.length} memories`);
+
+      hasMore = currentPage < response.pagination.totalPages;
+      currentPage++;
+    }
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    current_page = 1
+    has_more = True
+
+    while has_more:
+        response = client.memories.list(page=current_page, limit=50)
+
+        print(f"Page {current_page}: {len(response.memories)} memories")
+
+        has_more = current_page < response.pagination.total_pages
+        current_page += 1
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # 使用 bash 循环进行手动分页
+    for page in {1..5}; do
+      echo "=== Page $page ==="
+      curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+        -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "{\"page\": $page, \"limit\": 20}" | \
+        jq '.memories | length'
+    done
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  在分页场景中，将 `limit` 设为较大的值（50–100）以减少所需的 API 调用次数。
+</Info>

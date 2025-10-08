@@ -1,0 +1,300 @@
+---
+title: "Acompanhar o status de processamento"
+description: "Monitore, em tempo real, o status de processamento de documents"
+icon: "activity"
+---
+
+Acompanhe seus documents pelo pipeline de processamento para oferecer melhores experiências ao usuário e lidar com casos excepcionais.
+
+<div id="processing-pipeline">
+  ## Pipeline de Processamento
+</div>
+
+![Processo de conversão de documents em memórias](/images/pipeline.png)
+
+Cada etapa tem um propósito específico:
+
+- **Em fila**: O document está aguardando na fila de processamento
+- **Extração**: O conteúdo está sendo extraído (OCR para imagens, transcrição para vídeos)
+- **Segmentação em chunks**: O conteúdo é dividido em partes ideais e pesquisáveis
+- **Embedding**: Cada chunk é convertido em representações vetoriais
+- **Indexação**: Os vetores são adicionados ao índice de busca
+- **Concluído**: O document está totalmente processado e pesquisável
+
+<Note>
+O tempo de processamento varia conforme o tipo de conteúdo. Texto simples é processado em segundos, enquanto um vídeo de 10 minutos pode levar de 2 a 3 minutos.
+</Note>
+
+<div id="processing-documents">
+  ## Processando documents
+</div>
+
+Monitore todos os documents que estão sendo processados na sua conta.
+
+`GET /v3/documents/processing`
+
+<CodeGroup>
+
+```typescript
+// Chamada direta à API (fora do SDK)
+const response = await fetch('https://api.supermemory.ai/v3/documents/processing', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const processing = await response.json();
+console.log(`${processing.documents.length} documents em processamento`);
+```
+
+```python
+# Chamada direta à API (fora do SDK)
+import requests
+
+response = requests.get(
+    'https://api.supermemory.ai/v3/documents/processing',
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+processing = response.json()
+print(f"{len(processing['documents'])} documents em processamento")
+```
+
+```bash
+# Chamada direta à API (fora do SDK)
+curl -X GET "https://api.supermemory.ai/v3/documents/processing" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### Formato da Resposta
+</div>
+
+```json
+{
+  "documents": [
+    {
+      "id": "doc_abc123",
+      "status": "extracting",
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:15Z",
+      "container_tags": ["research"],
+      "metadata": {
+        "source": "upload",
+        "filename": "report.pdf",
+      }
+    },
+    {
+      "id": "doc_def456",
+      "status": "chunking",
+      "created_at": "2024-01-15T10:29:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "container_tags": ["articles"],
+      "metadata": {
+        "source": "url"
+        "url": "https://example.com/article"
+      }
+    }
+  ],
+  "total": 2
+}
+```
+
+
+<div id="individual-documents">
+  ## Documentos individuais
+</div>
+
+Acompanhe o status de processamento de um documento específico.
+
+`GET /v3/documents/{id}`
+
+<CodeGroup>
+
+```typescript
+const memory = await client.memories.get("doc_abc123");
+
+console.log(`Status: ${memory.status}`);
+
+// Fazer polling até concluir
+while (memory.status !== 'done') {
+  await new Promise(r => setTimeout(r, 2000));
+  memory = await client.memories.get("doc_abc123");
+  console.log(`Status: ${memory.status}`);
+}
+```
+
+```python
+memory = client.memories.get("doc_abc123")
+
+print(f"Status: {memory['status']}")
+
+# Fazer polling até concluir
+import time
+while memory['status'] != 'done':
+    time.sleep(2)
+    memory = client.memories.get("doc_abc123")
+    print(f"Status: {memory['status']}")
+```
+
+```bash
+curl -X GET "https://api.supermemory.ai/v3/documents/doc_abc123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### Formato de resposta
+</div>
+
+```json
+{
+  "id": "doc_abc123",
+  "status": "done",
+  "content": "O conteúdo original...",
+  "container_tags": ["research"],
+  "metadata": {
+    "source": "upload",
+    "filename": "report.pdf"
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:31:00Z"
+}
+```
+
+
+<div id="status-values">
+  ## Valores de status
+</div>
+
+| Status | Descrição | Duração típica |
+|--------|-------------|------------------|
+| `queued` | Aguardando processamento | < 5 segundos |
+| `extracting` | Extraindo conteúdo da origem | 5-30 segundos |
+| `chunking` | Segmentando em chunks pesquisáveis | 5-15 segundos |
+| `embedding` | Criando embeddings (representações vetoriais) | 10-30 segundos |
+| `indexing` | Adicionando ao índice de pesquisa | 5-10 segundos |
+| `done` | Totalmente processado e pesquisável | - |
+| `failed` | Falha no processamento | - |
+
+<div id="polling-best-practices">
+  ## Boas práticas de polling
+</div>
+
+Ao realizar polling para atualizações de status:
+
+```typescript
+async function waitForProcessing(documentId: string, maxWaitMs = 300000) {
+  const startTime = Date.now();
+  const pollInterval = 2000; // 2 segundos
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const doc = await client.memories.get(documentId);
+
+    if (doc.status === 'done') {
+      return doc;
+    }
+
+    if (doc.status === 'failed') {
+      throw new Error(`Falha no processamento de ${documentId}`);
+    }
+
+    await new Promise(r => setTimeout(r, pollInterval));
+  }
+
+  throw new Error(`Tempo limite ao aguardar ${documentId}`);
+}
+```
+
+
+<div id="batch-processing">
+  ## Processamento em lote
+</div>
+
+Para múltiplos documents, acompanhe-os de forma eficiente:
+
+```typescript
+async function trackBatch(documentIds: string[]) {
+  const statuses = new Map();
+
+  // Initial check
+  for (const id of documentIds) {
+    const doc = await client.memories.get(id);
+    statuses.set(id, doc.status);
+  }
+
+  // Poll until all done
+  while ([...statuses.values()].some(s => s !== 'done' && s !== 'failed')) {
+    await new Promise(r => setTimeout(r, 5000)); // intervalo de 5 segundos para o lote
+
+    for (const id of documentIds) {
+      if (statuses.get(id) !== 'done' && statuses.get(id) !== 'failed') {
+        const doc = await client.memories.get(id);
+        statuses.set(id, doc.status);
+      }
+    }
+
+    // Registrar progresso
+    const done = [...statuses.values()].filter(s => s === 'done').length;
+    console.log(`Progresso: ${done}/${documentIds.length} concluídos`)
+  }
+
+  return statuses;
+}
+```
+
+
+<div id="error-handling">
+  ## Tratamento de erros
+</div>
+
+Trate falhas de processamento de forma adequada:
+
+```typescript
+async function addWithRetry(content: string, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const { id } = await client.memories.add({ content });
+
+    try {
+      const result = await waitForProcessing(id);
+      return result;
+    } catch (error) {
+      console.error(`Tentativa ${attempt} falhou:`, error);
+
+      if (attempt === maxRetries) {
+        throw error;
+      }
+
+      // Backoff exponencial
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
+  }
+}
+```
+
+
+<div id="processing-times-by-content-type">
+  ## Tempos de processamento por tipo de conteúdo
+</div>
+
+Documents: Criados quase instantaneamente (200–500 ms)
+
+Memories: O Supermemory cria um grafo de memory com base em análise semântica e entendimento contextual.
+
+| Tipo de conteúdo | Tempo de processamento da memory | Observações |
+|--------------|------------------------|-------|
+| Texto simples | 5–10 segundos | Processamento mais rápido |
+| Markdown | 5–10 segundos | Semelhante ao texto simples |
+| PDF (< 10 páginas) | 15–30 segundos | OCR se necessário |
+| PDF (> 100 páginas) | 1–3 minutos | Depende da complexidade |
+| Imagens | 10–20 segundos | Processamento por OCR |
+| Vídeos do YouTube | 1–2 min por vídeo de 10 min | Transcrição necessária |
+| Páginas da Web | 10–20 segundos | Extração de conteúdo |
+| Google Docs | 10–15 segundos | Extração via API |
+
+<Note>
+**Dica profissional**: Use o endpoint de status de processamento para fornecer feedback em tempo real aos usuários, especialmente para documents maiores ou uploads em lote.
+</Note>

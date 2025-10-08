@@ -1,0 +1,31 @@
+---
+title: "连接器概览"
+sidebarTitle: "概览"
+description: "通过 supermemory 同步外部链接账户（如 Google Drive、Notion、OneDrive）"
+---
+
+supermemory 可同步外部链接账户（如 Google Drive、Notion、OneDrive），更多集成即将推出。
+
+<div id="the-flow">
+  ### 流程
+</div>
+
+1. 向 `/v3/connections/{provider}` 发起 `POST` 请求
+2. supermemory 会返回一个 `authLink`，你可以将用户重定向到该链接
+3. 用户将被重定向到该 provider 的登录页面
+4. 用户会被重定向回你应用的 `redirectUrl`
+
+![Connectors Flow](/images/connectors-flow.png)
+
+<div id="sync-frequency">
+  ## 同步频率
+</div>
+
+supermemory 同步 Documents：
+
+- **当某个 Document 被修改或创建（收到 Webhook）**
+    - 请注意，并非所有 provider 都通过 webhook 同步（这些目前为即时同步）
+    - `Google-Drive` 和 `Notion` 的 Documents 会即时同步
+- 每隔 **四小时**
+- 进行 **手动同步**（API 调用）
+    - 你可以调用 `/v3/connections/{provider}/sync` 手动同步 Documents

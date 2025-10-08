@@ -1,0 +1,214 @@
+---
+title: "Carga de archivos"
+description: "Carga archivos PDF, imágenes y otros formatos en Supermemory"
+---
+
+Carga archivos directamente en Supermemory para la extracción y el procesamiento automáticos del contenido.
+
+<div id="upload-a-pdf">
+  ## Cargar un PDF
+</div>
+
+Extrae texto de archivos PDF con soporte de OCR (Reconocimiento Óptico de Caracteres).
+
+<CodeGroup>
+
+```typescript TypeScript
+const file = fs.createReadStream('document.pdf');
+
+const response = await client.memories.uploadFile({
+  file: file,
+  containerTags: 'documents'
+});
+
+console.log(response.id);
+// Output: pdf_123
+```
+
+```python Python
+with open('document.pdf', 'rb') as file:
+    response = client.memories.upload_file(
+        file=file,
+        container_tags='documents'
+    )
+
+print(response['id'])
+# Output: pdf_123
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "containerTags=documents"
+
+# Response: {"id": "pdf_123", "status": "processing"}
+```
+
+</CodeGroup>
+
+<div id="upload-images-with-ocr">
+  ## Carga de imágenes con OCR (Reconocimiento Óptico de Caracteres)
+</div>
+
+Extrae texto de imágenes.
+
+<CodeGroup>
+
+```typescript TypeScript
+const image = fs.createReadStream('screenshot.png');
+
+await client.memories.uploadFile({
+  file: image,
+  containerTags: 'images'
+});
+```
+
+```python Python
+with open('screenshot.png', 'rb') as file:
+    client.memories.upload_file(
+        file=file,
+        container_tags='images'
+    )
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@screenshot.png" \
+  -F "containerTags=images"
+```
+
+</CodeGroup>
+
+<div id="browser-file-upload">
+  ## Carga de archivos en el navegador
+</div>
+
+Gestiona cargas de archivos desde el navegador.
+
+<CodeGroup>
+
+```javascript JavaScript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('containerTags', 'uploads');
+
+const response = await fetch('https://api.supermemory.ai/v3/documents/file', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`
+  },
+  body: formData
+});
+
+const result = await response.json();
+console.log(result.id);
+```
+
+```typescript React
+function handleUpload(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('containerTags', 'uploads');
+
+  return fetch('https://api.supermemory.ai/v3/documents/file', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}` },
+    body: formData
+  });
+}
+```
+
+```bash cURL
+# Las cargas desde el navegador usan FormData, igual que la carga de archivos
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "containerTags=uploads"
+```
+
+</CodeGroup>
+
+<div id="upload-multiple-files">
+  ## Cargar varios archivos
+</div>
+
+Carga por lotes con limitación de velocidad.
+
+<CodeGroup>
+
+```typescript TypeScript
+for (const file of files) {
+  const stream = fs.createReadStream(file);
+
+  await client.memories.uploadFile({
+    file: stream,
+    containerTags: 'batch'
+  });
+
+  // Limitación de velocidad
+  await new Promise(r => setTimeout(r, 1000));
+}
+```
+
+```python Python
+import time
+
+for file_path in files:
+    with open(file_path, 'rb') as file:
+        client.memories.upload_file(
+            file=file,
+            container_tags='batch'
+        )
+
+    time.sleep(1)  # Limitación de velocidad
+```
+
+```bash cURL
+# Cargar cada archivo por separado con demoras
+for file in *.pdf; do
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -F "file=@$file" \
+    -F "containerTags=batch"
+
+  sleep 1  # Limitación de velocidad
+done
+```
+
+</CodeGroup>
+
+<div id="supported-file-types">
+  ## Tipos de archivos compatibles
+</div>
+
+<div id="documents">
+  ### Documentos
+</div>
+
+| Formato | Extensiones | Procesamiento |
+|--------|------------|------------|
+| PDF | .pdf | Extracción de texto, OCR (Reconocimiento Óptico de Caracteres) para páginas escaneadas |
+| Microsoft Word | .doc, .docx | Extracción completa de texto y formatos |
+| Texto plano | .txt, .md | Procesamiento directo de texto |
+| CSV | .csv | Extracción de datos estructurados |
+
+<div id="images">
+  ### Imágenes
+</div>
+
+| Formato | Extensiones | Procesamiento |
+|--------|------------|------------|
+| JPEG | .jpg, .jpeg | Extracción de texto con OCR (Reconocimiento Óptico de Caracteres) |
+| PNG | .png | Extracción de texto con OCR (Reconocimiento Óptico de Caracteres) |
+| GIF | .gif | OCR (Reconocimiento Óptico de Caracteres) para imágenes estáticas |
+| WebP | .webp | Extracción de texto con OCR (Reconocimiento Óptico de Caracteres) |
+
+<div id="size-limits">
+  ### Límites de tamaño
+</div>
+
+- **Tamaño máximo de archivo**: 50 MB
+- **Tamaño recomendado**: < 10 MB para un procesamiento óptimo
+- **Archivos grandes**: pueden tardar más en procesarse

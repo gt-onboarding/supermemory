@@ -1,0 +1,314 @@
+---
+title: "从 Mem0.ai 迁移到 Supermemory"
+description: "将您的数据与应用从 Mem0.ai 迁移到 Supermemory 的完整指南"
+sidebarTitle: "从 Mem0 迁移"
+---
+
+从 Mem0.ai 迁移到 Supermemory 非常简单。本文将引导您将记忆存储从 Mem0 导出并导入到 Supermemory。
+
+<div id="why-migrate-to-supermemory">
+  ## 为什么迁移到 Supermemory？
+</div>
+
+与 Mem0.ai 相比，Supermemory 提供更强大的能力：
+
+* 通过 **Memory Router** 实现零代码集成 LLM
+* **知识图谱** 架构，提供更优的上下文关系
+* **多种内容类型**（URL、PDF、图片、视频）
+* **大方的免费额度**（100k tokens），且定价亲民
+* **多种集成选项**（API、Router、MCP、SDKs）
+
+<div id="quick-migration-all-in-one">
+  ## 快速迁移（全合一）
+</div>
+
+使用单个脚本完成迁移：
+
+```python
+from mem0 import MemoryClient
+from supermemory import Supermemory
+import json, time
+
+# 从 Mem0 导出
+mem0 = MemoryClient(api_key="your_mem0_api_key")
+export = mem0.create_memory_export(
+    schema={"type": "object", "properties": {"memories": {"type": "array", "items": {"type": "object"}}}},
+    filters={}
+)
+time.sleep(5)
+data = mem0.get_memory_export(memory_export_id=export["id"])
+
+# 导入到 Supermemory
+supermemory = Supermemory(api_key="your_supermemory_api_key")
+for memory in data["memories"]:
+    if memory.get("content"):
+        supermemory.memories.add(
+            content=memory["content"],
+            container_tags=["imported_from_mem0"]
+        )
+        print(f"✅ {memory['content'][:50]}...")
+
+print("迁移完成！")
+```
+
+<div id="step-by-step-migration">
+  ## 逐步迁移
+</div>
+
+<Steps>
+  <Step title="从 Mem0.ai 导出">
+    Mem0 提供两种方式导出你的 memory：
+
+    ### 选项 1：通过仪表盘导出（推荐）
+
+    1. 登录你的 [Mem0 仪表盘](https://app.mem0.ai)
+    2. 进入导出区域
+    3. 将你的 memory 下载为 JSON
+
+    ### 选项 2：通过 API 导出
+
+    用于从 Mem0 导出全部 memory 的简单脚本：
+
+    ```python
+    from mem0 import MemoryClient
+    import json
+    import time
+
+    # 连接到 Mem0
+    client = MemoryClient(api_key="your_mem0_api_key")
+
+    # 创建导出任务
+    schema = {
+        "type": "object",
+        "properties": {
+            "memories": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "content": {"type": "string"},
+                        "metadata": {"type": "object"},
+                        "created_at": {"type": "string"}
+                    }
+                }
+            }
+        }
+    }
+
+    response = client.create_memory_export(schema=schema, filters={})
+    export_id = response["id"]
+
+    # 等待并获取
+    print("Exporting memories...")
+    time.sleep(5)
+    export_data = client.get_memory_export(memory_export_id=export_id)
+
+    # 保存到文件
+    with open("mem0_export.json", "w") as f:
+        json.dump(export_data, f, indent=2)
+
+    print(f"Exported {len(export_data['memories'])} memories")
+    ```
+  </Step>
+
+  <Step title="设置 Supermemory">
+    创建你的 Supermemory 账户并获取 API 密钥：
+
+    1. 在 [console.supermemory.ai](https://console.supermemory.ai) 注册
+    2. 创建一个新项目
+    3. 在仪表盘中生成一个 API 密钥
+
+    ```bash
+    # 设置环境变量
+    export SUPERMEMORY_API_KEY="your_supermemory_api_key"
+    ```
+  </Step>
+
+  <Step title="导入到 Supermemory">
+    将 Mem0 的 memory 导入到 Supermemory 的简单脚本：
+
+    ```python
+    import json
+    from supermemory import Supermemory
+
+    # 加载 Mem0 导出文件
+    with open("mem0_export.json", "r") as f:
+        mem0_data = json.load(f)
+
+    # 连接到 Supermemory
+    client = Supermemory(api_key="your_supermemory_api_key")
+
+    # 导入 memory
+    for memory in mem0_data["memories"]:
+        content = memory.get("content", "")
+
+        # 跳过空的 memory
+        if not content:
+            continue
+
+        # 导入到 Supermemory
+        try:
+            result = client.memories.add(
+                content=content,
+                container_tags=["imported_from_mem0"],
+                metadata={
+                    "source": "mem0",
+                    "created_at": memory.get("created_at"),
+                    **(memory.get("metadata") or {})
+                }
+            )
+            print(f"Imported: {content[:50]}...")
+        except Exception as e:
+            print(f"Failed: {e}")
+
+    print("Migration complete!")
+    ```
+  </Step>
+</Steps>
+
+<div id="api-migration-reference">
+  ## API 迁移参考
+</div>
+
+以下展示常见的 Mem0.ai 操作在 Supermemory 中的对应方式：
+
+<div id="adding-memories">
+  ### 添加 memory
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  from mem0 import MemoryClient
+
+  client = MemoryClient(api_key="...")
+  client.add(
+      messages="用户偏好深色模式",
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  from supermemory import Supermemory
+
+  client = Supermemory(api_key="...")
+  client.memories.add(
+      content="用户偏好深色模式",
+      container_tags=["user_alice"]
+  )
+  ```
+</CodeGroup>
+
+<div id="searching-memories">
+  ### 搜索 memory
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  results = client.search(
+      query="user preferences",
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  results = client.memories.search(
+      query="user preferences",
+      container_tags=["user_alice"]
+  )
+  ```
+</CodeGroup>
+
+<div id="getting-all-memories">
+  ### 获取所有记忆存储
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  memories = client.get_all(
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  memories = client.memories.list(
+      container_tags=["user_alice"],
+      limit=100
+  )
+  ```
+</CodeGroup>
+
+<div id="deleting-memories">
+  ### 删除 memory
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  client.delete(memory_id="mem_123")
+  ```
+
+  ```python Supermemory
+  client.memories.delete("mem_123")
+  ```
+</CodeGroup>
+
+<div id="using-memory-router-easiest-migration">
+  ## 使用 Memory Router（最简迁移）
+</div>
+
+对于最简单的迁移方式，使用 Supermemory 的 Memory Router，只需极少代码改动：
+
+<CodeGroup>
+  ```python Before (Mem0 + OpenAI)
+  from openai import OpenAI
+  from mem0 import MemoryClient
+
+  # 需要两个独立的客户端
+  openai = OpenAI(api_key="sk-...")
+  memory = MemoryClient(api_key="mem0_key")
+
+  # 手动管理 memory
+  context = memory.search("user preferences", user_id="alice")
+  messages = [
+      {"role": "system", "content": f"Context: {context}"},
+      {"role": "user", "content": "What are my preferences?"}
+  ]
+
+  response = openai.chat.completions.create(
+      model="gpt-5",
+      messages=messages
+  )
+  ```
+
+  ```python After (Supermemory Router)
+  from openai import OpenAI
+
+  # 单一客户端，自动管理 memory
+  client = OpenAI(
+      api_key="sk-...",
+      base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1",
+      default_headers={
+          "x-supermemory-api-key": "your_supermemory_key",
+          "x-supermemory-user-id": "alice"
+      }
+  )
+
+  # 记忆存储自动处理！
+  response = client.chat.completions.create(
+      model="gpt-5",
+      messages=[{"role": "user", "content": "What are my preferences?"}]
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  对于企业级迁移，[联系我们](mailto:dhravya@supermemory.com)以获取协助。
+</Note>
+
+<div id="next-steps">
+  ## 后续步骤
+</div>
+
+1. [了解](/zh/how-it-works) Supermemory 的工作原理
+2. 阅读[快速上手](/zh/quickstart)，添加并检索你的首个记忆存储
+3. [连接](/zh/connectors/overview) Google Drive、Notion 和 OneDrive，开启自动同步

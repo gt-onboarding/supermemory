@@ -1,0 +1,405 @@
+---
+title: "Python SDK"
+sidebarTitle: "Python"
+description: "Lerne, wie du supermemory mit Python nutzt"
+---
+
+<div id="installation">
+  ## Installation
+</div>
+
+```sh
+# Installation von PyPI
+pip install --pre supermemory
+```
+
+
+<div id="usage">
+  ## Verwendung
+</div>
+
+```python
+import os
+from supermemory import Supermemory
+
+client = supermemory(
+    api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # Dies ist der Standardwert und kann weggelassen werden
+)
+
+response = client.search.execute(
+    q="documents related to python",
+)
+print(response.results)
+```
+
+Obwohl Sie ein `api_key`-Schlüsselwortargument übergeben können,
+empfehlen wir die Verwendung von [python-dotenv](https://pypi.org/project/python-dotenv/),
+um `SUPERMEMORY_API_KEY="My API Key"` zu Ihrer `.env`-Datei hinzuzufügen,
+damit Ihr API-Schlüssel nicht in der Versionsverwaltung landet.
+
+
+<div id="async-usage">
+  ## Asynchrone Verwendung
+</div>
+
+Importieren Sie einfach `AsyncSupermemory` statt `supermemory` und verwenden Sie `await` bei jedem API-Aufruf:
+
+```python
+import os
+import asyncio
+from supermemory import AsyncSupermemory
+
+client = AsyncSupermemory(
+    api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # Dies ist der Standardwert und kann weggelassen werden
+)
+
+
+async def main() -> None:
+    response = await client.search.execute(
+        q="documents zu Python",
+    )
+    print(response.results)
+
+
+asyncio.run(main())
+```
+
+Abgesehen davon ist die Funktionalität zwischen den synchronen und asynchronen Clients identisch.
+
+
+<div id="using-types">
+  ## Verwendung von Typen
+</div>
+
+Verschachtelte Anfrageparameter sind [TypedDicts](https://docs.python.org/3/library/typing.html#typing.TypedDict). Antworten sind [Pydantic-Modelle](https://docs.pydantic.dev), die außerdem Hilfsmethoden für Folgendes bereitstellen:
+
+- Serialisieren zurück in JSON, `model.to_json()`
+- Umwandeln in ein Dictionary, `model.to_dict()`
+
+Getypte Anfragen und Antworten bieten Autovervollständigung und Inline-Dokumentation in deinem Editor. Wenn du Typfehler in VS Code sehen möchtest, um Bugs früher zu finden, setze `python.analysis.typeCheckingMode` auf `basic`.
+
+<div id="file-uploads">
+  ## Datei-Uploads
+</div>
+
+Anfrageparameter, die Datei-Uploads entsprechen, können als `bytes`, als [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)-Instanz oder als Tupel `(Dateiname, Inhalt, Medientyp)` übergeben werden.
+
+```python
+from pathlib import Path
+from supermemory import Supermemory
+
+client = supermemory()
+
+client.memories.upload_file(
+    file=Path("/pfad/zur/datei"),
+)
+```
+
+Der asynchrone Client verwendet genau dieselbe Schnittstelle. Wenn Sie eine [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)-Instanz übergeben, werden die Datei-Inhalte automatisch asynchron gelesen.
+
+
+<div id="handling-errors">
+  ## Umgang mit Fehlern
+</div>
+
+Wenn die Bibliothek keine Verbindung zur API herstellen kann (zum Beispiel aufgrund von Netzwerkproblemen oder eines Timeouts), wird eine Unterklasse von `supermemory.APIConnectionError` ausgelöst.
+
+Wenn die API einen nicht erfolgreichen Statuscode zurückgibt (das heißt, eine 4xx- oder 5xx-Antwort), wird eine Unterklasse von `supermemory.APIStatusError` ausgelöst, die die Eigenschaften `status_code` und `response` enthält.
+
+Alle Fehler leiten sich von `supermemory.APIError` ab.
+
+```python
+import supermemory
+from supermemory import Supermemory
+
+client = supermemory()
+
+try:
+    client.memories.add(
+        content="Dies ist ein detaillierter Artikel über Machine Learning-Konzepte...",
+    )
+except supermemory.APIConnectionError as e:
+    print("Der Server konnte nicht erreicht werden")
+    print(e.__cause__)  # eine zugrundeliegende Exception, wahrscheinlich von httpx ausgelöst.
+except supermemory.RateLimitError as e:
+    print("Ein 429-Statuscode wurde empfangen; wir sollten etwas langsamer machen.")
+except supermemory.APIStatusError as e:
+    print("Ein anderer Statuscode außerhalb des 200er-Bereichs wurde empfangen")
+    print(e.status_code)
+    print(e.response)
+```
+
+Fehlercodes lauten wie folgt:
+
+| Statuscode | Fehlertyp                   |
+| ----------- | -------------------------- |
+| 400         | `BadRequestError`          |
+| 401         | `AuthenticationError`      |
+| 403         | `PermissionDeniedError`    |
+| 404         | `NotFoundError`            |
+| 422         | `UnprocessableEntityError` |
+| 429         | `RateLimitError`           |
+| &gt;=500       | `InternalServerError`      |
+| N/A         | `APIConnectionError`       |
+
+
+<div id="retries">
+  ### Wiederholungen
+</div>
+
+Bestimmte Fehler werden standardmäßig automatisch zweimal mit einem kurzen exponentiellen Backoff erneut versucht.
+Verbindungsfehler (z. B. durch Netzwerkprobleme), 408 Request Timeout, 409 Conflict,
+429 Rate Limit und ≥500 interne Fehler werden standardmäßig alle erneut versucht.
+
+Sie können die Option `max_retries` verwenden, um die Wiederholungen zu konfigurieren oder zu deaktivieren:
+
+```python
+from supermemory import Supermemory
+
+# Konfiguriere die Standardwerte für alle Anfragen:
+client = supermemory(
+    # Standard ist 2
+    max_retries=0,
+)
+
+# Oder konfiguriere pro Anfrage:
+client.with_options(max_retries=5).memories.add(
+    content="Dies ist ein detaillierter Artikel über Machine Learning-Konzepte...",
+)
+```
+
+
+<div id="timeouts">
+  ### Timeouts
+</div>
+
+Standardmäßig laufen Anfragen nach 1 Minute in einen Timeout. Sie können dies mit der Option `timeout` konfigurieren,
+die entweder eine Fließkommazahl oder ein [`httpx.Timeout`](https://www.python-httpx.org/advanced/#fine-tuning-the-configuration)-Objekt akzeptiert:
+
+```python
+from supermemory import Supermemory
+
+# Standardkonfiguration für alle Anfragen:
+client = supermemory(
+    # 20 Sekunden (Standard ist 1 Minute)
+    timeout=20.0,
+)
+
+# Feinere Kontrolle:
+client = supermemory(
+    timeout=httpx.Timeout(60.0, read=5.0, write=10.0, connect=2.0),
+)
+
+# Pro Anfrage überschreiben:
+client.with_options(timeout=5.0).memories.add(
+    content="Dies ist ein detaillierter Artikel über Machine-Learning-Konzepte...",
+)
+```
+
+Bei einem Timeout wird ein `APITimeoutError` ausgelöst.
+
+Beachte, dass zeitüberschreitende Anfragen [standardmäßig zweimal erneut versucht werden](#retries).
+
+
+<div id="advanced">
+  ## Fortgeschritten
+</div>
+
+<div id="logging">
+  ### Logging
+</div>
+
+Wir verwenden das Standardbibliotheksmodul [`logging`](https://docs.python.org/3/library/logging.html).
+
+Sie können Logging aktivieren, indem Sie die Umgebungsvariable `SUPERMEMORY_LOG` auf `info` setzen.
+
+```shell
+$ export SUPERMEMORY_LOG=info
+```
+
+Oder auf `debug` für ausführlicheres Logging.
+
+
+<div id="how-to-tell-whether-none-means-null-or-missing">
+  ### So erkennen Sie, ob `None` `null` oder „fehlend“ bedeutet
+</div>
+
+In einer API-Antwort kann ein Feld entweder explizit `null` sein oder ganz fehlen; in beiden Fällen lautet der Wert in dieser Bibliothek `None`. Sie können die beiden Fälle mit `.model_fields_set` unterscheiden:
+
+```py
+if response.my_field is None:
+  if 'my_field' not in response.model_fields_set:
+    print('JSON wie {} erhalten, ohne dass ein „my_field"-Schlüssel überhaupt vorhanden ist.')
+  else:
+    print('JSON wie {"my_field": null} erhalten.')
+```
+
+
+<div id="accessing-raw-response-data-eg-headers">
+  ### Zugriff auf Rohantwortdaten (z. B. Header)
+</div>
+
+Auf das „raw“-Response-Objekt kann zugegriffen werden, indem `.with_raw_response.` einem beliebigen HTTP-Methodenaufruf vorangestellt wird, z. B.:
+
+```py
+from supermemory import Supermemory
+
+client = supermemory()
+response = client.memories.with_raw_response.add(
+    content="Dies ist ein detaillierter Artikel über Konzepte des maschinellen Lernens...",
+)
+print(response.headers.get('X-My-Header'))
+
+memory = response.parse()  # das Objekt abrufen, das `memories.add()` zurückgegeben hätte
+print(memory.id)
+```
+
+Diese Methoden geben ein [`APIResponse`](https://github.com/supermemoryai/python-sdk/tree/main/src/supermemory/_response.py)-Objekt zurück.
+
+Der asynchrone Client gibt eine [`AsyncAPIResponse`](https://github.com/supermemoryai/python-sdk/tree/main/src/supermemory/_response.py) mit derselben Struktur zurück; der einzige Unterschied ist, dass die Methoden zum Lesen des Antwortinhalts mit `await` verwendet werden.
+
+
+<div id="with_streaming_response">
+  #### `.with_streaming_response`
+</div>
+
+Die oben genannte Schnittstelle liest beim Senden der Anfrage den gesamten Antwort-Body sofort ein, was nicht immer gewünscht ist.
+
+Um den Antwort-Body zu streamen, verwenden Sie stattdessen `.with_streaming_response`. Dies erfordert einen Context-Manager und liest den Antwort-Body erst, wenn Sie `.read()`, `.text()`, `.json()`, `.iter_bytes()`, `.iter_text()`, `.iter_lines()` oder `.parse()` aufrufen. Im asynchronen Client sind dies asynchrone Methoden.
+
+```python
+with client.memories.with_streaming_response.add(
+    content="Dies ist ein ausführlicher Artikel über Konzepte des maschinellen Lernens...",
+) as response:
+    print(response.headers.get("X-My-Header"))
+
+    for line in response.iter_lines():
+        print(line)
+```
+
+Der Kontext-Manager ist erforderlich, damit die Response zuverlässig geschlossen wird.
+
+
+<div id="making-customundocumented-requests">
+  ### Eigene/undokumentierte Anfragen stellen
+</div>
+
+Diese Bibliothek ist mit Typen versehen und ermöglicht einen bequemen Zugriff auf die dokumentierte API.
+
+Wenn Sie auf undokumentierte Endpunkte, Parameter oder Response‑Eigenschaften zugreifen müssen, können Sie die Bibliothek dennoch verwenden.
+
+<div id="undocumented-endpoints">
+  #### Undokumentierte Endpunkte
+</div>
+
+Um Anfragen an undokumentierte Endpunkte zu stellen, können Sie `client.get`, `client.post` und andere
+HTTP‑Verben verwenden. Die auf dem Client konfigurierten Optionen (z. B. Wiederholungen) werden bei dieser Anfrage berücksichtigt.
+
+```py
+import httpx
+
+response = client.post(
+    "/foo",
+    cast_to=httpx.Response,
+    body={"my_param": True},
+)
+
+print(response.headers.get("x-foo"))
+```
+
+
+<div id="undocumented-request-params">
+  #### Undokumentierte Request-Parameter
+</div>
+
+Wenn Sie ausdrücklich einen zusätzlichen Parameter senden möchten, können Sie dies über die Request-Optionen `extra_query`, `extra_body` und `extra_headers` tun.
+
+<div id="undocumented-response-properties">
+  #### Undokumentierte Response-Eigenschaften
+</div>
+
+Um auf undokumentierte Response-Eigenschaften zuzugreifen, können Sie die zusätzlichen Felder wie `response.unknown_prop` verwenden. Sie
+können außerdem alle zusätzlichen Felder am Pydantic-Modell als Dict über
+[`response.model_extra`](https://docs.pydantic.dev/latest/api/base_model/#pydantic.BaseModel.model_extra) abrufen.
+
+<div id="configuring-the-http-client">
+  ### Konfigurieren des HTTP-Clients
+</div>
+
+Sie können den [httpx-Client](https://www.python-httpx.org/api/#client) direkt ersetzen bzw. anpassen, um ihn für Ihren Anwendungsfall zu konfigurieren, einschließlich:
+
+* Unterstützung für [Proxys](https://www.python-httpx.org/advanced/proxies/)
+* Benutzerdefinierte [Transporte](https://www.python-httpx.org/advanced/transports/)
+* Zusätzliche [erweiterte](https://www.python-httpx.org/advanced/clients/) Funktionen
+
+```python
+import httpx
+from supermemory import Supermemory, DefaultHttpxClient
+
+client = supermemory(
+    # Oder die Umgebungsvariable `SUPERMEMORY_BASE_URL` verwenden
+    base_url="http://my.test.server.example.com:8083",
+    http_client=DefaultHttpxClient(
+        proxy="http://my.test.proxy.example.com",
+        transport=httpx.HTTPTransport(local_address="0.0.0.0"),
+    ),
+)
+```
+
+Sie können den Client auch für einzelne Anfragen anpassen, indem Sie `with_options()` verwenden:
+
+```python
+client.with_options(http_client=DefaultHttpxClient(...))
+```
+
+
+<div id="managing-http-resources">
+  ### Verwalten von HTTP-Ressourcen
+</div>
+
+Standardmäßig schließt die Bibliothek die zugrunde liegenden HTTP-Verbindungen, sobald der Client [vom Garbage Collector eingesammelt wird](https://docs.python.org/3/reference/datamodel.html#object.__del__). Sie können den Client bei Bedarf manuell mit der Methode `.close()` schließen oder einen Context-Manager verwenden, der beim Verlassen des Blocks automatisch schließt.
+
+```py
+from supermemory import Supermemory
+
+with supermemory() as client:
+  # hier Anfragen senden
+  ...
+
+# HTTP-Client wurde geschlossen
+```
+
+
+<div id="versioning">
+  ## Versionierung
+</div>
+
+Dieses Paket folgt im Allgemeinen den [SemVer](https://semver.org/spec/v2.0.0.html)-Konventionen, allerdings können bestimmte nicht abwärtskompatible Änderungen als Minor-Versionen veröffentlicht werden:
+
+1. Änderungen, die nur statische Typen betreffen und das Laufzeitverhalten nicht beeinflussen.
+2. Änderungen an internen Bibliotheksbestandteilen, die zwar technisch öffentlich sind, aber nicht für die externe Nutzung vorgesehen oder dokumentiert wurden. _(Bitte eröffnen Sie ein GitHub-Issue, wenn Sie sich auf solche Interna verlassen.)_
+3. Änderungen, von denen wir nicht erwarten, dass sie in der Praxis die große Mehrheit der Nutzer betreffen.
+
+Wir nehmen Abwärtskompatibilität ernst und setzen alles daran, ein reibungsloses Upgrade-Erlebnis zu gewährleisten.
+
+Wir freuen uns über Ihr Feedback. Bitte eröffnen Sie ein [Issue](https://www.github.com/supermemoryai/python-sdk/issues) für Fragen, Bugs oder Vorschläge.
+
+<div id="determining-the-installed-version">
+  ### Ermitteln der installierten Version
+</div>
+
+Wenn du auf die neueste Version aktualisiert hast, aber die erwarteten neuen Funktionen nicht siehst, verwendet deine Python-Umgebung wahrscheinlich noch eine ältere Version.
+
+Die zur Laufzeit verwendete Version kannst du mit Folgendem ermitteln:
+
+```py
+import supermemory
+print(supermemory.__version__)
+```
+
+
+<div id="requirements">
+  ## Anforderungen
+</div>
+
+Python 3.8 oder neuer.

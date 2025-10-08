@@ -1,0 +1,48 @@
+---
+title: "Reranking"
+description: "supermemory における検索結果のリエランキング"
+icon: "chart-bar-increasing"
+---
+
+Reranking は、クエリに基づいて検索結果の順位を再評価して並び替える機能です。
+
+![Reranking](/images/rerank.png)
+
+<div id="usage">
+  ### 使い方
+</div>
+
+Supermemory では、検索 API の `rerank` パラメータを `true` に設定すると、回答のリライトを有効化できます。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search?q=What+is+the+capital+of+France?&rerank=true \
+  --request GET \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rerank: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rerank=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### 注意事項と制限
+</div>
+
+- 現在、Reranking には `bge-reranker-base` モデルを使用しています。
+- Reranking に追加費用はかかりません。
+- Reranking により品質は大幅に向上しますが、**追加のレイテンシーが発生します**。
+- フィルタリング、ハイブリッド検索、最新性バイアスなどの他の機能も、Reranking 後の結果で問題なく動作します。

@@ -1,0 +1,373 @@
+---
+title: "添加记忆存储"
+description: "了解如何向 supermemory 添加内容"
+icon: "plus"
+---
+
+<Accordion title="最佳实践" icon="sparkles">
+  1. **内容组织**
+
+     * **使用 `containerTags` 进行分组/分区**
+       * 可选标签（字符串数组），用于对记忆存储进行分组。
+       * 可为用户 ID、项目 ID，或任何其他标识符。
+       * 便于筛选带有特定标签的记忆存储。
+       * 示例：`["user_123", "project_alpha"]`
+
+     详细了解[筛选](/zh/memory-api/features/filtering)
+
+  2. **性能提示**
+     * **批量操作**
+       * 可并行添加多个条目
+       * 为不同空间使用不同的 `containerTags`
+       * 非必要时无需等待处理完成
+
+     * **搜索优化**
+       ```json
+       {
+         "q": "error logs",
+         "documentThreshold": 0.7, // 值越高，越精确
+         "limit": 5, // 建议保持较小
+         "onlyMatchingChunks": true // 如无必要，跳过额外上下文
+       }
+       ```
+
+  3. **URL 内容**
+     * 提交不含跟踪参数的干净 URL
+     * 使用文章页面的 URL，而非主页 URL
+     * 提交前检查 URL 的可访问性
+</Accordion>
+
+<div id="basic-usage">
+  ## 基本用法
+</div>
+
+要添加一个 memory，请向 `/add` 发送 POST 请求并附上内容：
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --data '{
+    "customId": "xyz-my-db-id",
+    "content": "This is the content of my memory",
+    "metadata": {
+      "category": "technology",
+      "tag_1": "ai",
+      "tag_2": "machine-learning",
+    },
+    "containerTags": ["user_123", "project_xyz"]
+  }'
+  ```
+
+  ```typescript Typescript
+  await client.memory.create({
+  	customId: "xyz-mydb-id",
+  	content: "This is the content of my memory",
+  	metadata: {
+  		category: "technology",
+  		tag_1": "ai",
+      tag_2": "machine-learning",
+  	},
+  	containerTags: ["user_123", "project_xyz"]
+  })
+  ```
+
+  ```python Python
+  client.memory.create(
+      customId="xyz-mydb-id",
+      content="documents related to python",
+      metadata={
+          "category": "datascience",
+          "tag_1": "ai",
+          "tag_2": "machine-learning",
+      },
+      containerTags=["user_123", "project_xyz"]
+  )
+  ```
+</CodeGroup>
+
+API 将返回一个包含 id 和初始 status 的响应：
+
+```json
+{
+  "id": "mem_abc123",
+  "status": "queued"
+}
+```
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{
+      "content": "https://example.com/article",
+      "metadata": {
+        "source": "web",			# 示例 Metadata
+        "category": "technology"	# 非必填
+      },
+      "containerTags": ["user_456", "research_papers"]
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.memory.create({
+    content: "https://example.com/article",
+    userId: "user_456",
+    metadata: {
+      source: "web", // 示例 Metadata
+      category: "technology", // 非必填
+    },
+    containerTags: ["user_456", "research_papers"],
+  });
+  ```
+
+  ```python Python
+  client.memory.create(
+      content="https://example.com/article",
+      userId="user_456",
+      metadata={
+          "source": "web",
+          "category": "technology"
+      },
+      containerTags=["user_456", "research_papers"]
+  )
+  ```
+</CodeGroup>
+
+<div id="metadata-and-organization">
+  ## Metadata 与组织
+</div>
+
+你可以添加丰富的 Metadata 来组织内容：
+
+```json
+{
+  "metadata": {
+    "source": "string", // 字符串
+    "priority": 1234, // 自定义数值字段
+    "custom_field": "any" // 任意自定义字段
+  }
+}
+```
+
+<div id="partitioning-by-user">
+  ## 按用户分区
+</div>
+
+你可以通过提供 `userId` 来为数据归属并进行分区：
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{
+      "content": "This is space-specific content",
+      "userId": "space_123",
+      "metadata": {
+        "category": "space-content"
+      }
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.memory.create({
+    content: "This is space-specific content",
+    userId: "space_123",
+    metadata: {
+      category: "space-content",
+    },
+  });
+  ```
+
+  ```python Python
+  client.memory.create(
+      content="This is space-specific content",
+      userId="space_123",
+      metadata={
+          "category": "space-content"
+      }
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  搜索时，如果提供了 `userId`，将只返回该空间中的记忆存储。
+</Note>
+
+<div id="grouping">
+  ## 分组
+</div>
+
+你可以通过提供一个 `containerTags` 数组来对记忆存储进行分组：
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{
+      "content": "This is space-specific content",
+      "containerTags": ["user_123", "project_xyz"]
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.memory.create({
+    content: "This is space-specific content",
+    containerTags: ["user_123", "project_xyz"],
+  });
+  ```
+
+  ```python Python
+  client.memory.create(
+      content="This is space-specific content",
+      containerTags=["user_123", "project_xyz"]
+  )
+  ```
+</CodeGroup>
+
+<div id="checking-status">
+  ## 检查状态
+</div>
+
+使用 memory 的 ID 检查状态：
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents/mem_abc123 \
+    --request GET \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+  ```
+
+  ```typescript Typescript
+  await client.memory.get("mem_abc123");
+  ```
+
+  ```python Python
+  client.memory.get("mem_abc123")
+  ```
+</CodeGroup>
+
+<Warning>
+  如遇不可恢复的错误，记忆存储将在 2 分钟后删除。
+</Warning>
+
+<div id="file-uploads">
+  ## 文件上传
+</div>
+
+进行文件上传时，请使用专用的文件上传端点。你可以在表单数据中直接包含 `containerTags`：
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents/file \
+    --request POST \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --form 'file=@/path/to/your/file.pdf' \
+    --form 'containerTags=["user_123", "project_xyz"]'
+  ```
+
+  ```typescript Typescript
+  const formData = new FormData();
+  formData.append("file", fileBlob);
+  formData.append("containerTags", JSON.stringify(["user_123", "project_xyz"]));
+
+  const response = await fetch("https://api.supermemory.ai/v3/documents/file", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer SUPERMEMORY_API_KEY",
+    },
+    body: formData,
+  });
+  ```
+
+  ```python Python
+  import requests
+  import json
+
+  with open('/path/to/your/file.pdf', 'rb') as f:
+      files = {'file': f}
+      data = {'containerTags': json.dumps(["user_123", "project_xyz"])}
+      response = requests.post(
+          'https://api.supermemory.ai/v3/documents/file',
+          headers={'Authorization': 'Bearer SUPERMEMORY_API_KEY'},
+          files=files,
+          data=data
+      )
+  ```
+</CodeGroup>
+
+<div id="adding-additional-metadata-to-files">
+  ### 为文件添加额外的 Metadata
+</div>
+
+如果你需要在上传后补充元数据（如标题或描述），可以使用 PATCH 端点：
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents/MEMORY_ID \
+    --request PATCH \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --data '{
+      "metadata": {
+        "title": "My Document",
+        "description": "Important project document"
+      }
+    }'
+  ```
+
+  ```typescript Typescript
+  await fetch(`https://api.supermemory.ai/v3/documents/${memoryId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer SUPERMEMORY_API_KEY",
+    },
+    body: JSON.stringify({
+      metadata: {
+        title: "My Document",
+        description: "Important project document",
+      },
+    }),
+  });
+  ```
+
+  ```python Python
+  import requests
+
+  requests.patch(
+      f'https://api.supermemory.ai/v3/documents/{memory_id}',
+      headers={
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer SUPERMEMORY_API_KEY'
+      },
+      json={
+          'metadata': {
+              'title': 'My Document',
+              'description': 'Important project document'
+          }
+      }
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  文件上传端点会立即返回一个 memory ID 和处理
+  status。文件将异步处理，你可以使用 GET 端点检查其
+  status。
+</Note>
+
+<div id="next-steps">
+  ## 下一步
+</div>
+
+在我们的 [API 参考](/zh/api-reference/manage-memories/add-memory) 中探索更多高级功能

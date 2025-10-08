@@ -1,0 +1,371 @@
+---
+title: "メモリーの追加"
+description: "supermemory にコンテンツを追加する方法を学ぶ"
+icon: "plus"
+---
+
+<Accordion title="ベストプラクティス" icon="sparkles">
+  1. **コンテンツの整理**
+
+     * **グルーピング／分割には `containerTags` を使用**
+       * 保存メモリをグループ化するための任意のタグ（文字列配列）。
+       * ユーザーID、プロジェクトID、その他の識別子を指定可能。
+       * 特定のタグを共有する保存メモリでフィルタリングできる。
+       * 例: `["user_123", "project_alpha"]`
+
+     [フィルタリング](/ja/memory-api/features/filtering) の詳細
+
+  2. **パフォーマンスのヒント**
+     * **バッチ処理**
+       * 複数の項目を並行して追加できる
+       * スペースごとに別の `containerTags` を使う
+       * 必要な場合を除き、処理完了を待たない
+
+     * **検索の最適化**
+       ```json
+       {
+         "q": "error logs",
+         "documentThreshold": 0.7, // 値が高いほどより厳密
+         "limit": 5, // 小さめに保つ
+         "onlyMatchingChunks": true // 不要なら追加のコンテキストは省略
+       }
+       ```
+
+  3. **URL コンテンツ**
+     * トラッキングパラメータのないクリーンなURLを送信する
+     * ホームページではなく記事のURLを使用する
+     * 送信前にURLの到達性を確認する
+</Accordion>
+
+<div id="basic-usage">
+  ## 基本的な使い方
+</div>
+
+メモリーを追加するには、コンテンツを含めて `/add` に POST リクエストを送信します:
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --data '{
+    "customId": "xyz-my-db-id",
+    "content": "This is the content of my memory",
+    "metadata": {
+      "category": "technology",
+      "tag_1": "ai",
+      "tag_2": "machine-learning",
+    },
+    "containerTags": ["user_123", "project_xyz"]
+  }'
+  ```
+
+  ```typescript Typescript
+  await client.memory.create({
+  	customId: "xyz-mydb-id",
+  	content: "This is the content of my memory",
+  	metadata: {
+  		category: "technology",
+  		"tag_1": "ai",
+      "tag_2": "machine-learning",
+  	},
+  	containerTags: ["user_123", "project_xyz"]
+  })
+  ```
+
+  ```python Python
+  client.memory.create(
+      customId="xyz-mydb-id",
+      content="documents related to python",
+      metadata={
+          "category": "datascience",
+          "tag_1": "ai",
+          "tag_2": "machine-learning",
+      },
+      containerTags=["user_123", "project_xyz"]
+  )
+  ```
+</CodeGroup>
+
+API は id と初期 status を含むレスポンスを返します:
+
+```json
+{
+  "id": "mem_abc123",
+  "status": "queued"
+}
+```
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{
+      "content": "https://example.com/article",
+      "metadata": {
+        "source": "web",			# サンプルのメタデータ
+        "category": "technology"	# 必須ではありません
+      },
+      "containerTags": ["user_456", "research_papers"]
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.memory.create({
+    content: "https://example.com/article",
+    userId: "user_456",
+    metadata: {
+      source: "web", // サンプルのメタデータ
+      category: "technology", // 必須ではありません
+    },
+    containerTags: ["user_456", "research_papers"],
+  });
+  ```
+
+  ```python Python
+  client.memory.create(
+      content="https://example.com/article",
+      userId="user_456",
+      metadata={
+          "source": "web",
+          "category": "technology"
+      },
+      containerTags=["user_456", "research_papers"]
+  )
+  ```
+</CodeGroup>
+
+<div id="metadata-and-organization">
+  ## メタデータと組織設定
+</div>
+
+コンテンツを整理するためにリッチなメタデータを追加できます:
+
+```json
+{
+  "metadata": {
+    "source": "string", // 文字列
+    "priority": 1234, // カスタム数値フィールド
+    "custom_field": "any" // 任意のカスタムフィールド
+  }
+}
+```
+
+<div id="partitioning-by-user">
+  ## ユーザー単位でのパーティショニング
+</div>
+
+`userId` を指定すると、データに属性付けを行い、ユーザー単位でパーティショニングできます:
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{
+      "content": "This is space-specific content",
+      "userId": "space_123",
+      "metadata": {
+        "category": "space-content"
+      }
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.memory.create({
+    content: "This is space-specific content",
+    userId: "space_123",
+    metadata: {
+      category: "space-content",
+    },
+  });
+  ```
+
+  ```python Python
+  client.memory.create(
+      content="This is space-specific content",
+      userId="space_123",
+      metadata={
+          "category": "space-content"
+      }
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  検索時に `userId` を指定すると、そのスペースに属する保存メモリのみが返されます。
+</Note>
+
+<div id="grouping">
+  ## グルーピング
+</div>
+
+`containerTags` の配列を指定することで、メモリーをグループ化できます。
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{
+      "content": "This is space-specific content",
+      "containerTags": ["user_123", "project_xyz"]
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.memory.create({
+    content: "This is space-specific content",
+    containerTags: ["user_123", "project_xyz"],
+  });
+  ```
+
+  ```python Python
+  client.memory.create(
+      content="This is space-specific content",
+      containerTags=["user_123", "project_xyz"]
+  )
+  ```
+</CodeGroup>
+
+<div id="checking-status">
+  ## ステータスの確認
+</div>
+
+メモリーのidを使ってステータスを確認します:
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents/mem_abc123 \
+    --request GET \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+  ```
+
+  ```typescript Typescript
+  await client.memory.get("mem_abc123");
+  ```
+
+  ```python Python
+  client.memory.get("mem_abc123")
+  ```
+</CodeGroup>
+
+<Warning>
+  回復不能なエラーが発生した場合、保存メモリは2分後に削除されます。
+</Warning>
+
+<div id="file-uploads">
+  ## ファイルのアップロード
+</div>
+
+ファイルをアップロードする場合は、専用のファイルアップロード用エンドポイントを使用します。フォームデータに `containerTags` を直接含められます。
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents/file \
+    --request POST \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --form 'file=@/path/to/your/file.pdf' \
+    --form 'containerTags=["user_123", "project_xyz"]'
+  ```
+
+  ```typescript Typescript
+  const formData = new FormData();
+  formData.append("file", fileBlob);
+  formData.append("containerTags", JSON.stringify(["user_123", "project_xyz"]));
+
+  const response = await fetch("https://api.supermemory.ai/v3/documents/file", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer SUPERMEMORY_API_KEY",
+    },
+    body: formData,
+  });
+  ```
+
+  ```python Python
+  import requests
+  import json
+
+  with open('/path/to/your/file.pdf', 'rb') as f:
+      files = {'file': f}
+      data = {'containerTags': json.dumps(["user_123", "project_xyz"])}
+      response = requests.post(
+          'https://api.supermemory.ai/v3/documents/file',
+          headers={'Authorization': 'Bearer SUPERMEMORY_API_KEY'},
+          files=files,
+          data=data
+      )
+  ```
+</CodeGroup>
+
+<div id="adding-additional-metadata-to-files">
+  ### ファイルにメタデータを追加する
+</div>
+
+アップロード後に追加のメタデータ（title や description など）を付与する必要がある場合は、PATCH エンドポイントを使用します。
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents/MEMORY_ID \
+    --request PATCH \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --data '{
+      "metadata": {
+        "title": "My Document",
+        "description": "Important project document"
+      }
+    }'
+  ```
+
+  ```typescript Typescript
+  await fetch(`https://api.supermemory.ai/v3/documents/${memoryId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer SUPERMEMORY_API_KEY",
+    },
+    body: JSON.stringify({
+      metadata: {
+        title: "My Document",
+        description: "Important project document",
+      },
+    }),
+  });
+  ```
+
+  ```python Python
+  import requests
+
+  requests.patch(
+      f'https://api.supermemory.ai/v3/documents/{memory_id}',
+      headers={
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer SUPERMEMORY_API_KEY'
+      },
+      json={
+          'metadata': {
+              'title': 'My Document',
+              'description': 'Important project document'
+          }
+      }
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  ファイルアップロードのエンドポイントは、メモリーの ID と処理 status をすぐに返します。ファイルは非同期で処理され、GET エンドポイントでその status を確認できます。
+</Note>
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+[APIリファレンス](/ja/api-reference/manage-memories/add-memory)で、より高度な機能を確認しましょう

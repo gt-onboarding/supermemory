@@ -1,0 +1,140 @@
+---
+title: "Usa tu propia clave (BYOK)"
+description: "Configura las credenciales de tu propia aplicación OAuth para mayor seguridad y control"
+---
+
+De forma predeterminada, supermemory utiliza sus propias aplicaciones OAuth para conectarse a proveedores de terceros. No obstante, puedes configurar las credenciales de tu propia aplicación OAuth para reforzar la seguridad y el control. Esto es especialmente útil para clientes empresariales que desean mantener el control sobre el acceso a sus datos.
+
+<Danger>
+  Algunos proveedores como Google Drive requieren una verificación y aprobación exhaustivas antes de que puedas usar claves personalizadas.
+</Danger>
+
+<div id="setting-up-custom-provider-keys">
+  ### Configuración de claves personalizadas del provider
+</div>
+
+Para configurar credenciales de OAuth personalizadas para tu organización, usa el endpoint `PATCH /v3/settings`:
+
+1. Configura tu aplicación de OAuth en la consola de desarrolladores del provider.
+
+Google: https://console.developers.google.com/apis/credentials/oauthclient \
+Notion: https://www.notion.so/my-integrations \
+OneDrive: https://portal.azure.com/#view/Microsoft&#95;AAD&#95;RegisteredApps/ApplicationsMenu
+
+2. Si usas Google Drive,
+
+* Selecciona el tipo de aplicación como `Web application`
+* **Habilita la API de Google Drive en &quot;APIs and Services&quot; en la Cloud Console**
+
+3. Configura la URL de redirección; establécela en:
+
+```
+https://api.supermemory.ai/v3/connections/auth/callback/{provider}
+```
+
+Por ejemplo, si usas Google Drive, la url de redirección sería:
+
+```
+https://api.supermemory.ai/v3/connections/auth/callback/google-drive
+```
+
+4. Configura el client ID y el client secret en el endpoint `PATCH /v3/settings`.
+
+<CodeGroup>
+  ```typescript Typescript
+  import Supermemory from 'supermemory';
+
+  const client = new Supermemory({
+    apiKey: process.env['SUPERMEMORY_API_KEY'],
+  });
+
+  // Ejemplo: Configurar credenciales OAuth personalizadas de Google Drive
+  const settings = await client.settings.update({
+    googleCustomKeyEnabled: true,
+    googleDriveClientId: "your-google-client-id",
+    googleDriveClientSecret: "your-google-client-secret"
+  });
+
+  // Ejemplo: Configurar credenciales OAuth personalizadas de Notion
+  const settings = await client.settings.update({
+    notionCustomKeyEnabled: true,
+    notionClientId: "your-notion-client-id",
+    notionClientSecret: "your-notion-client-secret"
+  });
+
+  // Ejemplo: Configurar credenciales OAuth personalizadas de OneDrive
+  const settings = await client.settings.update({
+    onedriveCustomKeyEnabled: true,
+    onedriveClientId: "your-onedrive-client-id",
+    onedriveClientSecret: "your-onedrive-client-secret"
+  });
+  ```
+
+  ```python Python
+  from supermemory import supermemory
+
+  client = supermemory(
+      api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # Este es el valor predeterminado y se puede omitir
+  )
+
+  # Ejemplo: Configurar credenciales OAuth personalizadas de Google Drive
+  settings = client.settings.update(
+      google_custom_key_enabled=True,
+      google_client_id="your-google-client-id",
+      google_client_secret="your-google-client-secret"
+  )
+
+  # Ejemplo: Configurar credenciales OAuth personalizadas de Notion
+  settings = client.settings.update(
+      notion_custom_key_enabled=True,
+      notion_client_id="your-notion-client-id",
+      notion_client_secret="your-notion-client-secret"
+  )
+
+  # Ejemplo: Configurar credenciales OAuth personalizadas de OneDrive
+  settings = client.settings.update(
+      onedrive_custom_key_enabled=True,
+      onedrive_client_id="your-onedrive-client-id",
+      onedrive_client_secret="your-onedrive-client-secret"
+  )
+  ```
+
+  ```bash cURL
+  # Ejemplo: Configurar credenciales OAuth personalizadas de Google Drive
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "googleDriveCustomKeyEnabled": true,
+    "googleDriveClientId": "your-google-client-id",
+    "googleDriveClientSecret": "your-google-client-secret"
+  }'
+
+  # Ejemplo: Configurar credenciales OAuth personalizadas de Notion
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "notionCustomKeyEnabled": true,
+    "notionClientId": "your-notion-client-id",
+    "notionClientSecret": "your-notion-client-secret"
+  }'
+
+  # Ejemplo: Configurar credenciales OAuth personalizadas de OneDrive
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "onedriveCustomKeyEnabled": true,
+    "onedriveClientId": "your-onedrive-client-id",
+    "onedriveClientSecret": "your-onedrive-client-secret"
+  }'
+  ```
+</CodeGroup>
+
+<Warning>
+  Una vez que habilites claves personalizadas para un provider, todas las nuevas integraciones de ese provider usarán tu aplicación OAuth personalizada. Las integraciones existentes DEBERÁN volver a autorizarse.
+</Warning>

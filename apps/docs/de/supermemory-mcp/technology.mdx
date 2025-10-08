@@ -1,0 +1,60 @@
+---
+title: "Technische Implementierungsdetails"
+description: "Technische Implementierungsdetails von supermemory MCP"
+---
+
+Die technische Architektur stellt **Einfachheit und Benutzererlebnis** in den Vordergrund, bei gleichzeitiger Wahrung robuster Funktionalität. Entwickelt als das, was die Ersteller als „das Einfachste, was du je sehen wirst“ beschreiben – im Kern eine React‑Router‑Anwendung, die Fetch‑Requests an die supermemory API stellt – wurde das gesamte System in rund 5 Stunden tatsächlicher Arbeitszeit entwickelt und ausgeliefert.
+
+<div id="architecture-components">
+  ### Architekturkomponenten
+</div>
+
+- **Backend-API**: Basierend auf der supermemory API (https://api.supermemory.ai/v3)
+- **Transportschicht**: Nutzt Server-Sent Events (SSE) für Echtzeitkommunikation
+- **Dynamische Servergenerierung**: Erstellt über URL-Pfadparameter eindeutige MCP-Serverinstanzen für jede:n Nutzer:in
+- **Sitzungsverwaltung**: Gewährleistet vollständige Nutzerisolierung durch eindeutige URLs
+- **Infrastruktur**: Gehostet auf Cloudflare mit Durable Objects für persistente, lang laufende Verbindungen
+
+Das System nutzt die **Cloudflare-Infrastruktur** mit CPU-basierter Abrechnung und ist dadurch sehr effizient: Speicher-Verbindungen verbringen den Großteil der Zeit zwischen Interaktionen im Wartezustand statt aktiv zu verarbeiten, was trotz potenziell sehr langer Laufzeiten zu minimaler CPU-Nutzung führt.
+
+<div id="the-two-main-components-explained">
+  ## Die beiden Hauptkomponenten erklärt
+</div>
+
+<div id="addtosupermemory-action">
+  ### addToSupermemory action
+</div>
+
+Diese Komponente **speichert Benutzerinformationen, Präferenzen und Verhaltensmuster** mit ausgefeilten Auslösemechanismen:
+
+**Auslösemethoden:**
+
+- **Explizite Befehle**: Direkte Benutzeranweisungen wie „Merke dir das“
+- **Implizite Erkennung**: Automatische Identifizierung wichtiger Benutzermerkmale, Präferenzen oder Muster während von Unterhaltungen
+
+**Erfasste Datentypen:**
+
+- Technische Präferenzen und Details (z. B. „Meine primäre Programmiersprache ist Python“)
+- Projektinformationen und Kontext (z. B. „Ich arbeite derzeit an einem Projekt namens ‚Apollo‘“)
+- Benutzerverhalten und emotionale Reaktionen
+- Persönliche Fakten, Präferenzen und Entscheidungs­muster
+- Reichhaltiger Kontext, einschließlich technischer Details und Beispiele
+
+<div id="searchsupermemory-action">
+  ### searchSupermemory-Aktion
+</div>
+
+Diese Komponente **ruft relevante Informationen** aus gespeicherten Speicher-Einträgen mithilfe fortgeschrittener Suchfunktionen ab:
+
+**Auslöser für die Aktivierung:**
+
+- Explizite Nutzeranfragen nach früheren Informationen
+- Kontextsituationen, in denen frühere Nutzerentscheidungen aktuelle Entscheidungen unterstützen
+- Automatische Kontextanreicherung basierend auf dem Gesprächsverlauf
+
+**Suchfunktionen:**
+
+- **Semantisches Matching**: Findet relevante Details über verwandte Erfahrungen hinweg mittels Vektorsuche
+- **Mustererkennung**: Erkennt Verhaltensmuster und Präferenzen
+- **Sitzungsübergreifende Abfrage**: Greift auf Speicher-Einträge aus früheren Unterhaltungen und Plattformen zu
+- **Intelligente Filterung**: Liefert den relevantesten Kontext basierend auf den Anforderungen des aktuellen Gesprächs

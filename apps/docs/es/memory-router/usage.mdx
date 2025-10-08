@@ -1,0 +1,232 @@
+---
+title: "Uso"
+description: "Cómo implementar Memory Router en tu aplicación"
+sidebarTitle: "Uso"
+---
+
+Agrega memory ilimitada a tus aplicaciones LLM con solo cambiar la url.
+
+<div id="prerequisites">
+  ## Requisitos previos
+</div>
+
+Necesitas:
+
+1. Una [clave de API de Supermemory](https://console.supermemory.ai)
+2. La clave de API de tu provider de LLM
+
+<div id="basic-setup">
+  ## Configuración básica
+</div>
+
+<Steps>
+  <Step title="Obtén tus claves de API">
+    **Clave de API de Supermemory:**
+    1. Regístrate en [console.supermemory.ai](https://console.supermemory.ai)
+    2. Ve a **API Keys** → **Create API Key**
+    3. Copia tu clave
+
+    **Clave de API del provider:**
+    - [OpenAI](https://platform.openai.com/api-keys)
+    - [Anthropic](https://console.anthropic.com/settings/keys)
+    - [Google Gemini](https://aistudio.google.com/app/apikey)
+    - [Groq](https://console.groq.com/keys)
+  </Step>
+
+  <Step title="Actualiza tu URL base">
+    Antepone `https://api.supermemory.ai/v3/` a la URL de tu provider:
+
+    ```
+    https://api.supermemory.ai/v3/[PROVIDER_URL]
+    ```
+  </Step>
+
+  <Step title="Añade autenticación">
+    Incluye ambas claves de API en tus solicitudes (ver ejemplos a continuación)
+  </Step>
+</Steps>
+
+<div id="provider-urls">
+  ## URLs de proveedores
+</div>
+
+<CodeGroup>
+
+```text OpenAI
+https://api.supermemory.ai/v3/https://api.openai.com/v1/
+```
+
+```text Anthropic
+https://api.supermemory.ai/v3/https://api.anthropic.com/v1/
+```
+
+```text Google Gemini
+https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai/
+```
+
+```text Groq
+https://api.supermemory.ai/v3/https://api.groq.com/openai/v1/
+```
+
+</CodeGroup>
+
+<div id="implementation-examples">
+  ## Ejemplos de implementación
+</div>
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_OPENAI_API_KEY",
+        base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+        default_headers={
+            "x-supermemory-api-key": "YOUR_SUPERMEMORY_API_KEY",
+            "x-sm-user-id": "user123"  # Identificador único de usuario
+        }
+    )
+
+    # Úsalo como de costumbre
+    response = client.chat.completions.create(
+        model="gpt-5",
+        messages=[
+            {"role": "user", "content": "Hello!"}
+        ]
+    )
+
+    print(response.choices[0].message.content)
+    ```
+  </Tab>
+
+  <Tab title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/',
+      defaultHeaders: {
+        'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY,
+        'x-sm-user-id': 'user123'  // Identificador único de usuario
+      }
+    });
+
+    // Úsalo como de costumbre
+    const response = await client.chat.completions.create({
+      model: 'gpt-5',
+      messages: [
+        { role: 'user', content: 'Hello!' }
+      ]
+    });
+
+    console.log(response.choices[0].message.content);
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions" \
+      -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+      -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user123" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "gpt-5",
+        "messages": [{"role": "user", "content": "Hello!"}]
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="alternative-url-parameters">
+  ## Alternativa: parámetros de URL
+</div>
+
+Si no puedes modificar los encabezados, pasa la autenticación mediante parámetros de URL:
+
+<CodeGroup>
+
+```python Python
+client = OpenAI(
+    api_key="YOUR_OPENAI_API_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123"
+)
+
+# Luego establece la clave de API de Supermemory como variable de entorno:
+# export SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```typescript TypeScript
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123'
+});
+
+// Establece la clave de API de Supermemory como variable de entorno:
+// SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123" \
+  -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+  -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-5", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+</CodeGroup>
+
+<div id="conversation-management">
+  ## Administración de conversaciones
+</div>
+
+<div id="managing-conversations">
+  ### Gestión de conversaciones
+</div>
+
+Usa `x-sm-conversation-id` para mantener el contexto de la conversación entre solicitudes:
+
+```python
+# Iniciar una nueva conversación
+response1 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "Mi nombre es Alice"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+
+# Continuar la misma conversación más tarde
+response2 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "¿Cuál es mi nombre?"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+# La respuesta recordará "Alice"
+```
+
+
+<div id="user-identification">
+  ### Identificación de usuarios
+</div>
+
+Proporciona siempre un id de usuario único para aislar las memories entre usuarios:
+
+```python
+# Diferentes usuarios tienen espacios de memoria separados
+client_alice = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "alice_123"}
+)
+
+client_bob = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "bob_456"}
+)
+```

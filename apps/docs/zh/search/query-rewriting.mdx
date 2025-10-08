@@ -1,0 +1,468 @@
+---
+title: "查询重写"
+description: "通过自动扩展与重写查询提升搜索准确性"
+---
+
+![query rewriting](/images/query-rewriting.png)
+
+查询重写会自动生成你的查询的多种变体，以提升结果覆盖度和准确性。Supermemory 会创建多个重写版本，针对每个版本执行搜索，然后合并并去重结果。
+
+<div id="how-query-rewriting-works">
+  ## 查询重写的工作原理
+</div>
+
+当你启用 `rewriteQuery: true` 时，Supermemory 会：
+
+1. **分析你的原始查询** 的意图与关键概念
+2. **生成多个重写版本**，采用不同的表述与同义词
+3. **并行执行搜索**，同时针对原始与重写后的查询
+4. **合并并去重** 所有查询结果
+5. **返回统一结果**，按相关性排序
+
+该流程会增加约 400ms 的 Latency，但能显著提升结果质量，尤其适用于：
+
+- **自然语言问题**（“How do neural networks learn?”）
+- **含糊术语**，可能具有多重含义
+- **复杂查询**，包含多个概念
+- **特定领域术语**，可能存在同义表达
+
+<div id="basic-query-rewriting">
+  ## 基础查询重写
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    // 关闭查询重写
+    const basicResults = await client.search.documents({
+      q: "How do transformers work in AI?",
+      rewriteQuery: false,
+      limit: 5
+    });
+
+    // 开启查询重写 - 会生成多个查询变体
+    const rewrittenResults = await client.search.documents({
+      q: "How do transformers work in AI?",
+      rewriteQuery: true,
+      limit: 5
+    });
+
+    console.log(`基础搜索：${basicResults.total} 条结果`);
+    console.log(`重写后搜索：${rewrittenResults.total} 条结果`);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    # 关闭查询重写
+    basic_results = client.search.documents(
+        q="How do transformers work in AI?",
+        rewrite_query=False,
+        limit=5
+    )
+
+    # 开启查询重写 - 会生成多个查询变体
+    rewritten_results = client.search.documents(
+        q="How do transformers work in AI?",
+        rewrite_query=True,
+        limit=5
+    )
+
+    print(f"基础搜索：{basic_results.total} 条结果")
+    print(f"重写后搜索：{rewritten_results.total} 条结果")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # 关闭查询重写
+    echo "基础搜索："
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "How do transformers work in AI?",
+        "rewriteQuery": false,
+        "limit": 5
+      }' | jq '.total'
+
+    # 开启查询重写
+    echo "重写后搜索："
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "How do transformers work in AI?",
+        "rewriteQuery": true,
+        "limit": 5
+      }' | jq '.total'
+    ```
+  </Tab>
+</Tabs>
+
+**示例输出对比：**
+
+```json
+// 不重写查询：3 个结果
+{
+  "results": [...],
+  "total": 3,
+  "timing": 120
+}
+
+// 重写查询：8 个结果（找到更多相关内容）
+{
+  "results": [...],
+  "total": 8,
+  "timing": 520  // 查询处理增加 400ms
+}
+```
+
+
+<div id="natural-language-questions">
+  ## 自然语言问题
+</div>
+
+查询重写在将对话式提问转化为高效搜索查询方面表现突出：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Natural language question
+    const results = await client.search.documents({
+      q: "What are the best practices for training deep learning models?",
+      rewriteQuery: true,
+      limit: 10
+    });
+
+    // The system might generate rewrites like:
+    // - "deep learning model training best practices"
+    // - "neural network training optimization techniques"
+    // - "machine learning model training guidelines"
+    // - "deep learning training methodology"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    # Natural language question
+    results = client.search.documents(
+        q="What are the best practices for training deep learning models?",
+        rewrite_query=True,
+        limit=10
+    )
+
+    # The system might generate rewrites like:
+    # - "deep learning model training best practices"
+    # - "neural network training optimization techniques"
+    # - "machine learning model training guidelines"
+    # - "deep learning training methodology"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "What are the best practices for training deep learning models?",
+        "rewriteQuery": true,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**示例输出：**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_123",
+      "title": "深度学习训练指南",
+      "score": 0.92,
+      "chunks": [
+        {
+          "content": "训练深度神经网络的最佳实践包括合理的权重初始化、学习率调度和正则化技术...",
+          "score": 0.89,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_456",
+      "title": "神经网络优化",
+      "score": 0.87,
+      "chunks": [
+        {
+          "content": "有效的训练方法包括批量归一化、dropout 和梯度裁剪来防止过拟合...",
+          "score": 0.85,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 12,
+  "timing": 445
+}
+```
+
+
+<div id="technical-term-expansion">
+  ## 技术术语扩展
+</div>
+
+查询重写可通过不同的技术表述来帮助定位内容：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 使用特定术语的原始查询
+    const results = await client.search.documents({
+      q: "CNN architecture patterns",
+      rewriteQuery: true,
+      containerTags: ["research"],
+      limit: 8
+    });
+
+    // 系统将扩展为包含：
+    // - "convolutional neural network architecture"
+    // - "CNN design patterns"
+    // - "convolutional network structures"
+    // - "CNN architectural components"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    # 使用特定术语的原始查询
+    results = client.search.documents(
+        q="CNN architecture patterns",
+        rewrite_query=True,
+        container_tags=["research"],
+        limit=8
+    )
+
+    # 系统将扩展为包含：
+    # - "convolutional neural network architecture"
+    # - "CNN design patterns"
+    # - "convolutional network structures"
+    # - "CNN architectural components"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "CNN architecture patterns",
+        "rewriteQuery": true,
+        "containerTags": ["research"],
+        "limit": 8
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**示例输出：**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_789",
+      "title": "卷积神经网络架构",
+      "score": 0.94,
+      "chunks": [
+        {
+          "content": "ResNet和DenseNet等现代CNN架构利用跳跃连接来解决梯度消失问题...",
+          "score": 0.91,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_101",
+      "title": "深度学习设计模式",
+      "score": 0.88,
+      "chunks": [
+        {
+          "content": "卷积层后接池化操作构成了CNN架构的基本构建模块...",
+          "score": 0.86,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 15,
+  "timing": 478
+}
+```
+
+
+<div id="memory-search-with-query-rewriting">
+  ## 结合查询重写的 memory 搜索
+</div>
+
+查询重写同时适用于文档搜索和 memory 搜索：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 启用查询重写的 memory 搜索
+    const memoryResults = await client.search.memories({
+      q: "explain quantum entanglement simply",
+      rewriteQuery: true,
+      containerTag: "physics_notes",
+      limit: 5
+    });
+
+    // 将生成如下变体：
+    // - "quantum entanglement explanation"
+    // - "what is quantum entanglement"
+    // - "quantum entanglement basics"
+    // - "simple quantum entanglement description"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    # 启用查询重写的 memory 搜索
+    memory_results = client.search.memories(
+        q="explain quantum entanglement simply",
+        rewrite_query=True,
+        container_tag="physics_notes",
+        limit=5
+    )
+
+    # 将生成如下变体：
+    # - "quantum entanglement explanation"
+    # - "what is quantum entanglement"
+    # - "quantum entanglement basics"
+    # - "simple quantum entanglement description"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "explain quantum entanglement simply",
+        "rewriteQuery": true,
+        "containerTag": "physics_notes",
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**示例输出：**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_456",
+      "memory": "量子纠缠是一种现象，两个粒子以某种方式连接，测量其中一个会立即影响另一个，无论距离多远。可以把它想象成两枚神奇的硬币，总是落在相反的面上。",
+      "similarity": 0.91,
+      "title": "简单的量子纠缠解释",
+      "metadata": {
+        "topic": "量子物理",
+        "difficulty": "初学者"
+      }
+    },
+    {
+      "id": "mem_789",
+      "memory": "爱因斯坦称量子纠缠为'远距离的幽灵作用'，因为纠缠粒子似乎能够跨越巨大距离瞬间通信，这挑战了我们对物理学中局域性的理解。",
+      "similarity": 0.87,
+      "title": "爱因斯坦对纠缠的观点"
+    }
+  ],
+  "total": 7,
+  "timing": 412
+}
+```
+
+
+<div id="complex-multi-concept-queries">
+  ## 复杂多概念查询
+</div>
+
+查询重写在处理包含多个概念的查询时尤为出色：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning bias fairness algorithmic discrimination",
+      rewriteQuery: true,
+      filters: {
+        AND: [
+          { key: "category", value: "ethics", negate: false }
+        ]
+      },
+      limit: 10
+    });
+
+    // 拆解为更聚焦的重写：
+    // - "machine learning bias detection"
+    // - "algorithmic fairness in AI"
+    // - "discrimination in machine learning algorithms"
+    // - "bias mitigation techniques ML"
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning bias fairness algorithmic discrimination",
+        rewrite_query=True,
+        filters={
+            "AND": [
+                {"key": "category", "value": "ethics", "negate": False}
+            ]
+        },
+        limit=10
+    )
+
+    # 拆解为更聚焦的重写：
+    # - "machine learning bias detection"
+    # - "algorithmic fairness in AI"
+    # - "discrimination in machine learning algorithms"
+    # - "bias mitigation techniques ML"
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning bias fairness algorithmic discrimination",
+        "rewriteQuery": true,
+        "filters": {
+          "AND": [
+            {"key": "category", "value": "ethics", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>

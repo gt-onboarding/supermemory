@@ -1,0 +1,232 @@
+---
+title: "Verwendung"
+description: "So implementieren Sie den Memory Router in Ihrer Anwendung"
+sidebarTitle: "Verwendung"
+---
+
+Fügen Sie Ihren LLM-Anwendungen mit nur einer URL-Änderung unbegrenzten Speicher hinzu.
+
+<div id="prerequisites">
+  ## Voraussetzungen
+</div>
+
+Sie benötigen:
+
+1. Einen [Supermemory API-Schlüssel](https://console.supermemory.ai)
+2. Den API-Schlüssel Ihres LLM-Providers
+
+<div id="basic-setup">
+  ## Grundlegende Einrichtung
+</div>
+
+<Steps>
+  <Step title="API-Schlüssel abrufen">
+    **Supermemory API-Schlüssel:**
+    1. Registrieren Sie sich unter [console.supermemory.ai](https://console.supermemory.ai)
+    2. Navigieren Sie zu **API Keys** → **Create API Key**
+    3. Kopieren Sie Ihren Schlüssel
+
+    **Provider API-Schlüssel:**
+    - [OpenAI](https://platform.openai.com/api-keys)
+    - [Anthropic](https://console.anthropic.com/settings/keys)
+    - [Google Gemini](https://aistudio.google.com/app/apikey)
+    - [Groq](https://console.groq.com/keys)
+  </Step>
+
+  <Step title="Basis-URL aktualisieren">
+    Stellen Sie `https://api.supermemory.ai/v3/` vor die URL Ihres Providers:
+
+    ```
+    https://api.supermemory.ai/v3/[PROVIDER_URL]
+    ```
+  </Step>
+
+  <Step title="Authentifizierung hinzufügen">
+    Fügen Sie beide API-Schlüssel in Ihre Anfragen ein (siehe Beispiele unten)
+  </Step>
+</Steps>
+
+<div id="provider-urls">
+  ## Provider-URLs
+</div>
+
+<CodeGroup>
+
+```text OpenAI
+https://api.supermemory.ai/v3/https://api.openai.com/v1/
+```
+
+```text Anthropic
+https://api.supermemory.ai/v3/https://api.anthropic.com/v1/
+```
+
+```text Google Gemini
+https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai/
+```
+
+```text Groq
+https://api.supermemory.ai/v3/https://api.groq.com/openai/v1/
+```
+
+</CodeGroup>
+
+<div id="implementation-examples">
+  ## Implementierungsbeispiele
+</div>
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_OPENAI_API_KEY",
+        base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+        default_headers={
+            "x-supermemory-api-key": "YOUR_SUPERMEMORY_API_KEY",
+            "x-sm-user-id": "user123"  # Eindeutige Benutzerkennung
+        }
+    )
+
+    # Normal verwenden
+    response = client.chat.completions.create(
+        model="gpt-5",
+        messages=[
+            {"role": "user", "content": "Hello!"}
+        ]
+    )
+
+    print(response.choices[0].message.content)
+    ```
+  </Tab>
+
+  <Tab title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/',
+      defaultHeaders: {
+        'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY,
+        'x-sm-user-id': 'user123'  // Eindeutige Benutzerkennung
+      }
+    });
+
+    // Normal verwenden
+    const response = await client.chat.completions.create({
+      model: 'gpt-5',
+      messages: [
+        { role: 'user', content: 'Hello!' }
+      ]
+    });
+
+    console.log(response.choices[0].message.content);
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions" \
+      -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+      -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user123" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "gpt-5",
+        "messages": [{"role": "user", "content": "Hello!"}]
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="alternative-url-parameters">
+  ## Alternative: URL-Parameter
+</div>
+
+Wenn Sie Header nicht ändern können, übergeben Sie die Authentifizierung über URL-Parameter:
+
+<CodeGroup>
+
+```python Python
+client = OpenAI(
+    api_key="YOUR_OPENAI_API_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123"
+)
+
+# Setzen Sie anschließend den Supermemory API-Schlüssel als Umgebungsvariable:
+# export SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```typescript TypeScript
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123'
+});
+
+// Setzen Sie den Supermemory API-Schlüssel als Umgebungsvariable:
+// SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123" \
+  -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+  -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-5", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+</CodeGroup>
+
+<div id="conversation-management">
+  ## Gesprächsverwaltung
+</div>
+
+<div id="managing-conversations">
+  ### Verwaltung von Unterhaltungen
+</div>
+
+Verwenden Sie `x-sm-conversation-id`, um den Gesprächskontext über mehrere Anfragen hinweg beizubehalten:
+
+```python
+# Neue Unterhaltung starten
+response1 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "Mein Name ist Alice"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+
+# Dieselbe Unterhaltung später fortsetzen
+response2 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "Wie heiße ich?"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+# Antwort wird sich an „Alice" erinnern
+```
+
+
+<div id="user-identification">
+  ### Benutzeridentifikation
+</div>
+
+Geben Sie stets eine eindeutige Benutzer-ID an, um Speicher-Einträge zwischen Benutzern zu isolieren:
+
+```python
+# Verschiedene Benutzer haben separate Speicherbereiche
+client_alice = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "alice_123"}
+)
+
+client_bob = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "bob_456"}
+)
+```

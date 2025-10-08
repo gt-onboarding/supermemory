@@ -1,0 +1,99 @@
+---
+title: "Developer Platform"
+description: "API-Updates, neue Endpoints und SDK-Releases"
+---
+
+API-Updates, neue Endpoints, SDK-Releases und entwicklerorientierte Funktionen.
+
+<div id="september-17-2025">
+  ## 17. September 2025
+</div>
+
+- **Suche nach vergessenen Speicher‑Einträgen:** Neuer Parameter `include.forgottenMemories` in der v4-Such-API ermöglicht die Suche in Speicher‑Einträgen, die ausdrücklich vergessen oder abgelaufen sind. Auf `true` setzen, um vergessene Speicher‑Einträge in die Suchergebnisse einzubeziehen und so zuvor archivierte Informationen wiederzufinden.
+
+<div id="september-14-2025">
+  ## 14. September 2025
+</div>
+
+- **Erweiterte Delete-API:** Der Endpunkt `DELETE /v3/documents/:id` unterstützt jetzt sowohl die interne Dokument-id als auch customId für eine flexible Löschung. Entwickler können Dokumente nun mit derselben customId löschen, die bei der Erstellung angegeben wurde, was die API-Konsistenz mit anderen Endpunkten verbessert.
+- **Klarstellung der API-Terminologie:** Die Terminologie wurde von „memories“ auf „documents“ umgestellt, um die Verständlichkeit für Entwickler zu erhöhen. Neue Endpunkte unter `/v3/documents/*` bieten intuitivere Bezeichnungen und wahren gleichzeitig die vollständige Abwärtskompatibilität durch automatische Weiterleitungen von `/v3/memories/*`. Für bestehende Integrationen ist keine Aktion erforderlich.
+
+<div id="september-13-2025">
+  ## 13. September 2025
+</div>
+
+- **Dokumentation v2.0:** Vollständige Überarbeitung mit umfassenden API-Referenzen, Cookbook-Anleitungen und produktionsreifen Beispielen für TypeScript, Python und cURL
+- **AI SDK-Integration:** Neues Paket `@supermemory/tools/ai-sdk` für native Integration der Vercel AI SDK mit Memory Tools und Infinite-Chat-Funktionen
+- **Bulk-Lösch-Endpoint:** Neuer Endpoint `DELETE /v3/documents/bulk` für effizientes Speicher-Management
+
+<div id="september-5-2025">
+  ## 5. September 2025
+</div>
+
+- **Memory Search Endpoint:** Neuer `/v4/search`-Endpoint, optimiert für konversationelle KI und Speicherabruf (vs. Dokumentsuche)
+- **Erweitertes Speicher-Management:** Verbesserte Update-/Delete-Operationen mit präziserer Filterung und Batch-Verarbeitung
+
+<div id="august-30-2025">
+  ## 30. August 2025
+</div>
+
+- **MCP (Model Context Protocol) Server:** Einführung des supermemory MCP-Servers für KI‑Modellintegrationen mit vollständiger Projektunterstützung und automatischer Erkennung
+- **Erweiterte Filtering API:** Verbesserte SQL-basierte Filterung mit array_contains, numerischen Operatoren und komplexer AND/OR-Logik
+
+<div id="august-15-2025">
+  ## 15. August 2025
+</div>
+
+- **Memory Router Proxy:** Erweiterte Proxy-Funktionen für LLM-Anfragen mit automatischer Kontextverwaltung und Token-Optimierung
+- **Aktualisierungen des Suchalgorithmus:** Konfigurierbare Relevanz-thresholds, Reranking und Query Rewriting für bessere Ergebnisqualität
+
+<div id="april-30-2025">
+  ## 30. April 2025
+</div>
+
+- **Umfassende API-Dokumentation:** Neue interaktive API-Referenzen mit detaillierten Parametererläuterungen und Response-Schemata
+- **Container-Tag-System:** Verbesserte organisatorische Gruppierung für bessere Speicherisolation und benutzerspezifische Inhalte
+- **Automatische Inhaltstyperkennung:** Automatische Verarbeitung von PDFs, Bildern, Videos und Webinhalten – unabhängig von URL-Endungen
+
+<div id="april-28-2025">
+  ## 28. April 2025
+</div>
+
+- **Google Drive Connector API:** Neue Endpunkte für die programmgesteuerte Integration von Google Drive und die Dateisynchronisierung
+
+<div id="april-25-2025">
+  ## 25. April 2025
+</div>
+
+- **Steuerung der Suchschwellen:** Neue Parameter `documentThreshold` und `chunkThreshold` zur Feinabstimmung der Suchsensitivität
+- **Dokumentspezifische Suche:** Neuer Parameter `docId`, um innerhalb bestimmter großer documents zu suchen
+- **Erweiterte Chunk-Steuerung:** Parameter `onlyMatchingChunks` für präzise Ergebnisfilterung
+
+<div id="april-24-2025">
+  ## 24. April 2025
+</div>
+
+- **Query Rewriting API:** Automatische Erweiterung von Suchanfragen und Intent-Abgleich für bessere Suchergebnisse
+- **Suchkontextoptionen:** Neue Parameter `includeFullDocs` und `includeSummary` für eine umfassende Dokumentwiedergabe
+
+<div id="april-18-2025">
+  ## 18. April 2025
+</div>
+
+- **Erweiterte Inhaltsverarbeitung:** Verbesserte Ingestion-Pipeline mit Unterstützung für die direkte Verarbeitung von URLs zu Bildern, Videos und PDFs
+- **Stabilere Web-Ingestion:** Zuverlässigere Verarbeitung von Website-URLs mit besserer Inhaltsextraktion
+
+<div id="april-14-2025">
+  ## 14. April 2025
+</div>
+
+- **Team-API-Endpunkte:** Neue Endpunkte für Teamverwaltung und Berechtigungssteuerung
+- **Erweiterte Analytics-API:** Bessere Beobachtbarkeit mit detaillierten Nutzungsmetriken und Leistungsdaten
+
+<div id="february-1-2025">
+  ## 1. Februar 2025
+</div>
+
+- **Multi-Space Search:** Suche gleichzeitig über mehrere Container-Tags, mit Unterstützung für Array-Parameter
+- **API-Versionierung:** Migration auf `/v1`-Endpoints mit verbesserter Versionsstrategie
+- **Interaktives API-Playground:** Neue Testoberfläche für alle Endpoints mit Live-Beispielen

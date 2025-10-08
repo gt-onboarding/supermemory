@@ -1,0 +1,232 @@
+---
+title: "用法"
+description: "如何在你的应用中集成 Memory Router"
+sidebarTitle: "用法"
+---
+
+只需更改一个 url，即可为你的 LLM（大型语言模型）应用添加无限 memory。
+
+<div id="prerequisites">
+  ## 前置条件
+</div>
+
+你需要：
+
+1. 一个 [Supermemory API 密钥](https://console.supermemory.ai)
+2. 你的 LLM provider 的 API 密钥
+
+<div id="basic-setup">
+  ## 基本设置
+</div>
+
+<Steps>
+  <Step title="获取你的 API 密钥">
+    **Supermemory API 密钥：**
+    1. 在 [console.supermemory.ai](https://console.supermemory.ai) 注册
+    2. 前往 **API Keys** → **Create API Key**
+    3. 复制你的密钥
+
+    **Provider 的 API 密钥：**
+    - [OpenAI](https://platform.openai.com/api-keys)
+    - [Anthropic](https://console.anthropic.com/settings/keys)
+    - [Google Gemini](https://aistudio.google.com/app/apikey)
+    - [Groq](https://console.groq.com/keys)
+  </Step>
+
+  <Step title="更新你的基址 URL">
+    在 provider 的 URL 前添加 `https://api.supermemory.ai/v3/`：
+
+    ```
+    https://api.supermemory.ai/v3/[PROVIDER_URL]
+    ```
+  </Step>
+
+  <Step title="添加身份验证">
+    在请求中同时包含两个 API 密钥（见下方示例）
+  </Step>
+</Steps>
+
+<div id="provider-urls">
+  ## provider URL
+</div>
+
+<CodeGroup>
+
+```text OpenAI
+https://api.supermemory.ai/v3/https://api.openai.com/v1/
+```
+
+```text Anthropic
+https://api.supermemory.ai/v3/https://api.anthropic.com/v1/
+```
+
+```text Google Gemini
+https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai/
+```
+
+```text Groq
+https://api.supermemory.ai/v3/https://api.groq.com/openai/v1/
+```
+
+</CodeGroup>
+
+<div id="implementation-examples">
+  ## 实现示例
+</div>
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_OPENAI_API_KEY",
+        base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+        default_headers={
+            "x-supermemory-api-key": "YOUR_SUPERMEMORY_API_KEY",
+            "x-sm-user-id": "user123"  # 唯一的用户标识符
+        }
+    )
+
+    # 按常规方式使用
+    response = client.chat.completions.create(
+        model="gpt-5",
+        messages=[
+            {"role": "user", "content": "Hello!"}
+        ]
+    )
+
+    print(response.choices[0].message.content)
+    ```
+  </Tab>
+
+  <Tab title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/',
+      defaultHeaders: {
+        'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY,
+        'x-sm-user-id': 'user123'  // 唯一的用户标识符
+      }
+    });
+
+    // 按常规方式使用
+    const response = await client.chat.completions.create({
+      model: 'gpt-5',
+      messages: [
+        { role: 'user', content: 'Hello!' }
+      ]
+    });
+
+    console.log(response.choices[0].message.content);
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions" \
+      -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+      -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user123" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "gpt-5",
+        "messages": [{"role": "user", "content": "Hello!"}]
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="alternative-url-parameters">
+  ## 其他方式：使用 URL 参数
+</div>
+
+如果无法修改请求头，可通过 URL 参数传递认证信息：
+
+<CodeGroup>
+
+```python Python
+client = OpenAI(
+    api_key="YOUR_OPENAI_API_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123"
+)
+
+# 然后将 Supermemory API 密钥设置为环境变量：
+# export SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```typescript TypeScript
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123'
+});
+
+// 将 Supermemory API 密钥设置为环境变量：
+// SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123" \
+  -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+  -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-5", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+</CodeGroup>
+
+<div id="conversation-management">
+  ## 对话管理
+</div>
+
+<div id="managing-conversations">
+  ### 管理会话
+</div>
+
+使用 `x-sm-conversation-id` 跨请求保持会话上下文：
+
+```python
+# 开始新对话
+response1 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "我的名字是Alice"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+
+# 稍后继续同一对话
+response2 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "我的名字是什么？"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+# 响应将记住"Alice"
+```
+
+
+<div id="user-identification">
+  ### 用户标识
+</div>
+
+务必提供唯一的用户 ID，以在不同用户之间隔离记忆存储：
+
+```python
+# 不同用户拥有独立的 memory 空间
+client_alice = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "alice_123"}
+)
+
+client_bob = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "bob_456"}
+)
+```

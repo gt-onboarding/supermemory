@@ -1,0 +1,186 @@
+---
+title: "搜索 memory"
+description: "了解如何在 supermemory 中搜索与检索内容"
+---
+
+<Accordion title="最佳实践" defaultOpen icon="sparkles">
+  1. **查询构建**:
+     * 使用自然语言进行查询
+     * 包含相关关键词
+     * 明确具体，但避免冗长
+
+  2. **过滤**:
+     * 使用 Metadata filters 提高精确度
+     * 需要时组合多个 filters
+     * 设定合适的 最小相似度阈值
+
+  3. **性能**:
+     * 设置合适的结果 limit
+     * 使用更具体的文档/分块 filters
+     * 关注响应 timing
+</Accordion>
+
+<div id="basic-search">
+  ## 基本搜索
+</div>
+
+要在你的记忆存储中进行搜索，向 `/search` 发送一个 POST 请求：
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/search?q=machine+learning+concepts&limit=10 \
+    --request GET \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+  ```
+
+  ```typescript Typescript
+  await client.search.execute({
+    q: "machine learning concepts",
+    limit: 10,
+  });
+  ```
+
+  ```python Python
+  client.search.execute(
+      q="machine learning concepts",
+      limit=10
+  )
+  ```
+</CodeGroup>
+
+API 将返回相关匹配结果及其相似性分数：
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_xyz789",
+      "chunks": [
+        {
+          "content": "机器学习是人工智能的一个子集...",
+          "isRelevant": true,
+          "score": 0.85
+        }
+      ],
+      "score": 0.95,
+      "metadata": {
+        "source": "web",
+        "category": "technology"
+      },
+      "title": "机器学习入门"
+    }
+  ],
+  "total": 1,
+  "timing": 123.45
+}
+```
+
+<div id="search-parameters">
+  ## 搜索参数
+</div>
+
+```json
+{
+  "q": "search query", // 必需：搜索查询字符串
+  "limit": 10, // 可选：最大结果数（默认：10）
+  "threshold": 0.6, // 可选：最小相似度阈值（0-1，默认：0.6）
+  "containerTag": "user_123", // 可选：按容器标签过滤
+  "rerank": false, // 可选：重排结果以提高相关性
+  "rewriteQuery": false, // 可选：重写查询以改善匹配效果
+  "include": {
+    "documents": false, // 可选：包含文档 metadata
+    "summaries": false, // 可选：包含文档摘要
+    "relatedMemories": false, // 可选：包含相关 memory 上下文
+    "forgottenMemories": false // 可选：在结果中包含已遗忘的 memory
+  },
+  "filters": {
+    // 可选：Metadata 过滤器
+    "AND": [
+      {
+        "key": "category",
+        "value": "technology"
+      }
+    ]
+  }
+}
+```
+
+<div id="search-response">
+  ## 搜索结果响应
+</div>
+
+搜索结果响应包括：
+
+```json
+{
+  "results": [
+    {
+      "documentId": "string", // 文档 ID
+      "chunks": [
+        {
+          // 匹配的 chunk（文档片段）
+          "content": "string", // chunk 内容
+          "isRelevant": true, // 是否直接相关
+          "score": 0.95 // 相似性 score
+        }
+      ],
+      "score": 0.95, // 文档 score
+      "metadata": {}, // 文档 metadata
+      "title": "string", // 文档标题
+      "createdAt": "string", // 创建日期
+      "updatedAt": "string" // 最后更新日期
+    }
+  ],
+  "total": 1, // 总结果数
+  "timing": 123.45 // 搜索时间（毫秒）
+}
+```
+
+<div id="including-forgotten-memories">
+  ## 包含已遗忘的记忆存储
+</div>
+
+默认情况下，Search API 会排除被标记为遗忘或已过期的记忆存储。若要在搜索结果中包含它们，请将 `include.forgottenMemories` 设置为 `true`：
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v4/search \
+    --request POST \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --header 'Content-Type: application/json' \
+    --data '{
+      "q": "old project notes",
+      "include": {
+        "forgottenMemories": true
+      }
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.search.memories({
+    q: "old project notes",
+    include: {
+      forgottenMemories: true
+    }
+  });
+  ```
+
+  ```python Python
+  await client.search.memories(
+      q="old project notes",
+      include={
+          "forgottenMemories": True
+      }
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  “已遗忘”的记忆存储是指通过 forget API 明确标记为遗忘，或已超过其自动过期时间（`forgetAfter`）的记忆存储。在搜索结果中包含它们有助于找回可能仍然相关的信息。
+</Note>
+
+<div id="next-steps">
+  ## 后续步骤
+</div>
+
+在我们的 [API 参考](/zh/api-reference/search-memories/search-memories) 中了解更多高级功能。

@@ -1,0 +1,45 @@
+---
+title: "Introduzione"
+description: "supermemory è la Memory API per l’era dell’IA"
+mode: "custom"
+---
+
+export const HeroCard = ({ imageUrl, title, description, href }) => {
+  return (
+    <a className="group flex flex-col h-full rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700" href={href}>
+      <div className="overflow-hidden">
+        <img
+          src={imageUrl}
+          className="w-full h-48 object-cover transform group-hover:scale-105 transition-all duration-500"
+          alt={title}
+        />
+      </div>
+      <div className="p-6">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-50">{title}</h3>
+        <p className="mt-3 text-gray-600 dark:text-zinc-400">{description}</p>
+      </div>
+    </a>
+  )
+}
+
+<div className="relative pb-12">
+  <div className="px-4 py-16 lg:py-32 max-w-4xl mx-auto">
+    <h1 className="text-5xl font-bold text-center text-gray-900 dark:text-zinc-50 tracking-tight">
+      supermemory <span className="text-primary font-medium">[docs]</span>
+    </h1>
+
+    <p className="max-w-2xl mx-auto px-4 mt-6 text-xl text-center text-gray-600 dark:text-zinc-400 leading-relaxed">
+      Scopri la Memory API per l’era dell’AI — <span className="font-medium">scalabile</span>, <span className="font-medium">potente</span>, <span className="font-medium">conveniente</span> e <span className="font-medium">pronta per la produzione</span>.
+    </p>
+
+    <div className="mt-16 lg:mt-20 grid sm:grid-cols-2 gap-8">
+      <HeroCard imageUrl="https://imagedelivery.net/_Zs8NCbSWCQ8-iurXrWjBg/40fe287e-b392-4bd6-9fc5-128ef674ca00/public" title="Memory APIs" description="Usa le nostre API iperveloci, scalabili e componibili per memory e RAG" href="/it/how-it-works" />
+
+      <HeroCard imageUrl="https://imagedelivery.net/_Zs8NCbSWCQ8-iurXrWjBg/eda8b2fd-9633-4e93-c6bd-10b44be75e00/public" title="Model Enhancer (Infinite Chat)" description="Una riga di codice per aggiungere memory alla tua app. Potenzia il tuo LLM con la gestione intelligente del contesto di supermemory." href="/it/memory-router/overview" />
+
+      <HeroCard imageUrl="https://imagedelivery.net/_Zs8NCbSWCQ8-iurXrWjBg/abcc107d-7271-4acf-a9a2-90ad7a6f2000/public" title="SDK" description="Usa supermemory con i tuoi strumenti e le tue piattaforme preferite in modo fluido." href="/it/memory-api/sdks/overview" />
+
+      <HeroCard imageUrl="https://imagedelivery.net/_Zs8NCbSWCQ8-iurXrWjBg/9af9572c-9f8d-42d8-f7d0-503a5f87a300/public" title="Cookbook" description="Inizia con supermemory grazie a tutorial ed esempi" href="/it/cookbook/overview" />
+    </div>
+  </div>
+</div>

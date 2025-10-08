@@ -1,0 +1,437 @@
+---
+title: 'TypeScript SDK'
+sidebarTitle: "TypeScript"
+description: 'TypeScript で supermemory を使う方法'
+---
+
+<div id="installation">
+  ## インストール
+</div>
+
+```sh
+npm install supermemory
+```
+
+
+<div id="usage">
+  ## 使い方
+</div>
+
+```js
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // これはデフォルト値で、省略可能です
+});
+
+async function main() {
+  const response = await client.search.execute({ q: 'pythonに関連するdocuments' });
+
+  console.debug(response.results);
+}
+
+main();
+```
+
+
+<div id="request-response-types">
+  ### リクエスト／レスポンスの型
+</div>
+
+このライブラリには、すべてのリクエストパラメータとレスポンスフィールド用の TypeScript 定義が含まれています。次のようにインポートして使用できます：
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // これはデフォルト値で省略可能です
+});
+
+async function main() {
+  const params: supermemory.MemoryAddParams = {
+    content: 'これは機械学習の概念に関する詳細な記事です...',
+  };
+  const response: supermemory.MemoryAddResponse = await client.memories.add(params);
+}
+
+main();
+```
+
+各メソッド、リクエストパラメータ、レスポンスフィールドのドキュメントは docstring に記載されており、多くの最新のエディタではホバーすると表示されます。
+
+
+<div id="file-uploads">
+  ## ファイルのアップロード
+</div>
+
+ファイルアップロードに対応するリクエストパラメータは、さまざまな形式で渡せます:
+
+* `File`（または同等の構造のオブジェクト）
+* `fetch` の `Response`（または同等の構造のオブジェクト）
+* `fs.ReadStream`
+* `toFile` ヘルパーの戻り値
+
+```ts
+import fs from 'fs';
+import supermemory, { toFile } from 'supermemory';
+
+const client = new supermemory();
+
+// Node の `fs` にアクセスできる場合は、`fs.createReadStream()` の使用をおすすめします:
+await client.memories.uploadFile({ file: fs.createReadStream('/path/to/file') });
+
+// あるいは、Web の `File` API がある場合は、`File` インスタンスを渡せます:
+await client.memories.uploadFile({ file: new File(['my bytes'], 'file') });
+
+// `fetch` の `Response` を渡すこともできます:
+await client.memories.uploadFile({ file: await fetch('https://somesite/file') });
+
+// なお、上記のいずれも都合が悪い場合は、`toFile` ヘルパーを使うこともできます:
+await client.memories.uploadFile({ file: await toFile(Buffer.from('my bytes'), 'file') });
+await client.memories.uploadFile({ file: await toFile(new Uint8Array([0, 1, 2]), 'file') });
+```
+
+
+<div id="handling-errors">
+  ## エラーの扱い
+</div>
+
+ライブラリが API に接続できない場合や、
+API が成功ではない status コード（例：4xx や 5xx のレスポンス）を返した場合は、
+`APIError` のサブクラスがスローされます。
+
+```ts
+async function main() {
+  const response = await client.memories
+    .add({ content: 'これは機械学習の概念に関する詳細な記事です...' })
+    .catch(async (err) => {
+      if (err instanceof supermemory.APIError) {
+        console.debug(err.status); // 400
+        console.debug(err.name); // BadRequestError
+        console.debug(err.headers); // {server: 'nginx', ...}
+      } else {
+        throw err;
+      }
+    });
+}
+
+main();
+```
+
+エラーコードは次のとおりです。
+
+| Status Code | エラータイプ                |
+| ----------- | -------------------------- |
+| 400         | `BadRequestError`          |
+| 401         | `AuthenticationError`      |
+| 403         | `PermissionDeniedError`    |
+| 404         | `NotFoundError`            |
+| 422         | `UnprocessableEntityError` |
+| 429         | `RateLimitError`           |
+| &gt;=500       | `InternalServerError`      |
+| N/A         | `APIConnectionError`       |
+
+
+<div id="retries">
+  ### 再試行
+</div>
+
+特定のエラーは、デフォルトで短い指数バックオフを伴い、最大2回自動的に再試行されます。
+接続エラー（例：ネットワーク接続の問題）、408 Request Timeout、409 Conflict、
+429 Rate Limit、および &gt;=500 の内部エラーは、いずれもデフォルトで再試行の対象です。
+
+`maxRetries` オプションで、この挙動を設定したり無効化したりできます。
+
+```js
+// すべてのリクエストのデフォルトを設定：
+const client = new supermemory({
+  maxRetries: 0, // デフォルトは2
+});
+
+// または、リクエストごとに設定：
+await client.memories.add({ content: '機械学習の概念に関する詳細な記事です...' }, {
+  maxRetries: 5,
+});
+```
+
+
+<div id="timeouts">
+  ### タイムアウト
+</div>
+
+リクエストは既定で1分でタイムアウトします。`timeout` オプションで変更できます。
+
+```ts
+// すべてのリクエストに適用されるデフォルトを設定:
+const client = new supermemory({
+  timeout: 20 * 1000, // 20秒（デフォルトは1分）
+});
+
+// リクエストごとに個別設定で上書き:
+await client.memories.add({ content: 'これは機械学習の概念についての詳細な記事です...' }, {
+  timeout: 5 * 1000,
+});
+```
+
+タイムアウト時には、`APIConnectionTimeoutError` がスローされます。
+
+タイムアウトしたリクエストは、[既定で2回再試行されます](#retries)。
+
+
+<div id="advanced-usage">
+  ## 上級者向けの使い方
+</div>
+
+<div id="accessing-raw-response-data-eg-headers">
+  ### 生の Response データへアクセスする（例：ヘッダー）
+</div>
+
+`fetch()` が返す生の `Response` は、すべてのメソッドが返す `APIPromise` 型の `.asResponse()` メソッドで取得できます。
+このメソッドは、成功したレスポンスのヘッダーを受信した時点で即座に返り、レスポンスボディを消費しないため、独自のパース処理やストリーミング処理を自由に実装できます。
+
+また、`.withResponse()` メソッドを使うと、パース済みデータと生の `Response` を同時に取得できます。
+`.asResponse()` と異なり、このメソッドはボディを消費し、パースが完了した時点で返ります。
+
+```ts
+const client = new supermemory();
+
+const response = await client.memories
+  .add({ content: 'これは機械学習の概念に関する詳細な記事です...' })
+  .asResponse();
+console.debug(response.headers.get('X-My-Header'));
+console.debug(response.statusText); // 基盤となるResponseオブジェクトにアクセス
+
+const { data: response, response: raw } = await client.memories
+  .add({ content: 'これは機械学習の概念に関する詳細な記事です...' })
+  .withResponse();
+console.debug(raw.headers.get('X-My-Header'));
+console.debug(response.id);
+```
+
+
+<div id="logging">
+  ### ログ出力
+</div>
+
+<Warning>
+ログメッセージはすべてデバッグ専用です。ログメッセージの形式や内容はリリースごとに変更される場合があります。
+</Warning>
+
+<div id="log-levels">
+  #### ログレベル
+</div>
+
+ログレベルは次の2通りの方法で設定できます:
+
+1. `SUPERMEMORY_LOG` 環境変数を使う
+2. `logLevel` クライアントオプションを使う（設定されている場合は環境変数より優先されます）
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  logLevel: 'debug', // すべてのログメッセージを表示します
+});
+```
+
+最も詳細から最も簡潔な順の利用可能なログレベル:
+
+* `'debug'` - デバッグ、情報、警告、エラーを表示
+* `'info'` - 情報、警告、エラーを表示
+* `'warn'` - 警告とエラーを表示（既定）
+* `'error'` - エラーのみ表示
+* `'off'` - すべてのログ出力を無効化
+
+`'debug'` レベルでは、ヘッダーやボディを含むすべての HTTP リクエストとレスポンスが記録されます。
+一部の認証関連ヘッダーはマスクされますが、リクエストやレスポンスのボディ内の機微なデータが
+表示される可能性はあります。
+
+
+<div id="custom-logger">
+  #### カスタムロガー
+</div>
+
+デフォルトでは、このライブラリは `globalThis.console` にログを出力します。カスタムロガーを指定することもできます。
+多くのロギングライブラリに対応しており、[pino](https://www.npmjs.com/package/pino)、[winston](https://www.npmjs.com/package/winston)、[bunyan](https://www.npmjs.com/package/bunyan)、[consola](https://www.npmjs.com/package/consola)、[signale](https://www.npmjs.com/package/signale)、[@std/log](https://jsr.io/@std/log) などが利用できます。ロガーがうまく動作しない場合は、issue を作成してください。
+
+カスタムロガーを指定した場合でも、`logLevel` オプションは出力されるメッセージを引き続き制御します。設定したレベル未満のメッセージはロガーへ送られません。
+
+```ts
+import supermemory from 'supermemory';
+import pino from 'pino';
+
+const logger = pino();
+
+const client = new supermemory({
+  logger: logger.child({ name: 'supermemory' }),
+  logLevel: 'debug', // すべてのメッセージを pino に送信し、pino 側でのフィルタリングに任せます
+});
+```
+
+
+<div id="making-customundocumented-requests">
+  ### カスタム／未公開リクエストの作成
+</div>
+
+このライブラリは、ドキュメント化された API に便利にアクセスできるよう型定義が用意されています。未公開のエンドポイント、パラメータ、またはレスポンスプロパティにアクセスする必要がある場合でも、このライブラリをそのまま利用できます。
+
+<div id="undocumented-endpoints">
+  #### 非公開（未ドキュメント）エンドポイント
+</div>
+
+未ドキュメントのエンドポイントにリクエストするには、`client.get`、`client.post`、およびその他の HTTP メソッドを使用できます。
+リトライなどのクライアント設定は、これらのリクエスト実行時にも適用されます。
+
+```ts
+await client.post('/some/path', {
+  body: { some_prop: 'foo' },
+  query: { some_query_arg: 'bar' },
+});
+```
+
+
+<div id="undocumented-request-params">
+  #### 未公開のリクエストパラメータ
+</div>
+
+未公開のパラメータを使ってリクエストする場合は、そのパラメータに対して `// @ts-expect-error` を付けてください。このライブラリは実行時にリクエストが型定義と一致しているかを検証しないため、追加で指定した値はそのまま送信されます。
+
+```ts
+client.foo.create({
+  foo: 'my_param',
+  bar: 12,
+  // @ts-expect-error baz is not yet public
+  baz: '未ドキュメントのオプション',
+});
+```
+
+`GET` メソッドのリクエストでは、追加パラメータはクエリに含まれます。その他のリクエストでは、追加パラメータはボディで送信されます。
+
+追加の引数を明示的に送信したい場合は、`query`、`body`、`headers` のリクエストオプションを使用できます。
+
+
+<div id="undocumented-response-properties">
+  #### 未公開のレスポンスプロパティ
+</div>
+
+未公開のレスポンスプロパティにアクセスするには、レスポンスオブジェクトに `// @ts-expect-error` を付けて参照するか、レスポンスオブジェクトを必要な型にキャストしてください。リクエストパラメータと同様に、API のレスポンスから余分なプロパティを検証したり除去したりすることはありません。
+
+<div id="customizing-the-fetch-client">
+  ### fetch クライアントのカスタマイズ
+</div>
+
+デフォルトでは、このライブラリはグローバルな `fetch` 関数が定義されていることを想定しています。
+
+別の `fetch` 関数を使用したい場合は、グローバルをポリフィルすることもできます:
+
+```ts
+import fetch from 'my-fetch';
+
+globalThis.fetch = fetch;
+```
+
+またはクライアントに渡す：
+
+```ts
+import supermemory from 'supermemory';
+import fetch from 'my-fetch';
+
+const client = new supermemory({ fetch });
+```
+
+
+<div id="fetch-options">
+  ### Fetch options
+</div>
+
+`fetch` 関数自体を差し替えずにカスタムの `fetch` オプションを設定したい場合は、クライアントの生成時またはリクエスト時に `fetchOptions` オブジェクトを渡せます。（リクエスト固有のオプションはクライアントのオプションより優先されます。）
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  fetchOptions: {
+    // `RequestInit` のオプション
+  },
+});
+```
+
+
+<div id="configuring-proxies">
+  #### プロキシの設定
+</div>
+
+プロキシの動作を変更するには、リクエストに実行環境固有のプロキシオプションを追加するカスタム `fetchOptions` を指定できます：
+
+```ts
+import supermemory from 'supermemory';
+import * as undici from 'undici';
+
+const proxyAgent = new undici.ProxyAgent('http://localhost:8888');
+const client = new supermemory({
+  fetchOptions: {
+    dispatcher: proxyAgent,
+  },
+});
+```
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  fetchOptions: {
+    proxy: 'http://localhost:8888',
+  },
+});
+```
+
+```ts
+import supermemory from 'npm:supermemory';
+
+const httpClient = Deno.createHttpClient({ proxy: { url: 'http://localhost:8888' } });
+const client = new supermemory({
+  fetchOptions: {
+    client: httpClient,
+  },
+});
+```
+
+
+<div id="frequently-asked-questions">
+  ## よくあるご質問
+</div>
+
+<div id="semantic-versioning">
+  ## セマンティック バージョニング
+</div>
+
+このパッケージは一般的に [SemVer](https://semver.org/spec/v2.0.0.html) の規約に従いますが、後方互換性のない一部の変更がマイナー バージョンとしてリリースされる場合があります。
+
+1. 実行時の挙動を変えず、静的型にのみ影響する変更。
+2. 技術的には public だが外部利用を意図しておらず、ドキュメント化もされていないライブラリ内部への変更。_(そのような内部に依存している場合は、GitHub で issue を作成してお知らせください。)_
+3. 実務上、ほとんどのユーザーに影響しないと想定される変更。
+
+私たちは後方互換性を重視しており、スムーズにアップグレードできるよう最善を尽くしています。
+
+フィードバックを歓迎します。質問、不具合、提案があれば [issue](https://www.github.com/supermemoryai/sdk-ts/issues) を作成してください。
+
+<div id="requirements">
+  ## 必要条件
+</div>
+
+TypeScript >= 4.9 に対応しています。
+
+対応ランタイムは次のとおりです:
+
+- Web ブラウザ（最新の Chrome、Firefox、Safari、Edge など）
+- Node.js 20 LTS 以降の [non-EOL](https://endoflife.date/nodejs) バージョン
+- Deno v1.28.0 以上
+- Bun 1.0 以降
+- Cloudflare Workers
+- Vercel Edge Runtime
+- Jest 28 以上（`"node"` 環境。現時点では `"jsdom"` は未対応）
+- Nitro v2.6 以上
+
+現時点では React Native は未対応です。
+
+他のランタイム環境への対応に関心がある場合は、GitHub で issue を作成するか、既存の issue に投票してください。

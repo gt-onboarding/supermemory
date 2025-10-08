@@ -1,0 +1,615 @@
+---
+title: "OpenAI SDK プラグイン"
+description: "Supermemory 連携による OpenAI の関数呼び出し向けメモリー用ツール"
+---
+
+公式の OpenAI SDK（Software Development Kit、ソフトウェア開発キット）に、Supermemory の関数呼び出し用ツールを使ってメモリー機能を追加できます。これらのプラグインは、OpenAI のチャット補完と関数呼び出し機能にシームレスに統合されます。
+
+<CardGroup>
+  <Card title="Supermemory tools on npm" icon="npm" href="https://www.npmjs.com/package/@supermemory/tools">
+    詳細は npm のページをご覧ください
+  </Card>
+
+  <Card title="Supermemory AI SDK" icon="python" href="https://pypi.org/project/supermemory-openai-sdk/">
+    詳細は PyPI のページをご覧ください
+  </Card>
+</CardGroup>
+
+<div id="installation">
+  ## インストール
+</div>
+
+<CodeGroup>
+  ```bash Python
+  # uv を使用（推奨）
+  uv add supermemory-openai-sdk
+
+  # または pip を使用
+  pip install supermemory-openai-sdk
+  ```
+
+  ```bash JavaScript/TypeScript
+  npm install @supermemory/tools
+  ```
+</CodeGroup>
+
+<div id="quick-start">
+  ## クイックスタート
+</div>
+
+<CodeGroup>
+  ```python Python SDK
+  import asyncio
+  import openai
+  from supermemory_openai import SupermemoryTools, execute_memory_tool_calls
+
+  async def main():
+      # OpenAI クライアントを初期化
+      client = openai.AsyncOpenAI(api_key="your-openai-api-key")
+
+      # Supermemory のツールを初期化
+      tools = SupermemoryTools(
+          api_key="your-supermemory-api-key",
+          config={"project_id": "my-project"}
+      )
+
+      # メモリー ツールを使ってチャット
+      response = await client.chat.completions.create(
+          model="gpt-5",
+          messages=[
+              {
+                  "role": "system",
+                  "content": "You are a helpful assistant with access to user memories."
+              },
+              {
+                  "role": "user",
+                  "content": "Remember that I prefer tea over coffee"
+              }
+          ],
+          tools=tools.get_tool_definitions()
+      )
+
+      # ツール呼び出しがある場合の処理
+      if response.choices[0].message.tool_calls:
+          tool_results = await execute_memory_tool_calls(
+              api_key="your-supermemory-api-key",
+              tool_calls=response.choices[0].message.tool_calls,
+              config={"project_id": "my-project"}
+          )
+          print("ツールの結果:", tool_results)
+
+      print(response.choices[0].message.content)
+
+  asyncio.run(main())
+  ```
+
+  ```typescript JavaScript/TypeScript SDK
+  import { supermemoryTools, getToolDefinitions, createToolCallExecutor } from "@supermemory/tools/openai"
+  import OpenAI from "openai"
+
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY!,
+  })
+
+  // OpenAI 用のツール定義を取得
+  const toolDefinitions = getToolDefinitions()
+
+  // ツール実行エグゼキューターを作成
+  const executeToolCall = createToolCallExecutor(process.env.SUPERMEMORY_API_KEY!, {
+    projectId: "your-project-id",
+  })
+
+  // OpenAI の Chat Completions と併用
+  const completion = await client.chat.completions.create({
+    model: "gpt-5",
+    messages: [
+      {
+        role: "user",
+        content: "What do you remember about my preferences?",
+      },
+    ],
+    tools: toolDefinitions,
+  })
+
+  // ツール呼び出しがある場合は実行
+  if (completion.choices[0]?.message.tool_calls) {
+    for (const toolCall of completion.choices[0].message.tool_calls) {
+      const result = await executeToolCall(toolCall)
+      console.log(result)
+    }
+  }
+  ```
+</CodeGroup>
+
+<div id="configuration">
+  ## 設定
+</div>
+
+<div id="memory-tools-configuration">
+  ### Memory Tools の構成
+</div>
+
+<CodeGroup>
+  ```python Python Configuration
+  from supermemory_openai import SupermemoryTools
+
+  tools = SupermemoryTools(
+      api_key="your-supermemory-api-key",
+      config={
+          "project_id": "my-project",  # もしくは container_tags を使用
+          "base_url": "https://custom-endpoint.com",  # オプション
+      }
+  )
+  ```
+
+  ```typescript JavaScript Configuration
+  import { supermemoryTools } from "@supermemory/tools/openai"
+
+  const tools = supermemoryTools(process.env.SUPERMEMORY_API_KEY!, {
+    containerTags: ["your-user-id"],
+    baseUrl: "https://custom-endpoint.com", // オプション
+  })
+  ```
+</CodeGroup>
+
+<div id="available-tools">
+  ## 利用可能なツール
+</div>
+
+<div id="search-memories">
+  ### 保存メモリを検索する
+</div>
+
+セマンティック検索でユーザーの保存メモリを検索します:
+
+<CodeGroup>
+  ```python Python
+  # Search memories
+  result = await tools.search_memories(
+      information_to_get="user preferences",
+      limit=10,
+      include_full_docs=True
+  )
+  print(f"Found {len(result.memories)} memories")
+  ```
+
+  ```typescript JavaScript
+  // Search memories
+  const searchResult = await tools.searchMemories({
+    informationToGet: "user preferences",
+    limit: 10,
+  })
+  console.log(`Found ${searchResult.memories.length} memories`)
+  ```
+</CodeGroup>
+
+<div id="add-memory">
+  ### メモリーを追加
+</div>
+
+新しい情報をメモリーに保存します:
+
+<CodeGroup>
+  ```python Python
+  # メモリーを追加
+  result = await tools.add_memory(
+      memory="ユーザーはコーヒーより紅茶を好む"
+  )
+  print(f"Added memory with ID: {result.memory.id}")
+  ```
+
+  ```typescript JavaScript
+  // メモリーを追加
+  const addResult = await tools.addMemory({
+    memory: "ユーザーはダークローストのコーヒーを好む",
+  })
+  console.log(`Added memory with ID: ${addResult.memory.id}`)
+  ```
+</CodeGroup>
+
+<div id="fetch-memory">
+  ### メモリーの取得
+</div>
+
+ID を指定して特定のメモリーを取得します:
+
+<CodeGroup>
+  ```python Python
+  # 特定のメモリーを取得
+  result = await tools.fetch_memory(
+      memory_id="memory-id-here"
+  )
+  print(f"Memory content: {result.memory.content}")
+  ```
+
+  ```typescript JavaScript
+  // 特定のメモリーを取得
+  const fetchResult = await tools.fetchMemory({
+    memoryId: "memory-id-here"
+  })
+  console.log(`Memory content: ${fetchResult.memory.content}`)
+  ```
+</CodeGroup>
+
+<div id="individual-tools">
+  ## 個別ツール
+</div>
+
+より細かな制御のために、ツールを個別に使います:
+
+<CodeGroup>
+  ```python Python Individual Tools
+  from supermemory_openai import (
+      create_search_memories_tool,
+      create_add_memory_tool,
+      create_fetch_memory_tool
+  )
+
+  search_tool = create_search_memories_tool("your-api-key")
+  add_tool = create_add_memory_tool("your-api-key")
+  fetch_tool = create_fetch_memory_tool("your-api-key")
+
+  # OpenAI の function calling で個別ツールを使用
+  tools_list = [search_tool, add_tool, fetch_tool]
+  ```
+
+  ```typescript JavaScript Individual Tools
+  import {
+    createSearchMemoriesTool,
+    createAddMemoryTool,
+    createFetchMemoryTool
+  } from "@supermemory/tools/openai"
+
+  const searchTool = createSearchMemoriesTool(process.env.SUPERMEMORY_API_KEY!)
+  const addTool = createAddMemoryTool(process.env.SUPERMEMORY_API_KEY!)
+  const fetchTool = createFetchMemoryTool(process.env.SUPERMEMORY_API_KEY!)
+
+  // 個別ツールを使用
+  const toolDefinitions = [searchTool, addTool, fetchTool]
+  ```
+</CodeGroup>
+
+<div id="complete-chat-example">
+  ## 完全なチャット例
+</div>
+
+メモリーを使ったマルチターン会話の完全な例を示します:
+
+<CodeGroup>
+  ```python Complete Python Example
+  import asyncio
+  import openai
+  from supermemory_openai import SupermemoryTools, execute_memory_tool_calls
+
+  async def chat_with_memory():
+      client = openai.AsyncOpenAI()
+      tools = SupermemoryTools(
+          api_key="your-supermemory-api-key",
+          config={"project_id": "chat-example"}
+      )
+
+      messages = [
+          {
+              "role": "system",
+              "content": """You are a helpful assistant with memory capabilities.
+              When users share personal information, remember it using addMemory.
+              When they ask questions, search your memories to provide personalized responses."""
+          }
+      ]
+
+      while True:
+          user_input = input("You: ")
+          if user_input.lower() == 'quit':
+              break
+
+          messages.append({"role": "user", "content": user_input})
+
+          # Get AI response with tools
+          response = await client.chat.completions.create(
+              model="gpt-5",
+              messages=messages,
+              tools=tools.get_tool_definitions()
+          )
+
+          # Handle tool calls
+          if response.choices[0].message.tool_calls:
+              messages.append(response.choices[0].message)
+
+              tool_results = await execute_memory_tool_calls(
+                  api_key="your-supermemory-api-key",
+                  tool_calls=response.choices[0].message.tool_calls,
+                  config={"project_id": "chat-example"}
+              )
+
+              messages.extend(tool_results)
+
+              # Get final response after tool execution
+              final_response = await client.chat.completions.create(
+                  model="gpt-5",
+                  messages=messages
+              )
+
+              assistant_message = final_response.choices[0].message.content
+          else:
+              assistant_message = response.choices[0].message.content
+              messages.append({"role": "assistant", "content": assistant_message})
+
+          print(f"Assistant: {assistant_message}")
+
+  # Run the chat
+  asyncio.run(chat_with_memory())
+  ```
+
+  ```typescript Complete JavaScript Example
+  import OpenAI from "openai"
+  import { getToolDefinitions, createToolCallExecutor } from "@supermemory/tools/openai"
+  import readline from 'readline'
+
+  const client = new OpenAI()
+  const executeToolCall = createToolCallExecutor(process.env.SUPERMEMORY_API_KEY!, {
+    projectId: "chat-example",
+  })
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+
+  async function chatWithMemory() {
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      {
+        role: "system",
+        content: `You are a helpful assistant with memory capabilities.
+        When users share personal information, remember it using addMemory.
+        When they ask questions, search your memories to provide personalized responses.`
+      }
+    ]
+
+    const askQuestion = () => {
+      rl.question("You: ", async (userInput) => {
+        if (userInput.toLowerCase() === 'quit') {
+          rl.close()
+          return
+        }
+
+        messages.push({ role: "user", content: userInput })
+
+        // Get AI response with tools
+        const response = await client.chat.completions.create({
+          model: "gpt-5",
+          messages,
+          tools: getToolDefinitions(),
+        })
+
+        const choice = response.choices[0]
+        if (choice?.message.tool_calls) {
+          messages.push(choice.message)
+
+          // Execute tool calls
+          for (const toolCall of choice.message.tool_calls) {
+            const result = await executeToolCall(toolCall)
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: JSON.stringify(result),
+            })
+          }
+
+          // Get final response after tool execution
+          const finalResponse = await client.chat.completions.create({
+            model: "gpt-5",
+            messages,
+          })
+
+          const assistantMessage = finalResponse.choices[0]?.message.content || "No response"
+          console.log(`Assistant: ${assistantMessage}`)
+          messages.push({ role: "assistant", content: assistantMessage })
+        } else {
+          const assistantMessage = choice?.message.content || "No response"
+          console.log(`Assistant: ${assistantMessage}`)
+          messages.push({ role: "assistant", content: assistantMessage })
+        }
+
+        askQuestion()
+      })
+    }
+
+    console.log("メモリー対応のチャットを開始しました。終了するには 'quit' と入力してください。")
+    askQuestion()
+  }
+
+  chatWithMemory()
+  ```
+</CodeGroup>
+
+<div id="error-handling">
+  ## エラー処理
+</div>
+
+アプリケーションでエラーを丁寧に扱いましょう:
+
+<CodeGroup>
+  ```python Python Error Handling
+  from supermemory_openai import SupermemoryTools
+  import openai
+
+  async def safe_chat():
+      try:
+          client = openai.AsyncOpenAI()
+          tools = SupermemoryTools(api_key="your-api-key")
+
+          response = await client.chat.completions.create(
+              model="gpt-5",
+              messages=[{"role": "user", "content": "Hello"}],
+              tools=tools.get_tool_definitions()
+          )
+
+      except openai.APIError as e:
+          print(f"OpenAI API error: {e}")
+      except Exception as e:
+          print(f"Unexpected error: {e}")
+  ```
+
+  ```typescript JavaScript Error Handling
+  import OpenAI from "openai"
+  import { getToolDefinitions } from "@supermemory/tools/openai"
+
+  async function safeChat() {
+    try {
+      const client = new OpenAI()
+
+      const response = await client.chat.completions.create({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "Hello" }],
+        tools: getToolDefinitions(),
+      })
+
+    } catch (error) {
+      if (error instanceof OpenAI.APIError) {
+        console.error("OpenAI API error:", error.message)
+      } else {
+        console.error("Unexpected error:", error)
+      }
+    }
+  }
+  ```
+</CodeGroup>
+
+<div id="api-reference">
+  ## API リファレンス
+</div>
+
+<div id="python-sdk">
+  ### Python SDK
+</div>
+
+<div id="supermemorytools">
+  #### `SupermemoryTools`
+</div>
+
+**コンストラクタ**
+
+```python
+supermemoryTools(
+    api_key: str,
+    config: Optional[SupermemoryToolsConfig] = None
+)
+```
+
+**メソッド**
+
+* `get_tool_definitions()` - OpenAI の関数定義を取得
+* `search_memories(information_to_get, limit, include_full_docs)` - ユーザーの保存メモリを検索
+* `add_memory(memory)` - 新規メモリーを追加
+* `fetch_memory(memory_id)` - ID で特定のメモリーを取得
+* `execute_tool_call(tool_call)` - 個別のツール呼び出しを実行
+
+<div id="execute_memory_tool_calls">
+  #### `execute_memory_tool_calls`
+</div>
+
+```python
+execute_memory_tool_calls(
+    api_key: str,
+    tool_calls: List[ToolCall],
+    config: Optional[SupermemoryToolsConfig] = None
+) -> List[dict]
+```
+
+<div id="javascript-sdk">
+  ### JavaScript SDK
+</div>
+
+<div id="supermemorytools">
+  #### `supermemoryTools`
+</div>
+
+```typescript
+supermemoryTools(
+  apiKey: string,
+  config?: { projectId?: string; baseUrl?: string }
+)
+```
+
+<div id="createtoolcallexecutor">
+  #### `createToolCallExecutor`
+</div>
+
+```typescript
+createToolCallExecutor(
+  apiKey: string,
+  config?: { projectId?: string; baseUrl?: string }
+) -> (toolCall: OpenAI.Chat.ChatCompletionMessageToolCall) => Promise<any>
+```
+
+<div id="environment-variables">
+  ## 環境変数
+</div>
+
+次の環境変数を設定してください：
+
+```bash
+SUPERMEMORY_API_KEY=your_supermemory_key
+OPENAI_API_KEY=your_openai_key
+SUPERMEMORY_BASE_URL=https://custom-endpoint.com  # 任意
+```
+
+<div id="development">
+  ## 開発
+</div>
+
+<div id="python-setup">
+  ### Python セットアップ
+</div>
+
+```bash
+# uv のインストール
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# プロジェクトのセットアップ
+git clone <repository-url>
+cd packages/openai-sdk-python
+uv sync --dev
+
+# テストの実行
+uv run pytest
+
+# 型チェック
+uv run mypy src/supermemory_openai
+
+# フォーマット整形
+uv run black src/ tests/
+uv run isort src/ tests/
+```
+
+<div id="javascript-setup">
+  ### JavaScript のセットアップ
+</div>
+
+```bash
+# 依存関係のインストール
+npm install
+
+# テストの実行
+npm test
+
+# 型チェック
+npm run type-check
+
+# リンティング
+npm run lint
+```
+
+<div id="next-steps">
+  ## 次のステップ
+</div>
+
+<CardGroup cols={2}>
+  <Card title="AI SDK Integration" icon="triangle" href="/ja/ai-sdk/overview">
+    Vercel AI SDK と組み合わせて開発を効率化
+  </Card>
+
+  <Card title="Memory API" icon="database" href="/ja/memory-api/overview">
+    API に直接アクセスして高度なメモリー管理を実現
+  </Card>
+</CardGroup>

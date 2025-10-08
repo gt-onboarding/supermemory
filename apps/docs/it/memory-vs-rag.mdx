@@ -1,0 +1,291 @@
+---
+title: "Memory vs RAG: comprendere la differenza"
+description: "Scopri perché la memory degli agenti e il RAG sono fondamentalmente diversi e quando usare ciascun approccio"
+sidebarTitle: "Memory vs RAG"
+---
+
+Molti sviluppatori confondono il RAG (Retrieval-Augmented Generation) con la memory degli agenti. Non sono la stessa cosa e usare il RAG al posto della memory è il motivo per cui i tuoi agenti continuano a dimenticare contesti importanti. Vediamo qual è la differenza fondamentale.
+
+<div id="the-core-problem">
+  ## Il problema centrale
+</div>
+
+Quando si sviluppano agenti AI, gli sviluppatori spesso trattano la memory come un normale problema di retrieval. Archiviano le conversazioni in un database vettoriale, creano embedding delle query e sperano che la ricerca semantica faccia emergere il contesto giusto.
+
+**Questo approccio non funziona perché la memory non consiste nel trovare testo simile, ma nel comprendere relazioni, contesto temporale e lo stato dell’utente nel tempo.**
+
+<div id="documents-vs-memories-in-supermemory">
+  ## Documents vs memories in Supermemory
+</div>
+
+Supermemory distingue chiaramente tra questi due concetti:
+
+<div id="documents-raw-knowledge">
+  ### Documents: Conoscenza grezza
+</div>
+
+I Documents sono il contenuto grezzo che invii a Supermemory — PDF, pagine web, file di testo. Rappresentano conoscenza statica che non cambia in base a chi vi accede.
+
+**Caratteristiche:**
+
+- **Senza stato**: Un documento sulla programmazione in Python è lo stesso per tutti
+- **Non versionati**: Il contenuto non tiene traccia delle modifiche nel tempo
+- **Universali**: Non collegati a utenti o entità specifiche
+- **Ricercabili**: Perfetti per ricerche di somiglianza semantica
+
+**Casi d'uso:**
+
+- Basi di conoscenza aziendali
+- Documentazione tecnica
+- Articoli di ricerca
+- Materiale di riferimento generale
+
+<div id="memories-contextual-understanding">
+  ### Memories: Comprensione contestuale
+</div>
+
+Le memories sono gli insight, le preferenze e le relazioni estratti da Documents e conversazioni. Sono legate a utenti o entità specifici e si evolvono nel tempo.
+
+**Caratteristiche:**
+
+- **Stateful**: "L'utente preferisce la modalità scura" è specifico per quell'utente
+- **Temporali**: Tracciano quando i fatti diventano veri o non più validi
+- **Personali**: Collegate a utenti, sessioni o entità
+- **Relazionali**: Comprendono le relazioni tra i fatti
+
+**Casi d'uso:**
+
+- Preferenze e cronologia dell'utente
+- Contesto della conversazione
+- Fatti personali e relazioni
+- Schemi comportamentali
+
+<div id="why-rag-fails-as-memory">
+  ## Perché il RAG fallisce come memory
+</div>
+
+Vediamo uno scenario reale che illustra il problema:
+
+<Tabs>
+  <Tab title="Lo scenario">
+    ```
+    Giorno 1: "Adoro le sneakers Adidas"
+    Giorno 30: "Le mie Adidas si sono rotte dopo un mese, qualità pessima"
+    Giorno 31: "Passo a Puma"
+    Giorno 45: "Che sneakers dovrei comprare?"
+    ```
+  </Tab>
+
+  <Tab title="Approccio RAG (sbagliato)">
+    ```python
+    # RAG vede questi come embedding isolati
+    query = "Che sneakers dovrei comprare?"
+
+    # La ricerca semantica trova la corrispondenza più vicina
+    result = vector_search(query)
+    # Restituisce: "Adoro le sneakers Adidas" (somiglianza più alta)
+
+    # L'agente consiglia Adidas 🤦
+    ```
+
+    **Problema**: RAG trova il testo più simile semanticamente ma ignora la progressione temporale e le relazioni causali.
+  </Tab>
+
+  <Tab title="Approccio Memory (corretto)">
+    ```python
+    # Supermemory comprende il contesto temporale
+    query = "Che sneakers dovrei comprare?"
+
+    # Il recupero via memory considera:
+    # 1. Validità temporale (la preferenza per Adidas è superata)
+    # 2. Relazioni causali (rottura → delusione → cambio)
+    # 3. Stato attuale (ora preferisce Puma)
+
+    # L'agente consiglia correttamente Puma ✅
+    ```
+
+    **Soluzione**: I sistemi di memory tracciano quando i fatti diventano non più validi e comprendono le catene causali.
+  </Tab>
+</Tabs>
+
+<div id="the-technical-difference">
+  ## La differenza tecnica
+</div>
+
+<div id="rag-semantic-similarity">
+  ### RAG: Somiglianza semantica
+</div>
+
+```
+Query → Embedding → Ricerca Vettoriale → Risultati Top-K → LLM
+```
+
+RAG è eccellente nel trovare informazioni semanticamente simili alla tua richiesta. È stateless: ogni richiesta è indipendente.
+
+
+<div id="memory-contextual-graph">
+  ### Memory: grafo contestuale
+</div>
+
+```
+Query → Riconoscimento di Entità → Attraversamento del Grafo → Filtraggio Temporale → Assemblaggio del Contesto → LLM
+```
+
+I sistemi di memory costruiscono un grafo di conoscenza che comprende:
+
+* **Entità**: utenti, prodotti, concetti
+* **Relazioni**: preferenze, proprietà, causalità
+* **Contesto temporale**: quando i fatti erano validi
+* **Invalidazione**: quando i fatti sono diventati obsoleti
+
+
+<div id="when-to-use-each">
+  ## Quando usare ciascuno
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Usa RAG per" icon="search">
+    - Documentazione statica
+    - Knowledge base
+    - Query di ricerca
+    - Q&A generale
+    - Contenuti che non cambiano per utente
+  </Card>
+
+  <Card title="Usa Memory per" icon="brain">
+    - Preferenze utente
+    - Cronologia delle conversazioni
+    - Dati personali
+    - Schemi comportamentali
+    - Qualsiasi cosa che evolva nel tempo
+  </Card>
+</CardGroup>
+
+<div id="real-world-examples">
+  ## Esempi reali
+</div>
+
+<div id="e-commerce-assistant">
+  ### Assistente E-commerce
+</div>
+
+<Tabs>
+  <Tab title="RAG Component">
+    Archivia cataloghi prodotti, specifiche, recensioni
+
+    ```python
+    # Ideale per RAG
+    "Quali sono le specifiche dell’iPhone 15?"
+    "Confronta le scarpe da running Nike e Adidas"
+    "Mostrami le giacche impermeabili"
+    ```
+  </Tab>
+
+  <Tab title="Memory Component">
+    Tiene traccia di preferenze utente, cronologia degli acquisti e interazioni
+
+    ```python
+    # Richiede Memory
+    "Che taglia indosso di solito?"
+    "Mi è piaciuto il mio ultimo acquisto?"
+    "Qual è la mia preferenza di budget?"
+    ```
+  </Tab>
+</Tabs>
+
+<div id="customer-support-bot">
+  ### Bot di assistenza clienti
+</div>
+
+<Tabs>
+  <Tab title="RAG Component">
+    Documenti FAQ, guide di troubleshooting, policy
+
+    ```python
+    # Ideale per RAG
+    "Come reimposto la password?"
+    "Qual è la vostra policy sui resi?"
+    "Risoluzione dei problemi Wi‑Fi"
+    ```
+  </Tab>
+
+  <Tab title="Memory Component">
+    Problemi passati, dettagli dell’account utente, contesto della conversazione
+
+    ```python
+    # Richiede Memory
+    "Il problema della scorsa settimana è stato risolto?"
+    "Che piano ho?"
+    "Mi stavi aiutando con..."
+    ```
+  </Tab>
+</Tabs>
+
+<div id="how-supermemory-handles-both">
+  ## Come Supermemory gestisce entrambi
+</div>
+
+Supermemory offre una piattaforma unificata che gestisce correttamente entrambi i pattern:
+
+<div id="1-document-storage-rag">
+  ### 1. Archiviazione dei documenti (RAG)
+</div>
+
+```python
+# Aggiungi un documento per il recupero in stile RAG
+client.memories.add(
+    content="iPhone 15 has a 48MP camera and A17 Pro chip",
+    # Nessuna associazione utente - conoscenza universale
+)
+```
+
+
+<div id="2-memory-creation">
+  ### 2. Creazione delle memory
+</div>
+
+```python
+# Aggiungi una memory specifica per l'utente
+client.memories.add(
+    content="L'utente preferisce Android rispetto a iOS",
+    container_tags=["user_123"],  # Specifico per l'utente
+    metadata={
+        "type": "preference",
+        "confidence": "high"
+    }
+)
+```
+
+
+<div id="3-hybrid-retrieval">
+  ### 3. Recupero ibrido
+</div>
+
+```python
+# La ricerca combina entrambi gli approcci
+results = client.memories.search(
+    query="Quale telefono dovrei consigliare?",
+    container_tags=["user_123"],  # Ottiene le memories dell'utente
+    # Cerca anche nella conoscenza generale
+)
+
+# I risultati includono:
+# - Preferenza Android dell'utente (memory)
+# - Specifiche dei telefoni Android più recenti (documents)
+```
+
+
+<div id="the-bottom-line">
+  ## In sintesi
+</div>
+
+<Note>
+**Punto chiave**: RAG risponde a "Che cosa so?" mentre Memory risponde a "Che cosa ricordo di te?"
+</Note>
+
+Smetti di trattare la memory come un problema di semplice recupero. I tuoi agenti hanno bisogno di entrambe:
+
+- **RAG** per accedere alla conoscenza
+- **Memory** per comprendere gli utenti
+
+Supermemory offre entrambe le funzionalità in un’unica piattaforma, garantendo che i tuoi agenti abbiano il contesto giusto al momento giusto.

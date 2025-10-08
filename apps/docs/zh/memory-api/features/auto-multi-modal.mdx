@@ -1,0 +1,190 @@
+---
+title: "自动多模态"
+description: "supermemory 会自动检测你添加的文档内容类型。"
+icon: "sparkles"
+---
+
+supermemory 原生支持多模态，能自动检测你添加的文档内容类型。
+
+我们使用业界领先的工具从 URL 提取内容，并对其进行处理，以实现最优的 memory 存储。
+
+<div id="automatic-content-type-detection">
+  ## 自动内容类型检测
+</div>
+
+supermemory 会自动识别你添加的文档内容类型。只需将内容提交给 API，后续交由 supermemory 处理。
+
+<Tabs>
+  <Tab title="工作原理">
+    内容检测系统会分析：
+    - URL 模式与域名
+    - 文件扩展名与 MIME 类型
+    - 内容结构与 Metadata
+    - 请求头与响应类型
+  </Tab>
+  <Tab title="最佳实践">
+    <Accordion title="内容类型最佳实践" defaultOpen icon="sparkles">
+      1. **类型选择**
+         - 简单文本使用 `note`
+         - 在线内容使用 `webpage`
+         - 能用原生类型时尽量使用
+
+      2. **URL 内容**
+         - 提交不含跟踪参数的干净 URL
+         - 使用文章页 URL，而非首页 URL
+         - 提交前先检查 URL 的可访问性
+    </Accordion>
+
+  </Tab>
+</Tabs>
+
+<div id="quick-implementation">
+  ### 快速接入
+</div>
+
+你只需将内容发送到 `/documents` 端点：
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/documents \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  -d '{"content": "https://example.com/article"}'
+```
+
+```typescript
+await client.add.create({
+  content: "https://example.com/article",
+});
+```
+
+```python
+client.add.create(
+    content="https://example.com/article"
+)
+```
+
+</CodeGroup>
+
+<Note>
+  supermemory 使用 [Markdowner](https://md.dhr.wtf) 从 URL 中提取内容。
+</Note>
+
+<div id="supported-content-types">
+  ## 支持的内容类型
+</div>
+
+supermemory 支持多种内容格式，方便灵活创建 memory：
+
+<Grid cols={2}>
+  <Card title="文本内容" icon="document-text">
+    - `note`: 纯文本笔记和文档
+    - 可直接处理原始文本
+    - 自动对内容进行 chunk（文档片段）以实现最佳检索
+    - 保留原有格式与结构
+  </Card>
+
+  <Card title="网页内容" icon="globe">
+    - `webpage`: 网页（只需提供 URL）
+    - 智能提取主体内容
+    - 保留重要的 Metadata（title、description、images）
+    - 在可用时提取 OpenGraph Metadata
+
+    - `tweet`: Twitter 内容
+    - 捕获推文文本、媒体与 Metadata
+    - 如适用，保留话题串（线程）结构
+  </Card>
+
+  <Card title="文档类型" icon="document">
+    - `pdf`: PDF 文件
+    - 在保持结构的同时提取文本
+    - 同时支持可搜索 PDF 与通过光学字符识别（OCR）处理的扫描件
+    - 保留分页与格式
+
+    - `google_doc`: Google 文档
+    - 无缝对接 Google Docs API
+    - 保持文档格式与结构
+    - 源文档更新时自动同步
+
+    - `notion_doc`: Notion 页面
+    - 在保留 Notion 块级结构的同时提取内容
+    - 处理富文本格式与嵌入内容
+  </Card>
+
+  <Card title="媒体类型" icon="photo">
+    - `image`: 含文本的图像
+    - 通过光学字符识别（OCR）提取文本
+    - 进行视觉内容分析与描述
+
+    - `video`: 视频内容
+    - 转写与内容提取
+    - 关键帧分析
+  </Card>
+</Grid>
+
+<div id="processing-pipeline">
+  ## 处理流程
+</div>
+
+<Steps>
+  <Step title="内容检测">
+    supermemory 会根据输入自动识别内容类型。
+  </Step>
+
+<Step title="内容抽取">
+  面向不同类型的抽取器按以下方式处理内容：- 针对各格式的专用解析 - 带重试机制的错误处理 - 速率 limit 管理
+</Step>
+
+  <Step title="AI 增强">
+    ```typescript
+    interface ProcessedContent {
+      content: string;      // 抽取的文本
+      summary?: string;     // AI 生成的摘要
+      tags?: string[];     // 抽取的标签
+      categories?: string[]; // 内容类别
+    }
+    ```
+  </Step>
+
+  <Step title="内容分块与索引">
+    - 句子级切分
+    - 2 句重叠
+    - 上下文保留
+    - 语义一致性
+  </Step>
+</Steps>
+
+<div id="technical-specifications">
+  ## 技术规范
+</div>
+
+<div id="size-limits">
+  ### 大小限制
+</div>
+
+| 内容类型 | 最大大小 |
+| ------------ | -------- |
+| 文本/笔记    | 1MB      |
+| PDF          | 10MB     |
+| 图片        | 5MB      |
+| 视频        | 100MB    |
+| 网页        | N/A      |
+| Google 文档  | N/A      |
+| Notion 页面  | N/A      |
+| 推文        | N/A      |
+
+<div id="processing-time">
+  ### 处理时间
+</div>
+
+| 内容类型 | 处理时间 |
+| -------- | -------- |
+| 文本/笔记 | 几乎即时 |
+| PDF      | 1-5 秒   |
+| 图片     | 2-10 秒  |
+| 视频     | 10 秒以上 |
+| 网页     | 1-3 秒   |
+| Google 文档 | 不适用 |
+| Notion 页面 | 不适用 |
+| 推文     | 不适用  |

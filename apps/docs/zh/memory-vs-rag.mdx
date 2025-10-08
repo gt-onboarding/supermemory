@@ -1,0 +1,291 @@
+---
+title: "Memory 与 RAG：理解差异"
+description: "了解为何智能体 memory 与 RAG 在本质上不同，以及各自的适用场景"
+sidebarTitle: "Memory 与 RAG"
+---
+
+大多数开发者把 RAG（检索增强生成）与智能体 memory 混为一谈。它们并非同一概念，用 RAG 充当 memory 正是导致你的智能体反复遗忘关键上下文的原因。下面我们来厘清其中的根本差异。
+
+<div id="the-core-problem">
+  ## 核心问题
+</div>
+
+在构建 AI agent 时，开发者往往把 memory 当作普通的检索问题来处理。他们把对话存入向量数据库，对查询进行向量化，然后寄希望于语义搜索能给出合适的上下文。
+
+**这种做法并不可行，因为 memory 的关键不在于找相似文本——而在于随时间理解关系、时间语境以及用户状态的演变。**
+
+<div id="documents-vs-memories-in-supermemory">
+  ## Supermemory 中的 Documents 与存储的记忆
+</div>
+
+Supermemory 明确区分这两个概念：
+
+<div id="documents-raw-knowledge">
+  ### Documents：原始知识
+</div>
+
+Documents 是你发送给 Supermemory 的原始内容——PDF、网页、文本文件等。它们属于静态知识，不会因访问者不同而改变。
+
+**特性：**
+
+- **无状态**：关于 Python 编程的文档对所有人而言都是相同的
+- **无版本**：不随时间记录或管理变更
+- **通用**：不与特定用户或实体绑定
+- **可搜索**：非常适合语义相似度搜索
+
+**使用场景：**
+
+- 公司知识库
+- 技术文档
+- 学术论文
+- 通用参考资料
+
+<div id="memories-contextual-understanding">
+  ### 存储的记忆：上下文理解
+</div>
+
+存储的记忆是从 Documents 和对话中提取的洞察、偏好与关系。它们与特定用户或实体绑定，并会随时间演变。
+
+**特性：**
+
+- **有状态**：“User prefers dark mode” 这类信息只针对该用户
+- **时间性**：记录事实何时开始成立或失效
+- **个性化**：关联到用户、会话或实体
+- **关系性**：理解事实之间的关联
+
+**使用场景：**
+
+- 用户偏好与历史
+- 对话上下文
+- 个人事实与关系
+- 行为模式
+
+<div id="why-rag-fails-as-memory">
+  ## 为什么 RAG 不能充当 memory
+</div>
+
+来看一个能说明问题的真实场景：
+
+<Tabs>
+  <Tab title="The Scenario">
+    ```
+    第 1 天：“我喜欢 Adidas 运动鞋”
+    第 30 天：“我的 Adidas 用了一个月就坏了，质量太差”
+    第 31 天：“我打算换 Puma”
+    第 45 天：“我该买什么运动鞋？”
+    ```
+  </Tab>
+
+  <Tab title="RAG Approach (Wrong)">
+    ```python
+    # RAG 将这些视为彼此独立的 embedding
+    query = "What sneakers should I buy?"
+
+    # 语义搜索找到最接近的匹配
+    result = vector_search(query)
+    # 返回："I love Adidas sneakers"（最高相似度）
+
+    # Agent 推荐了 Adidas 🤦
+    ```
+
+    **问题**：RAG 只找到语义上最相近的文本，却忽略了时间演变与因果关系。
+  </Tab>
+
+  <Tab title="Memory Approach (Right)">
+    ```python
+    # Supermemory 理解时间语境
+    query = "What sneakers should I buy?"
+
+    # memory 检索会考虑：
+    # 1. 时间有效性（对 Adidas 的偏好已失效）
+    # 2. 因果关系（坏了 → 失望 → 转换）
+    # 3. 当前状态（现在偏好 Puma）
+
+    # Agent 正确地推荐了 Puma ✅
+    ```
+
+    **解决方案**：memory 系统会追踪事实何时失效，并理解因果链。
+  </Tab>
+</Tabs>
+
+<div id="the-technical-difference">
+  ## 技术差异点
+</div>
+
+<div id="rag-semantic-similarity">
+  ### RAG：语义相似度
+</div>
+
+```
+查询 → Embedding → 向量搜索 → Top-K 结果 → LLM（大型语言模型）
+```
+
+RAG 擅长检索与你的查询在语义上相似的信息。它是无状态的——每次查询都是彼此独立的。
+
+
+<div id="memory-contextual-graph">
+  ### memory：上下文图谱
+</div>
+
+```
+查询 → 实体识别 → 图遍历 → 时间过滤 → 上下文组装 → LLM（大型语言模型）
+```
+
+memory 系统会构建能够理解以下内容的知识图谱：
+
+* **实体**：用户、产品、概念
+* **关系**：偏好、所有权、因果关系
+* **时间上下文**：事实在何时成立
+* **失效**：事实在何时变得不再有效
+
+
+<div id="when-to-use-each">
+  ## 何时分别使用
+</div>
+
+<CardGroup cols={2}>
+  <Card title="适合使用 RAG" icon="search">
+    - 静态文档
+    - 知识库
+    - 研究型查询
+    - 常规问答
+    - 不随用户而变化的内容
+  </Card>
+
+  <Card title="适合使用 memory" icon="brain">
+    - 用户偏好
+    - 对话历史
+    - 个人信息
+    - 行为模式
+    - 会随时间演变的内容
+  </Card>
+</CardGroup>
+
+<div id="real-world-examples">
+  ## 真实案例
+</div>
+
+<div id="e-commerce-assistant">
+  ### 电商助理
+</div>
+
+<Tabs>
+  <Tab title="RAG Component">
+    存储产品目录、规格、评价
+
+    ```python
+    # 适用于 RAG
+    "iPhone 15 的规格有哪些？"
+    "比较 Nike 和 Adidas 的跑鞋"
+    "给我看看防水夹克"
+    ```
+  </Tab>
+
+  <Tab title="Memory Component">
+    追踪用户偏好、购买历史、互动记录
+
+    ```python
+    # 需要 Memory
+    "我通常穿多大尺码？"
+    "我上一次的购买我满意吗？"
+    "我的预算偏好是什么？"
+    ```
+  </Tab>
+</Tabs>
+
+<div id="customer-support-bot">
+  ### 客服机器人
+</div>
+
+<Tabs>
+  <Tab title="RAG 组件">
+    FAQ Documents、故障排查指南、政策
+
+    ```python
+    # 适合用于 RAG
+    "如何重置我的密码？"
+    "你们的退货政策是什么？"
+    "Wi‑Fi 问题排查"
+    ```
+  </Tab>
+
+  <Tab title="Memory 组件">
+    过往问题、用户账号详情、对话上下文
+
+    ```python
+    # 需要 Memory
+    "我上周的问题解决了吗？"
+    "我当前的套餐/方案是什么？"
+    "你之前在帮我处理……"
+    ```
+  </Tab>
+</Tabs>
+
+<div id="how-supermemory-handles-both">
+  ## Supermemory 如何同时处理这两种情况
+</div>
+
+Supermemory 提供了一个统一的平台，能够正确处理这两种模式：
+
+<div id="1-document-storage-rag">
+  ### 1. 文档存储（RAG）
+</div>
+
+```python
+# 为 RAG 风格检索添加文档
+client.memories.add(
+    content="iPhone 15 拥有 48MP 摄像头和 A17 Pro 芯片",
+    # 无用户关联 - 通用知识
+)
+```
+
+
+<div id="2-memory-creation">
+  ### 2. 创建 memory
+</div>
+
+```python
+# 添加用户特定的memory
+client.memories.add(
+    content="用户偏好Android而非iOS",
+    container_tags=["user_123"],  # 用户特定
+    metadata={
+        "type": "preference",
+        "confidence": "high"
+    }
+)
+```
+
+
+<div id="3-hybrid-retrieval">
+  ### 3. 混合式检索
+</div>
+
+```python
+# 搜索结合了两种方法
+results = client.memories.search(
+    query="我应该推荐什么手机？",
+    container_tags=["user_123"],  # 获取用户存储的记忆
+    # 同时搜索通用知识
+)
+
+# 结果包括：
+# - 用户的 Android 偏好（memory）
+# - 最新的 Android 手机规格（Documents）
+```
+
+
+<div id="the-bottom-line">
+  ## 核心结论
+</div>
+
+<Note>
+**关键洞见**：RAG 回答“我知道什么？”，而 Memory 回答“我关于你记得什么？”
+</Note>
+
+别再把 memory 当作检索问题来处理。你的智能体需要两者：
+
+- **RAG** 用于获取知识
+- **Memory** 用于理解用户
+
+Supermemory 在一个统一平台中提供这两种能力，确保你的智能体在合适的时机具备恰当的上下文。

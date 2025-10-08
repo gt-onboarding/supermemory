@@ -1,0 +1,251 @@
+---
+title: "supermemory Infinite Chat"
+description: "supermemory のインテリジェントなプロキシを用いて、無制限のコンテキストを持つチャットアプリケーションを構築する"
+tag: "ベータ"
+---
+
+import GettingAPIKey from '/snippets/ja/getting-api-key.mdx';
+
+supermemory Infinite Chat は、チャットアプリに無制限の文脈メモリーを付与する強力なソリューションです。既存の LLM（大規模言語モデル）プロバイダの前段で透過的なプロキシとして機能し、アプリケーションロジックを変更することなく、長時間の対話をインテリジェントに管理します。
+
+<img src="/images/infinite-context.png" alt="Infinite Context Diagram" className="rounded-lg shadow-lg" />
+
+<Tabs>
+  <Tab title="Key Features">
+    <CardGroup cols={2}>
+      <Card title="Unlimited Context" icon="infinity" color="#4F46E5">
+        トークン上限を気にせず、対話を無期限に拡張可能
+      </Card>
+
+      <Card title="Zero Latency" icon="bolt" color="#10B981">
+        ほぼオーバーヘッドなしの透過的プロキシ
+      </Card>
+
+      <Card title="Cost Efficient" icon="coins" color="#F59E0B">
+        長時間の対話でトークンコストを最大 70% 削減
+      </Card>
+
+      <Card title="Provider Agnostic" icon="plug" color="#6366F1">
+        OpenAI 互換のあらゆるエンドポイントで動作
+      </Card>
+    </CardGroup>
+  </Tab>
+</Tabs>
+
+
+<div id="getting-started">
+  ## はじめに
+</div>
+
+Infinite Chat エンドポイントを使用するには、次の手順が必要です：
+
+<div id="1-get-a-supermemory-api-key">
+  ### 1. Supermemory の APIキーを取得する
+</div>
+
+<GettingAPIKey />
+
+<div id="2-add-supermemory-in-front-of-any-openai-compatible-api-url">
+  ### 2. 任意の**OpenAI-Compatible**な API URL の先頭に supermemory を追加する
+</div>
+
+<CodeGroup>
+
+```typescript Typescript
+import OpenAI from "openai";
+
+/**
+ * supermemory プロキシで OpenAI クライアントを初期化
+ * @param {string} OPENAI_API_KEY - OpenAI の APIキー
+ * @param {string} SUPERMEMORY_API_KEY - supermemory の APIキー
+ * @returns {OpenAI} - 設定済みの OpenAI クライアント
+ */
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://api.supermemory.ai/v3/https://api.openai.com/v1",
+  headers: {
+    "x-supermemory-api-key": process.env.SUPERMEMORY_API_KEY,
+    "x-sm-user-id": "Your_users_id"
+  },
+});
+```
+
+```python Python
+import openai
+import os
+
+# supermemory プロキシで OpenAI クライアントを構成
+openai.api_base = "https://api.supermemory.ai/v3/https://api.openai.com/v1"
+openai.api_key = os.environ.get("OPENAI_API_KEY")  # 通常の OpenAI キー
+openai.default_headers = {
+    "x-supermemory-api-key": os.environ.get("SUPERMEMORY_API_KEY"),  # supermemory のキー
+}
+
+# 無制限のコンテキストでチャット補完を作成
+response = openai.ChatCompletion.create(
+  model="gpt-5-nano",
+  messages=[{"role": "user", "content": "Your message here"}]
+)
+```
+
+</CodeGroup>
+
+<div id="how-it-works">
+  ## 仕組み
+</div>
+
+<Steps>
+  <Step title="透過プロキシ">
+    すべてのリクエストは、追加のレイテンシーなしで supermemory を経由し、選択した LLM（大規模言語モデル）プロバイダに転送されます。
+
+    <img
+      src="/images/transparent-proxy.png"
+      alt="透過プロキシの図"
+      className="my-4 rounded-md shadow"
+    />
+  </Step>
+  <Step title="インテリジェントなチャンク化（分割処理）">
+    長い会話は、意味的一貫性を保つ当社独自のチャンク化アルゴリズムにより、自動的に最適なセグメントへ分割されます。
+  </Step>
+  <Step title="スマートリトリーバル">
+    会話がトークン上限（20k+）を超える場合、supermemory が過去メッセージから最も関連性の高いコンテキストを賢く取得します。
+  </Step>
+  <Step title="自動トークン管理">
+    システムがトークン使用量のバランスを賢く最適化し、コストを抑えつつ最適なパフォーマンスを確保します。
+  </Step>
+</Steps>
+
+<div id="performance-benefits">
+  ## パフォーマンス上の利点
+</div>
+
+<Accordion title="トークン使用量の削減" defaultOpen icon="coins">
+  スマートなコンテキスト管理とキャッシュにより、長い会話でもトークンコストを最大70%削減できます。
+</Accordion>
+
+<Accordion title="無制限のコンテキスト" icon="infinity">
+  8k/32k/128kのトークン上限はもう不要 — supermemoryの高度なリトリーバルにより、会話を事実上無制限に継続できます。
+</Accordion>
+
+<Accordion title="応答品質の向上" icon="sparkles">
+  より適切なコンテキスト取得により、超長文スレッドでも一貫性の高い応答を実現し、ハルシネーションや不整合を抑制します。
+</Accordion>
+
+<Accordion title="パフォーマンス低下ゼロ" icon="bolt">
+  プロキシはリクエストにほとんどレイテンシーを追加せず、ユーザーに高速な応答を提供します。
+</Accordion>
+
+<div id="pricing">
+  ## 料金
+</div>
+
+<Tabs>
+  <Tab title="プラン">
+    <div className="mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-bold">フリー</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">10万トークンを無料で保存可能</p>
+        </div>
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-bold">スタンダード</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">無料枠超過後は月額$20の固定料金</p>
+        </div>
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-bold">従量課金</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300">各スレッドに2万トークンの無料枠を含み、その後は100万トークンあたり$1</p>
+        </div>
+      </div>
+    </div>
+  </Tab>
+  <Tab title="比較">
+    <div className="mt-4">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead>
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              機能
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              フリー
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              スタンダード
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          <tr>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              保存トークン数
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              100k
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              無制限
+            </td>
+          </tr>
+          <tr>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              会話数
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              10
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              無制限
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </Tab>
+</Tabs>
+
+<div id="error-handling">
+  ## エラー処理
+</div>
+
+<Note>
+  supermemory は信頼性を最優先に設計されています。supermemory の処理パイプライン内で問題が発生した場合でも、システムは自動的にフォールバックし、リクエストを LLM プロバイダへ直接転送して、アプリケーションのダウンタイムを発生させません。
+</Note>
+
+各レスポンスには、処理に関する情報を提供する診断ヘッダーが含まれます:
+
+| Header                           | Description                                                                 |
+| -------------------------------- | --------------------------------------------------------------------------- |
+| `x-supermemory-conversation-id`  | 会話スレッドの一意の識別子                                                  |
+| `x-supermemory-context-modified` | supermemory がコンテキストを変更したかどうか（"true" または "false"）        |
+| `x-supermemory-tokens-processed` | このリクエストで処理されたトークン数                                         |
+| `x-supermemory-chunks-created`   | この会話から新規に作成された chunks の数                                     |
+| `x-supermemory-chunks-deleted`   | 削除された chunks の数（該当する場合）                                       |
+| `x-supermemory-docs-deleted`     | 削除された documents の数（該当する場合）                                    |
+
+エラーが発生した場合は、追加ヘッダー `x-supermemory-error` が含まれ、問題の詳細が示されます。supermemory でエラーが発生しても、基盤となる LLM プロバイダによってリクエストは引き続き処理されます。
+
+<div id="rate-limiting">
+  ## レート制限
+</div>
+
+<Info>
+  現在、supermemory 固有のレート制限は設けていません。リクエストは、利用している基盤の LLM プロバイダのレート制限のみに準拠します。
+</Info>
+
+<div id="supported-models">
+  ## 対応モデル
+</div>
+
+supermemory は、OpenAI 互換の API であればどれでも利用できます:
+
+<CardGroup cols={3}>
+  <Card title="OpenAI" icon="openai">
+    GPT-3.5、GPT-4、GPT-4o
+  </Card>
+  <Card title="Anthropic" icon="user-astronaut">
+    Claude 3 系列
+  </Card>
+  <Card title="Other Providers" icon="plug">
+    OpenAI 互換のエンドポイントを備えた任意のプロバイダ
+  </Card>
+</CardGroup>

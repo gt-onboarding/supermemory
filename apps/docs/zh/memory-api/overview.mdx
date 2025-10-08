@@ -1,0 +1,158 @@
+---
+title: "快速入门 - 5 分钟"
+description: "了解如何将 supermemory 集成到你的应用中"
+---
+
+<div id="authentication">
+  ## 身份验证
+</div>
+
+前往 [Supermemory 的 Developer Platform](https://console.supermemory.ai)，该平台可帮助你监控与管理 API 的各个方面。
+
+所有 API 请求都需要使用 API 密钥进行身份验证。请按以下方式包含你的 API 密钥：
+
+<CodeGroup>
+  ```bash cURL
+  Authorization: Bearer YOUR_API_KEY
+  ```
+
+  ```typescript Typescript
+  // npm install supermemory
+
+  const client = new supermemory({
+    apiKey: "YOUR_API_KEY",
+  });
+  ```
+
+  ```python Python
+  # pip install supermemory
+
+  client = supermemory(
+      api_key="YOUR_API_KEY",
+  )
+  ```
+</CodeGroup>
+
+<div id="installing-the-clients">
+  ## 安装客户端
+</div>
+
+你可以通过 API 使用 Supermemory，或使用我们的 SDK（软件开发工具包）
+
+<CodeGroup>
+  ```bash cURL
+  https://api.supermemory.ai/v3
+  ```
+
+  ```bash Typescript
+  npm i supermemory
+  ```
+
+  ```bash Python
+  pip install supermemory
+  ```
+</CodeGroup>
+
+<div id="add-your-first-memory">
+  ## 添加你的第一个记忆存储
+</div>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{"content": "This is the content of my first memory."}'
+  ```
+
+  ```typescript Typescript
+  await client.memory.add({
+    content: "This is the content of my first memory.",
+  });
+  ```
+
+  ```python Python
+  client.memory.add(
+      content="This is the content of my first memory.",
+  )
+  ```
+</CodeGroup>
+
+这将向你的 Supermemory 帐户添加一个新的记忆存储。
+
+在 [API Playground](/zh/api-reference/manage-memories/add-memory) 中试试。
+
+<div id="content-processing">
+  ## 内容处理
+</div>
+
+<Accordion title="Processing steps" icon="sparkles">
+  当你将内容添加到 supermemory 时，它会经过多个处理阶段：
+
+  1. **Queued**: 提交后处于初始状态
+  2. **Extracting**: 正在从源中提取内容
+  3. **Chunking**: 正在将内容拆分为语义 chunk（文档片段）
+  4. **Embedding**: 生成用于搜索的向量 Embedding（向量表示/嵌入）
+  5. **Indexing**: 将内容加入搜索索引
+  6. **Done**: 处理完成
+</Accordion>
+
+<Accordion title="Advanced Chunking" icon="sparkles">
+  系统使用先进的 NLP 技术进行高质量的内容分块：
+
+  * 句子级拆分以保持自然边界
+  * 通过重叠的 chunk（文档片段）保留上下文
+  * 智能处理长文本
+  * 优化语义连贯性
+</Accordion>
+
+<div id="search-your-memories">
+  ## 搜索你的记忆存储
+</div>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/search \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{"q": "This is the content of my first memory."}'
+  ```
+
+  ```typescript Typescript
+  await client.search.execute({
+    q: "This is the content of my first memory.",
+  });
+  ```
+
+  ```python Python
+  client.search.execute(
+      q="This is the content of my first memory.",
+  )
+  ```
+</CodeGroup>
+
+在 [API Playground](/zh/api-reference/search-memories/search-memories) 中试一试。
+
+你可以用 supermemory 实现更多功能，我们会带你逐步上手所需的一切。
+
+接下来，探索 supermemory 提供的功能
+
+<CardGroup cols={2}>
+  <Card title="添加记忆存储" icon="plus" href="/zh/memory-api/creation">
+    添加记忆存储
+  </Card>
+
+  <Card title="搜索与筛选" icon="search" href="/zh/memory-api/searching">
+    搜索项
+  </Card>
+
+  <Card title="连接器与同步" icon="plug" href="/zh/memory-api/connectors">
+    连接外部数据源
+  </Card>
+
+  <Card title="功能" icon="sparkles" href="/zh/memory-api/features">
+    探索功能
+  </Card>
+</CardGroup>

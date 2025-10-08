@@ -1,0 +1,170 @@
+---
+title: "パラメーター"
+description: "メモリー追加用パラメーターの完全リファレンス"
+---
+
+Supermemory にメモリーを追加するための詳細なパラメーターリファレンス。
+
+<div id="request-parameters">
+  ## リクエストパラメーター
+</div>
+
+<div id="required-parameters">
+  ### 必須パラメータ
+</div>
+
+<ParamField body="content" type="string" required>
+  保存済みメモリに変換する対象コンテンツ。次のいずれかを指定します:
+  - プレーンテキスト
+  - 処理対象の url
+  - HTML コンテンツ
+  - Markdown テキスト
+
+  ```json
+  {
+    "content": "Machine learning is a subset of AI..."
+  }
+  ```
+
+  **URL の例:**
+  ```json
+  {
+    "content": "https://youtube.com/watch?v=dQw4w9WgXcQ"
+  }
+  ```
+</ParamField>
+
+<div id="optional-parameters">
+  ### 任意パラメータ
+</div>
+
+<ParamField body="containerTag" type="string">
+  **推奨。** 関連する保存済みメモリをまとめる単一のコンテナタグ。検索パフォーマンスが向上します。
+
+  既定値: `"sm_project_default"`
+
+  ```json
+  {
+    "containerTag": "project_alpha"
+  }
+  ```
+
+  <Note>
+  より高いパフォーマンスのため、`containerTags`（配列）ではなく `containerTag`（単数）を使用してください。
+  </Note>
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  追加の metadata をキーと値のペアで指定します。値は文字列、数値、または真偽値である必要があります。
+
+  ```json
+  {
+    "metadata": {
+      "source": "research-paper",
+      "author": "John Doe",
+      "priority": 1,
+      "reviewed": true
+    }
+  }
+  ```
+
+  **制約:**
+  - ネストしたオブジェクトは不可
+  - 値として配列は不可
+  - キーは文字列のみ
+  - 値は文字列、数値、または真偽値のみ
+</ParamField>
+
+<ParamField body="customId" type="string">
+  ドキュメント用の独自の識別子。重複排除と更新を可能にします。
+
+  **最大長:** 255文字
+
+  ```json
+  {
+    "customId": "doc_2024_01_research_ml"
+  }
+  ```
+
+  **ユースケース:**
+  - 重複アップロードの防止
+  - 既存の documents の更新
+  - 外部システムとの同期
+</ParamField>
+
+<ParamField body="raw" type="string">
+  処理済みコンテンツと併せて保存する生のコンテンツ。元の書式を保持するのに役立ちます。
+
+  ```json
+  {
+    "content": "# Machine Learning\n\nML is a subset of AI...",
+    "raw": "# Machine Learning\n\nML is a subset of AI..."
+  }
+  ```
+</ParamField>
+
+<div id="file-upload-parameters">
+  ## ファイルアップロードのパラメーター
+</div>
+
+`POST /v3/documents/file` エンドポイントの場合:
+
+<ParamField body="file" type="file" required>
+  アップロードするファイル。対応形式:
+  - **ドキュメント:** PDF, DOC, DOCX, TXT, MD
+  - **画像:** JPG, PNG, GIF, WebP
+  - **動画:** MP4, WebM, AVI
+
+  **最大サイズ:** 50MB
+</ParamField>
+
+<ParamField body="containerTags" type="string">
+  アップロードするファイルに付与するコンテナタグ（フォームフィールドとして送信）。
+
+  ```bash
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -F "file=@document.pdf" \
+    -F "containerTags=research"
+  ```
+</ParamField>
+
+<div id="container-tag-patterns">
+  ## コンテナタグのパターン
+</div>
+
+<div id="recommended-patterns">
+  ### 推奨パターン
+</div>
+
+```typescript
+// ユーザー別
+"user_123"
+
+// プロジェクト別
+"project_alpha"
+
+// 組織とタイプ別
+"org_456_research"
+
+// 期間別
+"2024_q1_reports"
+
+// データソース別
+"slack_channel_general"
+```
+
+
+<div id="performance-considerations">
+  ### パフォーマンスに関する考慮事項
+</div>
+
+```typescript
+// ✅ 高速：単一タグ
+{ "containerTag": "project_alpha" }
+
+// ⚠️ 低速：複数タグ
+{ "containerTags": ["project_alpha", "backend", "auth"] }
+
+// ❌ 避ける：タグが多すぎる
+{ "containerTags": ["tag1", "tag2", "tag3", "tag4", "tag5"] }
+```

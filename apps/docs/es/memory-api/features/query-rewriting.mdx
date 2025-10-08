@@ -1,0 +1,54 @@
+---
+title: "Reescritura de consultas"
+description: "Reescritura de consultas en supermemory"
+icon: "blend"
+---
+
+La Reescritura de consultas es una función que permite reformular consultas para mejorar su precisión.
+
+![Reescritura de consultas](/images/query-rewriting.png)
+
+<div id="usage">
+  ### Uso
+</div>
+
+En Supermemory, puedes habilitar la Reescritura de consultas estableciendo el parámetro `rewriteQuery` en `true` en la API de búsqueda.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --header 'Content-Type: application/json' \
+  -d '{
+    "q": "What is the capital of France?",
+    "rewriteQuery": true
+  }'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rewriteQuery: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rewriteQuery=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### Notas y limitaciones
+</div>
+
+- supermemory genera múltiples reescrituras y ejecuta la búsqueda con todas ellas.
+- Luego, los resultados se fusionan y se te devuelven.
+- No hay costos adicionales asociados con la Reescritura de consultas.
+- Aunque la Reescritura de consultas mejora significativamente la calidad, también **incurre en latencia adicional**.
+- Todas las demás funciones, como el filtrado, la búsqueda híbrida y el sesgo de recencia, también funcionan con los resultados reescritos.

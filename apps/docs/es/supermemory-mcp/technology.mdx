@@ -1,0 +1,60 @@
+---
+title: "Detalles de implementación técnica"
+description: "Detalles de implementación técnica de supermemory MCP"
+---
+
+La arquitectura técnica prioriza la **simplicidad y la experiencia de usuario** sin sacrificar la funcionalidad. Concebida como lo que sus creadores describen como “lo más simple que verás”—básicamente una aplicación de React Router que hace llamadas fetch a la Memory API de Supermemory—, todo el sistema se desarrolló y se puso en producción en aproximadamente 5 horas de trabajo efectivo.
+
+<div id="architecture-components">
+  ### Componentes de la arquitectura
+</div>
+
+- **Backend API**: Construida sobre la Memory API de Supermemory (https://api.supermemory.ai/v3)
+- **Capa de transporte**: Utiliza Server-Sent Events (SSE) para la comunicación en tiempo real
+- **Generación dinámica de servidores**: Crea instancias únicas de servidores MCP para cada usuario mediante parámetros de ruta en la URL
+- **Gestión de sesiones**: Mantiene un aislamiento completo de usuarios a través de URL únicas
+- **Infraestructura**: Alojado en Cloudflare utilizando Durable Objects para conexiones persistentes y de larga duración
+
+El sistema aprovecha la **infraestructura de Cloudflare** con facturación basada en CPU, lo que lo hace muy eficiente, ya que las memory connections pasan la mayor parte del tiempo esperando entre interacciones en lugar de procesar activamente, lo que se traduce en un uso mínimo de CPU a pesar de que potencialmente se ejecuten durante millones de milisegundos.
+
+<div id="the-two-main-components-explained">
+  ## Los dos componentes principales, explicados
+</div>
+
+<div id="addtosupermemory-action">
+  ### acción addToSupermemory
+</div>
+
+Este componente **almacena información del usuario, preferencias y patrones de comportamiento** con mecanismos de activación sofisticados:
+
+**Métodos de activación:**
+
+- **Comandos explícitos**: instrucciones directas del usuario como “recuerda esto”
+- **Detección implícita**: identificación automática de rasgos, preferencias o patrones significativos del usuario durante las conversaciones
+
+**Tipos de datos capturados:**
+
+- Preferencias y detalles técnicos (p. ej., “Mi lenguaje de programación principal es Python”)
+- Información y contexto del proyecto (p. ej., “Actualmente estoy trabajando en un proyecto llamado ‘Apollo’”)
+- Comportamientos del usuario y respuestas emocionales
+- Datos personales, preferencias y patrones de toma de decisiones
+- Contexto enriquecido que incluye detalles técnicos y ejemplos
+
+<div id="searchsupermemory-action">
+  ### acción searchSupermemory
+</div>
+
+Este componente **recupera información relevante** de memories almacenadas mediante capacidades de búsqueda avanzadas:
+
+**Desencadenantes de activación:**
+
+- Solicitudes explícitas del usuario de información histórica
+- Situaciones contextuales en las que las elecciones pasadas del usuario serían útiles para decisiones actuales
+- Mejora automática del contexto en función del flujo de la conversación
+
+**Capacidades de búsqueda:**
+
+- **Coincidencia semántica**: encuentra detalles relevantes entre experiencias relacionadas mediante búsqueda vectorial
+- **Reconocimiento de patrones**: identifica patrones de comportamiento y preferencias
+- **Recuperación entre sesiones**: accede a memories de conversaciones y plataformas anteriores
+- **Filtrado inteligente**: devuelve el contexto más relevante según las necesidades de la conversación actual

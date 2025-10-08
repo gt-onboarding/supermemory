@@ -1,0 +1,405 @@
+---
+title: "Python SDK"
+sidebarTitle: "Python"
+description: "了解如何在 Python 中使用 supermemory"
+---
+
+<div id="installation">
+  ## 安装
+</div>
+
+```sh
+# 从 PyPI 安装
+pip install --pre supermemory
+```
+
+
+<div id="usage">
+  ## 使用方法
+</div>
+
+```python
+import os
+from supermemory import Supermemory
+
+client = supermemory(
+    api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # 这是默认值，可以省略
+)
+
+response = client.search.execute(
+    q="与 python 相关的 documents",
+)
+print(response.results)
+```
+
+虽然可以通过关键字参数 `api_key` 直接传入，
+但我们建议使用 [python-dotenv](https://pypi.org/project/python-dotenv/)
+将 `SUPERMEMORY_API_KEY="My API Key"` 添加到 `.env` 文件中，
+以避免在源代码仓库中保存 API 密钥。
+
+
+<div id="async-usage">
+  ## 异步用法
+</div>
+
+只需导入 `AsyncSupermemory`（而非 `supermemory`），并在每次 API 调用时使用 `await`：
+
+```python
+import os
+import asyncio
+from supermemory import AsyncSupermemory
+
+client = AsyncSupermemory(
+    api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # 这是默认值，可以省略
+)
+
+
+async def main() -> None:
+    response = await client.search.execute(
+        q="与 python 相关的文档",
+    )
+    print(response.results)
+
+
+asyncio.run(main())
+```
+
+除此之外，同步客户端与异步客户端的功能一致。
+
+
+<div id="using-types">
+  ## 使用类型
+</div>
+
+嵌套请求参数采用 [TypedDict](https://docs.python.org/3/library/typing.html#typing.TypedDict)。响应为 [Pydantic 模型](https://docs.pydantic.dev)，并提供以下辅助方法：
+
+- 序列化为 JSON：`model.to_json()`
+- 转换为字典：`model.to_dict()`
+
+带类型的请求与响应可在编辑器中提供自动补全和内联文档。若希望在 VS Code 中启用类型错误以更早发现问题，请将 `python.analysis.typeCheckingMode` 设置为 `basic`。
+
+<div id="file-uploads">
+  ## 文件上传
+</div>
+
+与文件上传对应的请求参数可以以 `bytes`、[`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike) 实例，或 `(文件名, 内容, 媒体类型)` 元组的形式传递。
+
+```python
+from pathlib import Path
+from supermemory import Supermemory
+
+client = supermemory()
+
+client.memories.upload_file(
+    file=Path("/path/to/file"),
+)
+```
+
+异步客户端使用完全相同的接口。如果你传入一个 [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike) 实例，文件内容将会自动以异步方式读取。
+
+
+<div id="handling-errors">
+  ## 处理错误
+</div>
+
+当库无法连接到 API（例如由于网络连接问题或超时）时，会抛出 `supermemory.APIConnectionError` 的子类。
+
+当 API 返回非成功状态码（即 4xx 或 5xx 响应）时，会抛出 `supermemory.APIStatusError` 的子类，其中包含 `status_code` 和 `response` 属性。
+
+所有错误都继承自 `supermemory.APIError`。
+
+```python
+import supermemory
+from supermemory import Supermemory
+
+client = supermemory()
+
+try:
+    client.memories.add(
+        content="这是一篇关于机器学习概念的详细文章...",
+    )
+except supermemory.APIConnectionError as e:
+    print("无法连接到服务器")
+    print(e.__cause__)  # 底层异常，通常在 httpx 中抛出。
+except supermemory.RateLimitError as e:
+    print("收到 429 状态码；应当稍作等待后重试。")
+except supermemory.APIStatusError as e:
+    print("收到其他非 200 范围的状态码")
+    print(e.status_code)
+    print(e.response)
+```
+
+错误代码如下：
+
+| 状态码 | 错误类型                   |
+| ------ | -------------------------- |
+| 400    | `BadRequestError`          |
+| 401    | `AuthenticationError`      |
+| 403    | `PermissionDeniedError`    |
+| 404    | `NotFoundError`            |
+| 422    | `UnprocessableEntityError` |
+| 429    | `RateLimitError`           |
+| &gt;=500 | `InternalServerError`      |
+| N/A    | `APIConnectionError`       |
+
+
+<div id="retries">
+  ### 重试
+</div>
+
+某些错误默认会自动重试 2 次，并采用短暂的指数回退。
+连接错误（例如网络连通性问题）、408 Request Timeout、409 Conflict、
+429 Rate Limit，以及 ≥500 的内部错误默认都会被重试。
+
+你可以使用 `max_retries` 选项来配置或禁用重试策略：
+
+```python
+from supermemory import Supermemory
+
+# 为所有请求配置默认设置：
+client = supermemory(
+    # 默认为 2
+    max_retries=0,
+)
+
+# 或者，按请求配置：
+client.with_options(max_retries=5).memories.add(
+    content="这是一篇关于机器学习概念的详细文章...",
+)
+```
+
+
+<div id="timeouts">
+  ### 超时
+</div>
+
+默认情况下，请求会在 1 分钟后超时。你可以通过 `timeout` 选项进行配置，
+该选项接受一个浮点数或一个 [`httpx.Timeout`](https://www.python-httpx.org/advanced/#fine-tuning-the-configuration) 对象：
+
+```python
+from supermemory import Supermemory
+
+# 为所有请求配置默认设置：
+client = supermemory(
+    # 20 秒（默认为 1 分钟）
+    timeout=20.0,
+)
+
+# 更精细的控制：
+client = supermemory(
+    timeout=httpx.Timeout(60.0, read=5.0, write=10.0, connect=2.0),
+)
+
+# 按请求覆盖：
+client.with_options(timeout=5.0).memories.add(
+    content="这是一篇关于机器学习概念的详细文章...",
+)
+```
+
+发生超时时会抛出 `APITimeoutError`。
+
+请注意，超时的请求[默认会重试两次](#retries)。
+
+
+<div id="advanced">
+  ## 进阶
+</div>
+
+<div id="logging">
+  ### 日志
+</div>
+
+我们使用标准库模块 [`logging`](https://docs.python.org/3/library/logging.html)。
+
+你可以将环境变量 `SUPERMEMORY_LOG` 设置为 `info` 来启用日志。
+
+```shell
+$ export SUPERMEMORY_LOG=info
+```
+
+或者将其设置为 `debug`，以输出更详细的日志。
+
+
+<div id="how-to-tell-whether-none-means-null-or-missing">
+  ### 如何判断 `None` 表示 `null` 还是缺失
+</div>
+
+在 API 响应中，某个字段可能被显式设为 `null`，也可能完全缺失；无论哪种情况，在此库中其值都会是 `None`。你可以通过 `.model_fields_set` 来区分这两种情况：
+
+```py
+if response.my_field is None:
+  if 'my_field' not in response.model_fields_set:
+    print('获取到类似 {} 的 json，完全不存在 "my_field" 键。')
+  else:
+    print('获取到类似 {"my_field": null} 的 json。')
+```
+
+
+<div id="accessing-raw-response-data-eg-headers">
+  ### 访问原始响应数据（如 headers）
+</div>
+
+可以通过在任意 HTTP 方法调用前添加前缀 `.with_raw_response.` 来获取“原始” Response 对象，例如：
+
+```py
+from supermemory import Supermemory
+
+client = supermemory()
+response = client.memories.with_raw_response.add(
+    content="这是一篇详尽阐述机器学习概念的文章……",
+)
+print(response.headers.get('X-My-Header'))
+
+memory = response.parse()  # 获取 `memories.add()` 原本会返回的对象
+print(memory.id)
+```
+
+这些方法会返回一个 [`APIResponse`](https://github.com/supermemoryai/python-sdk/tree/main/src/supermemory/_response.py) 对象。
+
+异步客户端会返回一个结构相同的 [`AsyncAPIResponse`](https://github.com/supermemoryai/python-sdk/tree/main/src/supermemory/_response.py)，唯一的区别是读取响应内容需使用可 `await` 的方法。
+
+
+<div id="with_streaming_response">
+  #### `.with_streaming_response`
+</div>
+
+上述接口在你发起请求时会立即读取完整的响应体，但这可能并不总是你想要的。
+
+若要以流式方式处理响应体，请改用 `.with_streaming_response`。它需要一个上下文管理器，并且仅在你调用 `.read()`、`.text()`、`.json()`、`.iter_bytes()`、`.iter_text()`、`.iter_lines()` 或 `.parse()` 时才会读取响应体。在异步客户端中，这些是异步方法。
+
+```python
+with client.memories.with_streaming_response.add(
+    content="这是一篇关于机器学习概念的详细文章……",
+) as response:
+    print(response.headers.get("X-My-Header"))
+
+    for line in response.iter_lines():
+        print(line)
+```
+
+必须使用上下文管理器，才能确保响应被可靠关闭。
+
+
+<div id="making-customundocumented-requests">
+  ### 发起自定义/未记录的请求
+</div>
+
+该库具备类型定义，便于访问文档中说明的 API。
+
+如果你需要访问未记录的端点、参数或响应属性，依然可以使用该库。
+
+<div id="undocumented-endpoints">
+  #### 未文档化的端点
+</div>
+
+要向未文档化的端点发起请求，你可以使用 `client.get`、`client.post` 以及其他
+HTTP 动词。发起该请求时，将遵循客户端上的选项（例如重试）。
+
+```py
+import httpx
+
+response = client.post(
+    "/foo",
+    cast_to=httpx.Response,
+    body={"my_param": True},
+)
+
+print(response.headers.get("x-foo"))
+```
+
+
+<div id="undocumented-request-params">
+  #### 未文档化的请求参数
+</div>
+
+如果你想显式地发送额外参数，可以使用 `extra_query`、`extra_body` 和 `extra_headers` 这些请求选项来实现。
+
+<div id="undocumented-response-properties">
+  #### 未记录的响应属性
+</div>
+
+要访问未记录的响应属性，你可以读取类似 `response.unknown_prop` 的额外字段。你也可以通过
+[`response.model_extra`](https://docs.pydantic.dev/latest/api/base_model/#pydantic.BaseModel.model_extra)
+将 Pydantic 模型上的所有额外字段获取为字典。
+
+<div id="configuring-the-http-client">
+  ### 配置 HTTP 客户端
+</div>
+
+你可以直接替换并自定义 [httpx client](https://www.python-httpx.org/api/#client) 以适配你的使用场景，包括：
+
+* 支持 [proxies](https://www.python-httpx.org/advanced/proxies/)
+* 自定义 [transports](https://www.python-httpx.org/advanced/transports/)
+* 其他 [高级](https://www.python-httpx.org/advanced/clients/) 功能
+
+```python
+import httpx
+from supermemory import Supermemory, DefaultHttpxClient
+
+client = supermemory(
+    # 或使用 `SUPERMEMORY_BASE_URL` 环境变量
+    base_url="http://my.test.server.example.com:8083",
+    http_client=DefaultHttpxClient(
+        proxy="http://my.test.proxy.example.com",
+        transport=httpx.HTTPTransport(local_address="0.0.0.0"),
+    ),
+)
+```
+
+你也可以使用 `with_options()` 按请求自定义客户端：
+
+```python
+client.with_options(http_client=DefaultHttpxClient(...))
+```
+
+
+<div id="managing-http-resources">
+  ### 管理 HTTP 资源
+</div>
+
+默认情况下，当客户端被[垃圾回收](https://docs.python.org/3/reference/datamodel.html#object.__del__)时，库会关闭底层 HTTP 连接。你也可以在需要时调用 `.close()` 方法手动关闭客户端，或使用上下文管理器，在退出上下文时自动关闭。
+
+```py
+from supermemory import Supermemory
+
+with supermemory() as client:
+  # 在此发送请求
+  ...
+
+# HTTP 客户端现已关闭
+```
+
+
+<div id="versioning">
+  ## 版本管理
+</div>
+
+本包通常遵循 [SemVer](https://semver.org/spec/v2.0.0.html) 规范，但某些向后不兼容的更改可能会作为次要版本发布：
+
+1. 仅影响静态类型且不改变运行时行为的更改。
+2. 对库的内部实现进行的更改，这些部分在技术上是公开的，但并非为外部使用而设计或记录。 _(如果你依赖这些内部实现，请在 GitHub 提交 issue 告知我们。)_
+3. 我们预期在实际使用中不会影响绝大多数用户的更改。
+
+我们高度重视向后兼容性，并努力确保你能够顺畅升级。
+
+我们期待你的反馈；如有问题、bug 或建议，请提交 [issue](https://www.github.com/supermemoryai/python-sdk/issues)。
+
+<div id="determining-the-installed-version">
+  ### 确定已安装的版本
+</div>
+
+如果你已升级到最新版本，但没有看到预期的新功能，那么你的 Python 环境很可能仍在使用较旧的版本。
+
+你可以在运行时通过以下方式确定实际使用的版本：
+
+```py
+import supermemory
+print(supermemory.__version__)
+```
+
+
+<div id="requirements">
+  ## 系统要求
+</div>
+
+Python 3.8 或更高版本。

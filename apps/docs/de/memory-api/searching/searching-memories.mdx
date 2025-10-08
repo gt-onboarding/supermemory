@@ -1,0 +1,186 @@
+---
+title: "Speicher durchsuchen"
+description: "Erfahren Sie, wie Sie Inhalte in supermemory suchen und abrufen"
+---
+
+<Accordion title="Best Practices" defaultOpen icon="sparkles">
+  1. **Abfrageformulierung**:
+     * Verwenden Sie natürlichsprachliche Suchanfragen
+     * Fügen Sie relevante Schlüsselwörter hinzu
+     * Seien Sie konkret, aber nicht zu ausschweifend
+
+  2. **Filterung**:
+     * Nutzen Sie Metadata-Filter für präzise Ergebnisse
+     * Kombinieren Sie bei Bedarf mehrere filters
+     * Verwenden Sie geeignete threshold-Werte
+
+  3. **Leistung**:
+     * Setzen Sie angemessene Ergebnislimits (limit)
+     * Verwenden Sie spezifische Dokument-/Chunk-Filter
+     * Berücksichtigen Sie das response timing
+</Accordion>
+
+<div id="basic-search">
+  ## Basissuche
+</div>
+
+Um Ihre Speicher zu durchsuchen, senden Sie eine POST-Anfrage an `/search`:
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/search?q=machine+learning+concepts&limit=10 \
+    --request GET \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+  ```
+
+  ```typescript Typescript
+  await client.search.execute({
+    q: "machine learning concepts",
+    limit: 10,
+  });
+  ```
+
+  ```python Python
+  client.search.execute(
+      q="machine learning concepts",
+      limit=10
+  )
+  ```
+</CodeGroup>
+
+Die API gibt relevante Treffer mit ihrem Relevanzwert (similarity) zurück:
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_xyz789",
+      "chunks": [
+        {
+          "content": "Maschinelles Lernen ist ein Teilgebiet der Künstlichen Intelligenz...",
+          "isRelevant": true,
+          "score": 0.85
+        }
+      ],
+      "score": 0.95,
+      "metadata": {
+        "source": "web",
+        "category": "technology",
+      },
+      "title": "Einführung in das Maschinelle Lernen"
+    }
+  ],
+  "total": 1,
+  "timing": 123.45
+}
+```
+
+<div id="search-parameters">
+  ## Suchparameter
+</div>
+
+```json
+{
+  "q": "search query", // Erforderlich: Suchanfrage-String
+  "limit": 10, // Optional: Max. Ergebnisse (Standard: 10)
+  "threshold": 0.6, // Optional: Min. Relevanzwert (0-1, Standard: 0.6)
+  "containerTag": "user_123", // Optional: Nach Container-Tag filtern
+  "rerank": false, // Optional: Reranking der Ergebnisse für bessere Relevanz
+  "rewriteQuery": false, // Optional: Anfrage umschreiben für bessere Übereinstimmung
+  "include": {
+    "documents": false, // Optional: Dokument-Metadata einschließen
+    "summaries": false, // Optional: Dokument-Zusammenfassungen einschließen
+    "relatedMemories": false, // Optional: Verwandte Speicher-Kontexte einschließen
+    "forgottenMemories": false // Optional: Vergessene Speicher-Einträge in Ergebnissen einschließen
+  },
+  "filters": {
+    // Optional: Metadata-Filter
+    "AND": [
+      {
+        "key": "category",
+        "value": "technology"
+      }
+    ]
+  }
+}
+```
+
+<div id="search-response">
+  ## Suchergebnis
+</div>
+
+Die Suchergebnis-Antwort umfasst:
+
+```json
+{
+  "results": [
+    {
+      "documentId": "string", // Dokument-ID
+      "chunks": [
+        {
+          // Passende Chunks
+          "content": "string", // Chunk-Inhalt
+          "isRelevant": true, // Ist direkt relevant
+          "score": 0.95 // Relevanzwert
+        }
+      ],
+      "score": 0.95, // Dokument-Relevanzwert
+      "metadata": {}, // Dokument-Metadata
+      "title": "string", // Dokumenttitel
+      "createdAt": "string", // Erstellungsdatum
+      "updatedAt": "string" // Letztes Aktualisierungsdatum
+    }
+  ],
+  "total": 1, // Gesamtergebnisse
+  "timing": 123.45 // Suchzeit (ms)
+}
+```
+
+<div id="including-forgotten-memories">
+  ## Vergessene Speicher einbeziehen
+</div>
+
+Standardmäßig schließt die Such-API Speicher aus, die als vergessen markiert wurden oder deren Ablaufdatum abgelaufen ist. Um diese in Ihre Suchergebnisse einzubeziehen, setzen Sie `include.forgottenMemories` auf `true`:
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v4/search \
+    --request POST \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --header 'Content-Type: application/json' \
+    --data '{
+      "q": "old project notes",
+      "include": {
+        "forgottenMemories": true
+      }
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.search.memories({
+    q: "old project notes",
+    include: {
+      forgottenMemories: true
+    }
+  });
+  ```
+
+  ```python Python
+  await client.search.memories(
+      q="old project notes",
+      include={
+          "forgottenMemories": True
+      }
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  „Vergessene“ Speicher sind Speicher, die explizit über die Forget-API verworfen wurden oder deren automatisches Ablaufdatum (`forgetAfter`) erreicht wurde. Die Einbeziehung in die Suchergebnisse kann helfen, Informationen wiederzufinden, die weiterhin relevant sein könnten.
+</Note>
+
+<div id="next-steps">
+  ## Nächste Schritte
+</div>
+
+Entdecken Sie weitere fortgeschrittene Funktionen in unserer [API-Referenz](/de/api-reference/search-memories/search-memories).

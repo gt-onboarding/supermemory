@@ -1,0 +1,468 @@
+---
+title: "Reescritura de consultas"
+description: "Mejora la precisión de la búsqueda con expansión y reescritura automáticas de consultas"
+---
+
+![Reescritura de consultas](/images/query-rewriting.png)
+
+La reescritura de consultas genera automáticamente varias variantes de tu consulta de búsqueda para mejorar la cobertura y la precisión de los resultados. Supermemory crea varias reescrituras, ejecuta búsquedas con todas ellas y luego combina y elimina los duplicados de los resultados.
+
+<div id="how-query-rewriting-works">
+  ## Cómo funciona la Reescritura de consultas
+</div>
+
+Cuando habilitas `rewriteQuery: true`, Supermemory:
+
+1. **Analiza tu consulta original** para identificar la intención y los conceptos clave
+2. **Genera múltiples reescrituras** con distintas formulaciones y sinónimos
+3. **Ejecuta búsquedas en paralelo** tanto para la consulta original como para las reescritas
+4. **Fusiona y deduplica** los resultados de todas las consultas
+5. **Devuelve resultados unificados** ordenados por relevancia
+
+Este proceso añade ~400 ms de latencia, pero mejora significativamente la calidad de los resultados, especialmente para:
+
+- **Preguntas en lenguaje natural** («¿Cómo aprenden las redes neuronales?»)
+- **Términos ambiguos** que pueden tener múltiples significados
+- **Consultas complejas** con múltiples conceptos
+- **Terminología específica del dominio** que puede tener sinónimos
+
+<div id="basic-query-rewriting">
+  ## Reescritura básica de consultas
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    // Sin reescritura de consultas
+    const basicResults = await client.search.documents({
+      q: "How do transformers work in AI?",
+      rewriteQuery: false,
+      limit: 5
+    });
+
+    // Con reescritura de consultas: genera múltiples variaciones de la consulta
+    const rewrittenResults = await client.search.documents({
+      q: "How do transformers work in AI?",
+      rewriteQuery: true,
+      limit: 5
+    });
+
+    console.log(`Búsqueda básica: ${basicResults.total} resultados`);
+    console.log(`Búsqueda con reescritura: ${rewrittenResults.total} resultados`);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    # Sin reescritura de consultas
+    basic_results = client.search.documents(
+        q="How do transformers work in AI?",
+        rewrite_query=False,
+        limit=5
+    )
+
+    # Con reescritura de consultas: genera múltiples variaciones de la consulta
+    rewritten_results = client.search.documents(
+        q="How do transformers work in AI?",
+        rewrite_query=True,
+        limit=5
+    )
+
+    print(f"Búsqueda básica: {basic_results.total} resultados")
+    print(f"Búsqueda con reescritura: {rewritten_results.total} resultados")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # Sin reescritura de consultas
+    echo "Búsqueda básica:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "How do transformers work in AI?",
+        "rewriteQuery": false,
+        "limit": 5
+      }' | jq '.total'
+
+    # Con reescritura de consultas
+    echo "Búsqueda con reescritura:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "How do transformers work in AI?",
+        "rewriteQuery": true,
+        "limit": 5
+      }' | jq '.total'
+    ```
+  </Tab>
+</Tabs>
+
+**Comparación de resultados de ejemplo:**
+
+```json
+// Sin reescritura: 3 resultados
+{
+  "results": [...],
+  "total": 3,
+  "timing": 120
+}
+
+// Con reescritura: 8 resultados (se encontró contenido más relevante)
+{
+  "results": [...],
+  "total": 8,
+  "timing": 520  // +400ms para el procesamiento de consultas
+}
+```
+
+
+<div id="natural-language-questions">
+  ## Preguntas en lenguaje natural
+</div>
+
+La Reescritura de consultas destaca por convertir preguntas conversacionales en consultas de búsqueda eficaces:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Pregunta en lenguaje natural
+    const results = await client.search.documents({
+      q: "What are the best practices for training deep learning models?",
+      rewriteQuery: true,
+      limit: 10
+    });
+
+    // El sistema podría generar reescrituras como:
+    // - "deep learning model training best practices"
+    // - "neural network training optimization techniques"
+    // - "machine learning model training guidelines"
+    // - "deep learning training methodology"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    # Pregunta en lenguaje natural
+    results = client.search.documents(
+        q="What are the best practices for training deep learning models?",
+        rewrite_query=True,
+        limit=10
+    )
+
+    # El sistema podría generar reescrituras como:
+    # - "deep learning model training best practices"
+    # - "neural network training optimization techniques"
+    # - "machine learning model training guidelines"
+    # - "deep learning training methodology"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "What are the best practices for training deep learning models?",
+        "rewriteQuery": true,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Ejemplo de salida:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_123",
+      "title": "Guía de Entrenamiento de Aprendizaje Profundo",
+      "score": 0.92,
+      "chunks": [
+        {
+          "content": "Las mejores prácticas para entrenar redes neuronales profundas incluyen inicialización adecuada de pesos, programación de la tasa de aprendizaje y técnicas de regularización...",
+          "score": 0.89,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_456",
+      "title": "Optimización de Redes Neuronales",
+      "score": 0.87,
+      "chunks": [
+        {
+          "content": "Las metodologías de entrenamiento efectivas incluyen normalización por lotes, dropout y recorte de gradientes para prevenir el sobreajuste...",
+          "score": 0.85,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 12,
+  "timing": 445
+}
+```
+
+
+<div id="technical-term-expansion">
+  ## Expansión de terminología técnica
+</div>
+
+La reescritura de consultas ayuda a encontrar contenido usando diferentes terminologías técnicas:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Consulta original con terminología específica
+    const results = await client.search.documents({
+      q: "CNN architecture patterns",
+      rewriteQuery: true,
+      containerTags: ["research"],
+      limit: 8
+    });
+
+    // El sistema amplía la consulta para incluir:
+    // - "convolutional neural network architecture"
+    // - "CNN design patterns"
+    // - "convolutional network structures"
+    // - "CNN architectural components"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    # Consulta original con terminología específica
+    results = client.search.documents(
+        q="CNN architecture patterns",
+        rewrite_query=True,
+        container_tags=["research"],
+        limit=8
+    )
+
+    # El sistema amplía la consulta para incluir:
+    # - "convolutional neural network architecture"
+    # - "CNN design patterns"
+    # - "convolutional network structures"
+    # - "CNN architectural components"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "CNN architecture patterns",
+        "rewriteQuery": true,
+        "containerTags": ["research"],
+        "limit": 8
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Ejemplo de salida:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_789",
+      "title": "Arquitecturas de Redes Neuronales Convolucionales",
+      "relevancia": 0.94,
+      "chunks": [
+        {
+          "content": "Las arquitecturas CNN modernas como ResNet y DenseNet utilizan conexiones de salto para abordar el problema del gradiente que se desvanece...",
+          "relevancia": 0.91,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_101",
+      "title": "Patrones de Diseño de Aprendizaje Profundo",
+      "relevancia": 0.88,
+      "chunks": [
+        {
+          "content": "Las capas convolucionales seguidas de operaciones de agrupación forman los bloques de construcción fundamentales de las arquitecturas CNN...",
+          "relevancia": 0.86,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 15,
+  "timing": 478
+}
+```
+
+
+<div id="memory-search-with-query-rewriting">
+  ## Búsqueda de memory con Reescritura de consultas
+</div>
+
+La reescritura de consultas funciona tanto en la búsqueda de documentos como en la de memory:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Búsqueda de memory con reescritura de consultas
+    const memoryResults = await client.search.memories({
+      q: "explain quantum entanglement simply",
+      rewriteQuery: true,
+      containerTag: "physics_notes",
+      limit: 5
+    });
+
+    // Genera variaciones como:
+    // - "quantum entanglement explanation"
+    // - "what is quantum entanglement"
+    // - "quantum entanglement basics"
+    // - "simple quantum entanglement description"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    # Búsqueda de memory con reescritura de consultas
+    memory_results = client.search.memories(
+        q="explain quantum entanglement simply",
+        rewrite_query=True,
+        container_tag="physics_notes",
+        limit=5
+    )
+
+    # Genera variaciones como:
+    # - "quantum entanglement explanation"
+    # - "what is quantum entanglement"
+    # - "quantum entanglement basics"
+    # - "simple quantum entanglement description"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "explain quantum entanglement simply",
+        "rewriteQuery": true,
+        "containerTag": "physics_notes",
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**Salida de ejemplo:**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_456",
+      "memory": "El entrelazamiento cuántico es un fenómeno donde dos partículas se conectan de tal manera que medir una afecta instantáneamente a la otra, sin importar la distancia. Piénsalo como tener dos monedas mágicas que siempre caen en lados opuestos.",
+      "similarity": 0.91,
+      "title": "Explicación Simple del Entrelazamiento Cuántico",
+      "metadata": {
+        "topic": "quantum-physics",
+        "difficulty": "beginner"
+      }
+    },
+    {
+      "id": "mem_789",
+      "memory": "Einstein llamó al entrelazamiento cuántico 'acción fantasmal a distancia' porque las partículas entrelazadas parecen comunicarse instantáneamente a través de vastas distancias, desafiando nuestra comprensión de la localidad en física.",
+      "similarity": 0.87,
+      "title": "La Perspectiva de Einstein sobre el Entrelazamiento"
+    }
+  ],
+  "total": 7,
+  "timing": 412
+}
+```
+
+
+<div id="complex-multi-concept-queries">
+  ## Consultas complejas con múltiples conceptos
+</div>
+
+La Reescritura de consultas destaca al manejar consultas con múltiples conceptos:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning bias fairness algorithmic discrimination",
+      rewriteQuery: true,
+      filters: {
+        AND: [
+          { key: "category", value: "ethics", negate: false }
+        ]
+      },
+      limit: 10
+    });
+
+    // Se desglosa en reescrituras enfocadas:
+    // - "machine learning bias detection"
+    // - "algorithmic fairness in AI"
+    // - "discrimination in machine learning algorithms"
+    // - "bias mitigation techniques ML"
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning bias fairness algorithmic discrimination",
+        rewrite_query=True,
+        filters={
+            "AND": [
+                {"key": "category", "value": "ethics", "negate": False}
+            ]
+        },
+        limit=10
+    )
+
+    # Se desglosa en reescrituras enfocadas:
+    # - "machine learning bias detection"
+    # - "algorithmic fairness in AI"
+    # - "discrimination in machine learning algorithms"
+    # - "bias mitigation techniques ML"
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning bias fairness algorithmic discrimination",
+        "rewriteQuery": true,
+        "filters": {
+          "AND": [
+            {"key": "category", "value": "ethics", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>

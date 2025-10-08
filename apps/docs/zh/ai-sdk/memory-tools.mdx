@@ -1,0 +1,163 @@
+---
+title: "Memory Tools"
+description: "使用 Vercel AI SDK 工具为你的 AI 代理添加 memory 能力"
+sidebarTitle: "Memory Tools"
+---
+
+Memory Tools 让 AI 代理能够搜索、添加并获取记忆存储。
+
+<div id="setup">
+  ## 安装与配置
+</div>
+
+```typescript
+import { streamText } from "ai"
+import { createOpenAI } from "@ai-sdk/openai"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const openai = createOpenAI({
+  apiKey: "YOUR_OPENAI_KEY"
+})
+
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "记住我的名字是Alice",
+  tools: supermemoryTools("YOUR_SUPERMEMORY_KEY")
+})
+```
+
+<div id="available-tools">
+  ## 可用工具
+</div>
+
+<div id="search-memories">
+  ### 搜索记忆存储
+</div>
+
+在用户的记忆存储中进行语义搜索：
+
+```typescript
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "我的饮食偏好是什么？",
+  tools: supermemoryTools("API_KEY")
+})
+
+// AI 将自动调用 searchMemories 工具
+// 工具调用示例：
+// searchMemories({ informationToGet: "dietary preferences and restrictions" })
+```
+
+<div id="add-memory">
+  ### 添加 memory
+</div>
+
+存储新信息：
+
+```typescript
+const result = await streamText({
+  model: anthropic("claude-3-sonnet"),
+  prompt: "记住我对花生过敏",
+  tools: supermemoryTools("API_KEY")
+})
+
+// AI 将自动调用 addMemory 工具
+// 工具调用示例：
+// addMemory({ memory: "用户对花生过敏" })
+```
+
+<div id="fetch-memory">
+  ### 获取 memory
+</div>
+
+通过 ID 获取指定的 memory：
+
+```typescript
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "获取 memory abc123 的详细信息",
+  tools: supermemoryTools("API_KEY")
+})
+
+// AI 将自动调用 fetchMemory 工具
+// 工具调用示例：
+// fetchMemory({ memoryId: "abc123" })
+```
+
+<div id="using-individual-tools">
+  ## 单独使用工具
+</div>
+
+如需更精细的控制，请分别导入各个工具：
+
+```typescript
+import {
+  searchMemoriesTool,
+  addMemoryTool,
+  fetchMemoryTool
+} from "@supermemory/tools/ai-sdk"
+
+// 仅使用搜索工具
+const result = await streamText({
+  model: openai("gpt-5"),
+  prompt: "你对我了解什么？",
+  tools: {
+    searchMemories: searchMemoriesTool("API_KEY", {
+      projectId: "personal"
+    })
+  }
+})
+
+// 与自定义工具结合使用
+const result = await streamText({
+  model: anthropic("claude-3"),
+  prompt: "帮我处理日历",
+  tools: {
+    searchMemories: searchMemoriesTool("API_KEY"),
+    // 你的自定义工具
+    createEvent: yourCustomTool,
+    sendEmail: anotherCustomTool
+  }
+})
+```
+
+<div id="tool-results">
+  ## 工具结果
+</div>
+
+每个工具都会返回一个结果对象：
+
+```typescript
+// searchMemories 结果
+{
+  success: true,
+  results: [...],  // 记忆存储数组
+  count: 5
+}
+
+// addMemory 结果
+{
+  success: true,
+  memory: { id: "mem_123", ... }
+}
+
+// fetchMemory 结果
+{
+  success: true,
+  memory: { id: "mem_123", content: "...", ... }
+}
+```
+
+<div id="next-steps">
+  ## 后续步骤
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Infinite Chat" icon="infinity" href="/zh/ai-sdk/infinite-chat">
+    试用自动 memory 管理
+  </Card>
+
+  <Card title="Examples" icon="code" href="/zh/cookbook/ai-sdk-integration">
+    查看更多完整示例
+  </Card>
+</CardGroup>

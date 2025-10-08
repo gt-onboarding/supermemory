@@ -1,0 +1,89 @@
+---
+title: "連携の作成"
+description: "supermemory とコンテンツを同期するための連携を作成する"
+---
+
+連携を作成するには、`POST` リクエストを `/v3/connections/{provider}` に送信します。
+
+<CodeGroup>
+```typescript Typescript
+import Supermemory from 'supermemory';
+
+const client = new Supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // これはデフォルトのため省略可能です
+});
+
+const connection = await client.connections.create('notion');
+
+console.debug(connection.authLink);
+```
+
+```python Python
+import requests
+
+url = "https://api.supermemory.ai/v3/connections/{provider}"
+
+payload = {
+    "redirectUrl": "<string>",
+    "containerTags": ["<string>"],
+    "metadata": {},
+    "documentLimit": 5000
+}
+headers = {
+    "Authorization": "Bearer <token>",
+    "Content-Type": "application/json"
+}
+
+response = requests.request("POST", url, json=payload, headers=headers)
+
+print(response.text)
+```
+
+```bash cURL
+curl --request POST \
+  --url https://api.supermemory.ai/v3/connections/{provider} \
+  --header 'Authorization: Bearer <token)' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "redirectUrl": "<string>",
+  "containerTags": [
+    "<string>"
+  ],
+  "metadata": {},
+  "documentLimit": 5000
+}'
+```
+</CodeGroup>
+
+<div id="parameters">
+  ### パラメータ
+</div>
+
+- `provider`: 接続するプロバイダ。現在サポートされているプロバイダは `notion`, `google-drive`, `one-drive`
+- `redirectUrl`: 連携作成後にリダイレクトするURL（アプリのURL）
+- `containerTags`: 任意。アプリ内でユーザーや組織などを区分するためのコンテナタグ。
+    - 例: `["user_123", "project_alpha"]`
+- `metadata`: 任意。連携に関連付けるメタデータ。
+    - このメタデータは、この連携から同期されるすべてのdocumentsに付与されます。
+- `documentLimit`: 任意。この連携から同期するdocumentsの最大数。
+    - デフォルト: 10,000
+    - コストを抑えたり、特定ユーザーに対して同期するdocuments数を制限する目的で使用できます。
+
+<div id="response">
+  ## レスポンス
+</div>
+
+supermemory は次のスキーマで応答を返します:
+
+```json
+{
+  "id": "<string>",
+  "authLink": "<string>",
+  "expiresIn": "<string>",
+  "redirectsTo": "<string>"
+}
+```
+
+`authLink` を使って、ユーザーをプロバイダのログインページにリダイレクトできます。
+
+次は、連携の管理です。

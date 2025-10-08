@@ -1,0 +1,299 @@
+---
+title: "Verarbeitungsstatus nachverfolgen"
+description: "Verarbeitungsstatus von documents in Echtzeit überwachen"
+icon: "activity"
+---
+
+Verfolge deine documents durch die Verarbeitungspipeline, um bessere Nutzungserlebnisse zu bieten und Edge Cases zu handhaben.
+
+<div id="processing-pipeline">
+  ## Verarbeitungspipeline
+</div>
+
+![Prozess der Umwandlung von documents in Speicher-Einträge](/images/pipeline.png)
+
+Jede Phase hat einen spezifischen Zweck:
+
+- **In Warteschlange**: Das Dokument wartet in der Verarbeitungsschlange
+- **Extrahieren**: Inhalte werden extrahiert (OCR für Bilder, Transkription für Videos)
+- **Chunking**: Inhalte werden in optimale, durchsuchbare Einheiten zerlegt
+- **Embedding**: Jeder Chunk wird in Vektorrepräsentationen umgewandelt
+- **Indexierung**: Vektoren werden dem Suchindex hinzugefügt
+- **Fertig**: Das Dokument ist vollständig verarbeitet und durchsuchbar
+
+<Note>
+Die Verarbeitungszeit variiert je nach Inhaltstyp. Reiner Text wird in Sekunden verarbeitet, während ein 10‑minütiges Video 2–3 Minuten dauern kann.
+</Note>
+
+<div id="processing-documents">
+  ## Verarbeitung von documents
+</div>
+
+Überwachen Sie alle documents, die derzeit in Ihrem Konto verarbeitet werden.
+
+`GET /v3/documents/processing`
+
+<CodeGroup>
+
+```typescript
+// Direkter API-Aufruf (nicht im SDK)
+const response = await fetch('https://api.supermemory.ai/v3/documents/processing', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const processing = await response.json();
+console.log(`${processing.documents.length} documents in Verarbeitung`);
+```
+
+```python
+# Direkter API-Aufruf (nicht im SDK)
+import requests
+
+response = requests.get(
+    'https://api.supermemory.ai/v3/documents/processing',
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+processing = response.json()
+print(f"{len(processing['documents'])} documents in Verarbeitung")
+```
+
+```bash
+curl -X GET "https://api.supermemory.ai/v3/documents/processing" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### Antwortformat
+</div>
+
+```json
+{
+  "documents": [
+    {
+      "id": "doc_abc123",
+      "status": "extracting",
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:15Z",
+      "container_tags": ["research"],
+      "metadata": {
+        "source": "upload",
+        "filename": "report.pdf"
+      }
+    },
+    {
+      "id": "doc_def456",
+      "status": "chunking",
+      "created_at": "2024-01-15T10:29:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "container_tags": ["articles"],
+      "metadata": {
+        "source": "url",
+        "url": "https://example.com/article"
+      }
+    }
+  ],
+  "total": 2
+}
+```
+
+
+<div id="individual-documents">
+  ## Einzelne Dokumente
+</div>
+
+Status der Verarbeitung eines bestimmten Dokuments verfolgen.
+
+`GET /v3/documents/{id}`
+
+<CodeGroup>
+
+```typescript
+const memory = await client.memories.get("doc_abc123");
+
+console.log(`Status: ${memory.status}`);
+
+// Auf Abschluss warten (Polling)
+while (memory.status !== 'done') {
+  await new Promise(r => setTimeout(r, 2000));
+  memory = await client.memories.get("doc_abc123");
+  console.log(`Status: ${memory.status}`);
+}
+```
+
+```python
+memory = client.memories.get("doc_abc123")
+
+print(f"Status: {memory['status']}")
+
+# Auf Abschluss warten (Polling)
+import time
+while memory['status'] != 'done':
+    time.sleep(2)
+    memory = client.memories.get("doc_abc123")
+    print(f"Status: {memory['status']}")
+```
+
+```bash
+curl -X GET "https://api.supermemory.ai/v3/documents/doc_abc123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### Antwortformat
+</div>
+
+```json
+{
+  "id": "doc_abc123",
+  "status": "done",
+  "content": "Der ursprüngliche Inhalt...",
+  "container_tags": ["research"],
+  "metadata": {
+    "source": "upload",
+    "filename": "bericht.pdf"
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:31:00Z"
+}
+```
+
+
+<div id="status-values">
+  ## Statuswerte
+</div>
+
+| Status | Beschreibung | Typische Dauer |
+|--------|--------------|----------------|
+| `queued` | Wartet auf Verarbeitung | < 5 Sekunden |
+| `extracting` | Extrahiert Inhalt aus der Quelle | 5-30 Sekunden |
+| `chunking` | Aufteilung in durchsuchbare Abschnitte | 5-15 Sekunden |
+| `embedding` | Erzeugt Vektorrepräsentationen | 10-30 Sekunden |
+| `indexing` | Wird dem Suchindex hinzugefügt | 5-10 Sekunden |
+| `done` | Vollständig verarbeitet und durchsuchbar | - |
+| `failed` | Verarbeitung fehlgeschlagen | - |
+
+<div id="polling-best-practices">
+  ## Best Practices für Polling
+</div>
+
+Beim Abfragen von status-Updates:
+
+```typescript
+async function waitForProcessing(documentId: string, maxWaitMs = 300000) {
+  const startTime = Date.now();
+  const pollInterval = 2000; // 2 Sekunden
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const doc = await client.memories.get(documentId);
+
+    if (doc.status === 'done') {
+      return doc;
+    }
+
+    if (doc.status === 'failed') {
+      throw new Error(`Verarbeitung für ${documentId} fehlgeschlagen`);
+    }
+
+    await new Promise(r => setTimeout(r, pollInterval));
+  }
+
+  throw new Error(`Timeout beim Warten auf ${documentId}`);
+}
+```
+
+
+<div id="batch-processing">
+  ## Stapelverarbeitung
+</div>
+
+Verwalten Sie mehrere documents effizient:
+
+```typescript
+async function trackBatch(documentIds: string[]) {
+  const statuses = new Map();
+
+  // Initiale Prüfung
+  for (const id of documentIds) {
+    const doc = await client.memories.get(id);
+    statuses.set(id, doc.status);
+  }
+
+  // Abfragen bis alle abgeschlossen sind
+  while ([...statuses.values()].some(s => s !== 'done' && s !== 'failed')) {
+    await new Promise(r => setTimeout(r, 5000)); // 5-Sekunden-Intervall für Batch
+
+    for (const id of documentIds) {
+      if (statuses.get(id) !== 'done' && statuses.get(id) !== 'failed') {
+        const doc = await client.memories.get(id);
+        statuses.set(id, doc.status);
+      }
+    }
+
+    // Fortschritt protokollieren
+    const done = [...statuses.values()].filter(s => s === 'done').length;
+    console.log(`Fortschritt: ${done}/${documentIds.length} abgeschlossen`);
+  }
+
+  return statuses;
+}
+```
+
+
+<div id="error-handling">
+  ## Fehlerbehandlung
+</div>
+
+Gehen Sie mit Verarbeitungsfehlern robust und elegant um:
+
+```typescript
+async function addWithRetry(content: string, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const { id } = await client.memories.add({ content });
+
+    try {
+      const result = await waitForProcessing(id);
+      return result;
+    } catch (error) {
+      console.error(`Versuch ${attempt} fehlgeschlagen:`, error);
+
+      if (attempt === maxRetries) {
+        throw error;
+      }
+
+      // Exponentieller Backoff
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
+  }
+}
+```
+
+
+<div id="processing-times-by-content-type">
+  ## Verarbeitungszeiten nach Inhaltstyp
+</div>
+
+documents: Nahezu sofort erstellt (200–500 ms)
+
+Speicher-Einträge: Supermemory erstellt auf Basis semantischer Analyse und kontextuellen Verständnisses ein Verständnis des Speichergraphs.
+
+| Inhaltstyp | Verarbeitungszeit für Speicher | Hinweise |
+|--------------|-------------------------------|---------|
+| Reiner Text | 5–10 Sekunden | Schnellste Verarbeitung |
+| Markdown | 5–10 Sekunden | Ähnlich wie reiner Text |
+| PDF (< 10 Seiten) | 15–30 Sekunden | OCR bei Bedarf |
+| PDF (> 100 Seiten) | 1–3 Minuten | Abhängig von der Komplexität |
+| Bilder | 10–20 Sekunden | OCR-Verarbeitung |
+| YouTube-Videos | 1–2 Min pro 10 Min Video | Transkription erforderlich |
+| Webseiten | 10–20 Sekunden | Inhaltsextraktion |
+| Google Docs | 10–15 Sekunden | API-Extraktion |
+
+<Note>
+**Profi-Tipp**: Verwende den Endpoint für den processing status, um Nutzerinnen und Nutzern Echtzeit-Feedback zu geben – insbesondere bei größeren documents oder Batch-Uploads.
+</Note>

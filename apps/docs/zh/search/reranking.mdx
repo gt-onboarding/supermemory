@@ -1,0 +1,408 @@
+---
+title: "重排"
+description: "通过二次排序算法提升结果相关性"
+---
+
+重排会应用二次排序算法，以优化搜索结果的相关性顺序。在初始搜索返回结果后，重排器会分析你的查询与每个结果之间的关系，从而提供更优的排序。
+
+<div id="how-reranking-works">
+  ## 重排的工作原理
+</div>
+
+Supermemory 的重排流程：
+
+1. **初始搜索** 基于标准语义相似性返回结果
+2. **重排模型** 分析查询与结果的配对
+3. **基于更深层的语义理解** 对分数进行重新计算
+4. **按新的相关性分数** 对结果重新排序
+5. **最终结果** 结构保持不变，但排序更优
+
+重排器在以下方面尤为有效：
+
+- **理解上下文** 及细微关系
+- **处理歧义查询**（具有多种可能含义）
+- **提升复杂技术主题的精准度**
+- **在初始分数相近时提供更好的排序**
+
+<div id="basic-reranking-comparison">
+  ## 基础重排对比
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    // 不启用重排的搜索
+    const standardResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: false,
+      limit: 5
+    });
+
+    // 启用重排的搜索
+    const rerankedResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: true,
+      limit: 5
+    });
+
+    console.log("标准结果的顶部项：", standardResults.results[0].score);
+    console.log("重排结果的顶部项：", rerankedResults.results[0].score);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    # 不启用重排的搜索
+    standard_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=False,
+        limit=5
+    )
+
+    # 启用重排的搜索
+    reranked_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=True,
+        limit=5
+    )
+
+    print("标准结果的顶部项:", standard_results.results[0].score)
+    print("重排结果的顶部项:", reranked_results.results[0].score)
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # 不启用重排
+    echo "标准排序："
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": false,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+
+    # 启用重排
+    echo "重排后的结果："
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": true,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+    ```
+  </Tab>
+</Tabs>
+
+**示例输出对比：**
+
+```json
+// 不使用重排 - 结果按语义相似性排序
+{
+  "results": [
+    {
+      "title": "深度学习优化方法",
+      "score": 0.82,
+      "chunks": [
+        {
+          "content": "各种优化算法如 Adam、RMSprop 和 SGD 用于神经网络训练...",
+          "score": 0.79
+        }
+      ]
+    },
+    {
+      "title": "神经网络训练技术",
+      "score": 0.81,
+      "chunks": [
+        {
+          "content": "批量归一化和 dropout 是神经网络常用的正则化技术...",
+          "score": 0.78
+        }
+      ]
+    }
+  ],
+  "timing": 145
+}
+
+// 使用重排 - 结果按上下文相关性重新排序
+{
+  "results": [
+    {
+      "title": "神经网络训练技术",
+      "score": 0.89,  // 被重排器提升
+      "chunks": [
+        {
+          "content": "批量归一化和 dropout 是神经网络常用的正则化技术...",
+          "score": 0.85
+        }
+      ]
+    },
+    {
+      "title": "深度学习优化方法",
+      "score": 0.86,  // 略有调整
+      "chunks": [
+        {
+          "content": "各种优化算法如 Adam、RMSprop 和 SGD 用于神经网络训练...",
+          "score": 0.83
+        }
+      ]
+    }
+  ],
+  "timing": 267  // 重排增加约 120ms
+}
+```
+
+
+<div id="complex-query-reranking">
+  ## 复杂查询重排
+</div>
+
+重排在处理复杂、多维度的查询时表现出色：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "sustainable machine learning carbon footprint energy efficiency",
+      rerank: true,
+      containerTags: ["research", "sustainability"],
+      limit: 8
+    });
+
+    // 重排器能够理解以下内容之间的关联：
+    // - 机器学习的计算成本
+    // - AI 训练对环境的影响
+    // - 能源高效的模型架构
+    // - 机器学习中的绿色计算实践
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="sustainable machine learning carbon footprint energy efficiency",
+        rerank=True,
+        container_tags=["research", "sustainability"],
+        limit=8
+    )
+
+    # 重排器能够理解以下内容之间的关联：
+    # - 机器学习的计算成本
+    # - AI 训练对环境的影响
+    # - 能源高效的模型架构
+    # - 机器学习中的绿色计算实践
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "sustainable machine learning carbon footprint energy efficiency",
+        "rerank": true,
+        "containerTags": ["research", "sustainability"],
+        "limit": 8
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**示例输出：**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_green_ai",
+      "title": "绿色AI：减少机器学习的碳足迹",
+      "score": 0.94,  // 重排后高度相关
+      "chunks": [
+        {
+          "content": "训练大型神经网络可能消耗相当于几辆汽车整个生命周期的能源。可持续机器学习实践专注于模型效率、剪枝和量化，以减少计算需求...",
+          "score": 0.92,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_efficient_models",
+      "title": "节能神经网络架构",
+      "score": 0.91,  // 因强主题相关性而提升
+      "chunks": [
+        {
+          "content": "MobileNets和EfficientNets专为能源受限环境设计，以最小的计算开销实现高精度...",
+          "score": 0.88,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 12,
+  "timing": 298
+}
+```
+
+
+<div id="memory-search-reranking">
+  ## 记忆搜索重排
+</div>
+
+重排还能提升记忆搜索结果的相关性：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const memoryResults = await client.search.memories({
+      q: "explain transformer architecture attention mechanism",
+      rerank: true,
+      containerTag: "ai_notes",
+      threshold: 0.6,
+      limit: 5
+    });
+
+    // 重排器会识别出
+    // 最能解释 transformer 与 attention 关系的记忆
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    memory_results = client.search.memories(
+        q="explain transformer architecture attention mechanism",
+        rerank=True,
+        container_tag="ai_notes",
+        threshold=0.6,
+        limit=5
+    )
+
+    # 重排器会识别出
+    # 最能解释 transformer 与 attention 关系的记忆
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "explain transformer architecture attention mechanism",
+        "rerank": true,
+        "containerTag": "ai_notes",
+        "threshold": 0.6,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**示例输出：**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_transformer_intro",
+      "memory": "Transformer架构通过用自注意力机制替代循环层，彻底变革了NLP领域。注意力机制使模型在处理每个token时能够关注输入序列的不同部分，从而实现并行处理并更好地建模长距离依赖关系。",
+      "similarity": 0.93,  // 因全面解释而重排至更高位置
+      "title": "Transformer架构概述",
+      "metadata": {
+        "topic": "deep-learning",
+        "subtopic": "transformers"
+      }
+    },
+    {
+      "id": "mem_attention_detail",
+      "memory": "自注意力通过计算从输入embedding中派生的查询、键和值向量之间的点积来计算注意力权重。这使得每个位置都能关注前一层中的所有位置，从而捕获数据中的复杂关系。",
+      "similarity": 0.91,  // 因技术细节而提升
+      "title": "自注意力机制详解"
+    }
+  ],
+  "total": 8,
+  "timing": 198
+}
+```
+
+
+<div id="domain-specific-reranking">
+  ## 领域特定的重排
+</div>
+
+重排能够理解特定领域内的关系：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 医疗领域查询
+    const medicalResults = await client.search.documents({
+      q: "diabetes treatment insulin resistance metformin",
+      rerank: true,
+      filters: {
+        AND: [
+          { key: "domain", value: "medical", negate: false }
+        ]
+      },
+      limit: 10
+    });
+
+    // 重排器能理解医疗领域的关联：
+    // - 糖尿病的类型与治疗
+    // - 胰岛素抵抗的机制
+    // - 二甲双胍在糖尿病管理中的作用
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 医疗领域查询
+    medical_results = client.search.documents(
+        q="diabetes treatment insulin resistance metformin",
+        rerank=True,
+        filters={
+            "AND": [
+                {"key": "domain", "value": "medical", "negate": False}
+            ]
+        },
+        limit=10
+    )
+
+    # 重排器能理解医疗领域的关联：
+    # - 糖尿病的类型与治疗
+    # - 胰岛素抵抗的机制
+    # - 二甲双胍在糖尿病管理中的作用
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "diabetes treatment insulin resistance metformin",
+        "rerank": true,
+        "filters": {
+          "AND": [
+            {"key": "domain", "value": "medical", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>

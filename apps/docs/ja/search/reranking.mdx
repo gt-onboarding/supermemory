@@ -1,0 +1,408 @@
+---
+title: "Reranking"
+description: "セカンダリのランキング手法で結果の関連性を高める"
+---
+
+Reranking は、検索結果の並び順をより関連性の高いものにするために、二段目のランキングアルゴリズムを適用します。初回の検索で結果が返った後、reranker がクエリと各結果との関係を評価し、より適切な順序に並べ替えます。
+
+<div id="how-reranking-works">
+  ## Reranking の仕組み
+</div>
+
+Supermemory の リエランキング プロセス:
+
+1. **初期検索** は標準的なセマンティック類似度を用いて結果を返す
+2. **Reranker モデル** がクエリと結果のペアを分析する
+3. **score を再計算** し、より深いセマンティックな理解に基づいて更新する
+4. **結果を再順位付け** し、新しい関連度の score によって並べ替える
+5. **最終結果** は構造はそのままに、並び順が改善される
+
+Reranker は特に次の点で効果的です:
+
+- **文脈理解** と微妙な関係性の把握
+- **曖昧なクエリの処理**（複数の意味が想定される場合）
+- **精度向上**（複雑な技術トピックに対して）
+- **より適切な順位付け**（初期の score が近い結果が並ぶ場合）
+
+<div id="basic-reranking-comparison">
+  ## 基本的なRerankingの比較
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    // リエランキングなしで検索
+    const standardResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: false,
+      limit: 5
+    });
+
+    // リエランキングありで検索
+    const rerankedResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: true,
+      limit: 5
+    });
+
+    console.log("Standard top result:", standardResults.results[0].score);
+    console.log("Reranked top result:", rerankedResults.results[0].score);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    # リエランキングなしで検索
+    standard_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=False,
+        limit=5
+    )
+
+    # リエランキングありで検索
+    reranked_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=True,
+        limit=5
+    )
+
+    print("Standard top result:", standard_results.results[0].score)
+    print("Reranked top result:", reranked_results.results[0].score)
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # リエランキングなし
+    echo "Standard ranking:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": false,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+
+    # リエランキングあり
+    echo "Reranked results:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": true,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+    ```
+  </Tab>
+</Tabs>
+
+**サンプル出力の比較:**
+
+```json
+// リランキングなし - 意味的類似度で順序付けされた結果
+{
+  "results": [
+    {
+      "title": "Deep Learning Optimization Methods",
+      "score": 0.82,
+      "chunks": [
+        {
+          "content": "Adam、RMSprop、SGDなどの様々な最適化アルゴリズムがニューラルネットワークの訓練で使用されます...",
+          "score": 0.79
+        }
+      ]
+    },
+    {
+      "title": "Neural Network Training Techniques",
+      "score": 0.81,
+      "chunks": [
+        {
+          "content": "バッチ正規化とドロップアウトは、ニューラルネットワークの一般的な正則化技術です...",
+          "score": 0.78
+        }
+      ]
+    }
+  ],
+  "timing": 145
+}
+
+// リランキングあり - 文脈的関連性で再順序付けされた結果
+{
+  "results": [
+    {
+      "title": "Neural Network Training Techniques",
+      "score": 0.89,  // リランカーによって向上
+      "chunks": [
+        {
+          "content": "バッチ正規化とドロップアウトは、ニューラルネットワークの一般的な正則化技術です...",
+          "score": 0.85
+        }
+      ]
+    },
+    {
+      "title": "Deep Learning Optimization Methods",
+      "score": 0.86,  // わずかに調整
+      "chunks": [
+        {
+          "content": "Adam、RMSprop、SGDなどの様々な最適化アルゴリズムがニューラルネットワークの訓練で使用されます...",
+          "score": 0.83
+        }
+      ]
+    }
+  ],
+  "timing": 267  // リランキングのための追加の約120ms
+}
+```
+
+
+<div id="complex-query-reranking">
+  ## 複雑なクエリのReranking
+</div>
+
+Rerankingは、複雑で多面的なクエリで特に効果を発揮します:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "sustainable machine learning carbon footprint energy efficiency",
+      rerank: true,
+      containerTags: ["research", "sustainability"],
+      limit: 8
+    });
+
+    // Rerankerは次の要素間の関係を理解します:
+    // - 機械学習の計算コスト
+    // - AIのトレーニングによる環境負荷
+    // - エネルギー効率の高いモデルアーキテクチャ
+    // - MLにおけるグリーンコンピューティングの実践
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="sustainable machine learning carbon footprint energy efficiency",
+        rerank=True,
+        container_tags=["research", "sustainability"],
+        limit=8
+    )
+
+    # Rerankerは次の要素間の関係を理解します:
+    # - 機械学習の計算コスト
+    # - AIのトレーニングによる環境負荷
+    # - エネルギー効率の高いモデルアーキテクチャ
+    # - MLにおけるグリーンコンピューティングの実践
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "sustainable machine learning carbon footprint energy efficiency",
+        "rerank": true,
+        "containerTags": ["research", "sustainability"],
+        "limit": 8
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**サンプル出力:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_green_ai",
+      "title": "グリーンAI：機械学習のカーボンフットプリント削減",
+      "score": 0.94,  // リランキング後の高い関連性
+      "chunks": [
+        {
+          "content": "大規模なニューラルネットワークの訓練は、その生涯にわたって数台の車と同程度のエネルギーを消費する可能性があります。持続可能なML実践では、計算需要を削減するためにモデル効率、プルーニング、量子化に焦点を当てています...",
+          "score": 0.92,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_efficient_models",
+      "title": "エネルギー効率的なニューラルネットワークアーキテクチャ",
+      "score": 0.91,  // 強いトピック関連性により向上
+      "chunks": [
+        {
+          "content": "MobileNetとEfficientNetは、エネルギー制約のある環境向けに特別に設計されており、最小限の計算オーバーヘッドで高い精度を実現します...",
+          "score": 0.88,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 12,
+  "timing": 298
+}
+```
+
+
+<div id="memory-search-reranking">
+  ## メモリー検索のReranking
+</div>
+
+Rerankingはメモリー検索結果の精度も向上させます:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const memoryResults = await client.search.memories({
+      q: "explain transformer architecture attention mechanism",
+      rerank: true,
+      containerTag: "ai_notes",
+      threshold: 0.6,
+      limit: 5
+    });
+
+    // Rerankerは、トランスフォーマーとアテンションの
+    // 関係を最もうまく説明するメモリーを特定します
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    memory_results = client.search.memories(
+        q="explain transformer architecture attention mechanism",
+        rerank=True,
+        container_tag="ai_notes",
+        threshold=0.6,
+        limit=5
+    )
+
+    # Rerankerは、トランスフォーマーとアテンションの
+    # 関係を最もうまく説明するメモリーを特定します
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "explain transformer architecture attention mechanism",
+        "rerank": true,
+        "containerTag": "ai_notes",
+        "threshold": 0.6,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**サンプル出力:**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_transformer_intro",
+      "memory": "Transformerアーキテクチャは、再帰層を自己注意メカニズムに置き換えることでNLPに革命をもたらしました。注意メカニズムにより、モデルは各トークンを処理する際に入力シーケンスの異なる部分に焦点を当てることができ、並列処理とより良い長距離依存関係のモデリングを可能にします。",
+      "similarity": 0.93,  // 包括的な説明のためリエランキングで上位に
+      "title": "Transformerアーキテクチャ概要",
+      "metadata": {
+        "topic": "deep-learning",
+        "subtopic": "transformers"
+      }
+    },
+    {
+      "id": "mem_attention_detail",
+      "memory": "自己注意は、入力埋め込みから導出されたクエリ、キー、バリューベクトル間の内積を取ることで注意重みを計算します。これにより、各位置が前の層のすべての位置に注意を向けることができ、データ内の複雑な関係を捉えることができます。",
+      "similarity": 0.91,  // 技術的詳細のためブースト
+      "title": "自己注意メカニズムの詳細"
+    }
+  ],
+  "total": 8,
+  "timing": 198
+}
+```
+
+
+<div id="domain-specific-reranking">
+  ## ドメイン特化型のReranking
+</div>
+
+Rerankingはドメイン固有の関係性を理解します：
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 医療ドメインのクエリ
+    const medicalResults = await client.search.documents({
+      q: "diabetes treatment insulin resistance metformin",
+      rerank: true,
+      filters: {
+        AND: [
+          { key: "domain", value: "medical", negate: false }
+        ]
+      },
+      limit: 10
+    });
+
+    // Rerankerは医療領域における関係性を理解します:
+    // - 糖尿病のタイプと治療
+    // - インスリン抵抗性のメカニズム
+    // - メトホルミンの糖尿病管理における役割
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # 医療ドメインのクエリ
+    medical_results = client.search.documents(
+        q="diabetes treatment insulin resistance metformin",
+        rerank=True,
+        filters={
+            "AND": [
+                {"key": "domain", "value": "medical", "negate": False}
+            ]
+        },
+        limit=10
+    )
+
+    # Rerankerは医療領域における関係性を理解します:
+    # - 糖尿病のタイプと治療
+    # - インスリン抵抗性のメカニズム
+    # - メトホルミンの糖尿病管理における役割
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "diabetes treatment insulin resistance metformin",
+        "rerank": true,
+        "filters": {
+          "AND": [
+            {"key": "domain", "value": "medical", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>

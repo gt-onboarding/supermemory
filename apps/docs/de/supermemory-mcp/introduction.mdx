@@ -1,0 +1,90 @@
+---
+title: "Über supermemory MCP"
+description: "Nimm deine Speicher-Einträge überallhin mit – mit supermemory MCP"
+---
+
+supermemory MCP ist eine leichtgewichtige, auf Endnutzer ausgerichtete Komponente, mit der du deine Speicher-Einträge plattformübergreifend auf jeder KI-Plattform mitnehmen kannst. Sie dient als universelle Speicherschicht, die LLMs ermöglicht, über verschiedene Anwendungen und Sitzungen hinweg einen persistierenden Kontext und Speicher-Einträge beizubehalten und so die grundlegende Einschränkung zu beheben, dass KI-Assistenten zwischen Gesprächen alles vergessen.
+
+<div id="what-supermemory-mcp-is-and-how-it-works">
+  ## Was supermemory MCP ist und wie es funktioniert
+</div>
+
+**supermemory MCP** dient als quelloffenes, universelles Speichersystem, das isolierte KI-Anwendungen über das Model Context Protocol (MCP) verbindet. Es läuft als **Meta-MCP-Server**, der für jede:n Nutzer:in eigene Serverinstanzen bereitstellt und so nahtlose Speicherpersistenz über jeden MCP-kompatiblen LLM-Client hinweg ermöglicht – einschließlich ChatGPT, Claude, Windsurf, Cursor und VS Code.
+
+Das System arbeitet als MCP-Server, der mit MCP-kompatiblen Clients kommuniziert und kontextuelle Informationen über die robuste Supermemory Memory API-Infrastruktur speichert und abruft. Wenn Nutzer:innen mit einer verbundenen KI-Anwendung interagieren, erfasst das System automatisch relevante Informationen und macht sie über **semantische Suche und intelligente Wiederverwendung** für alle anderen verbundenen Plattformen verfügbar.
+
+Es ist außerdem ein hervorragendes Beispiel dafür, wie Sie supermemory nutzen können, um eigene Endnutzer-Anwendungen zu entwickeln.
+
+<Card title="supermemory MCP code" icon="github" href="https://github.com/supermemoryai/supermemory-mcp">
+    Code hinter den Kulissen
+</Card>
+
+<div id="key-consumer-benefits">
+  ### Zentrale Vorteile für Nutzer
+</div>
+
+- **Keine Anmeldung erforderlich**: Zugriff über eindeutige, private URLs, die sowohl als Bezeichner als auch als API-Schlüssel dienen
+- **Komplett kostenlos**: Voll funktionsfähiger gehosteter Dienst ohne Kosten
+- **Ein-Befehl-Setup**: Einfache CLI-Installation: `npx install-mcp [URL] --client [CLIENT]`
+- **Universelle Kompatibilität**: Funktioniert nahtlos mit mehreren LLM-Clients und -Plattformen
+
+<div id="core-workflow-process">
+  ### Kernablauf
+</div>
+
+1. Der Nutzer interagiert mit einem MCP-kompatiblen KI-Client
+2. Der Client stellt über eine eindeutige, private URL eine Verbindung zum supermemory MCP-Server her
+3. Während der Unterhaltung werden relevante Informationen mit der Aktion `addToSupermemory` gespeichert
+4. Wenn Kontext benötigt wird, ruft die Aktion `searchSupermemory` relevante Speicher-Einträge ab
+5. Der KI-Assistent greift unabhängig von der verwendeten Plattform auf diesen persistenten Kontext zu
+
+<div id="building-applications-with-supermemory">
+  ## Anwendungen mit supermemory entwickeln
+</div>
+
+supermemory MCP demonstriert anhand seiner **API-first-Architektur**, wie sich Consumer‑Anwendungen mit supermemory bauen lassen. Das System fungiert als „Kunde“ der zugrunde liegenden supermemory API‑Infrastruktur und zeigt, wie Entwickler die Plattform nutzen können, um eigene speicherfähige Anwendungen zu entwickeln.
+
+<div id="supported-platforms">
+  ### Unterstützte Plattformen
+</div>
+
+- **Claude Desktop**: Unterstützung für direkte SSE-Verbindungen
+- **Cursor IDE**: Globale MCP-Serverkonfiguration über `~/.cursor/mcp.json`
+- **Windsurf**: Nahtlose Integration für KI-gestützte Entwicklung
+- **VS Code**: Kompatibel mit verschiedenen KI-Coding-Erweiterungen
+- **Cline/Roo-Cline**: Umfassende Unterstützung des MCP-Protokolls
+- **Beliebige MCP-kompatible Anwendung**: Universelle Kompatibilität durch Implementierung des Standardprotokolls
+
+<div id="security-and-privacy-considerations">
+  ## Sicherheits- und Datenschutzüberlegungen
+</div>
+
+<div id="security-model">
+  ### Sicherheitsmodell
+</div>
+
+- **URL-basierte Authentifizierung**: Zufällige URLs dienen als Zugriffsschlüssel und vermeiden die Komplexität herkömmlicher Logins
+- **Sitzungsisolation**: Vollständige Trennung der Benutzerdaten durch eindeutige URL-Pfade
+- **Self-Hosting-Option**: Volle Kontrolle über Daten und Infrastruktur für datenschutzbewusste Nutzer
+- **Kein Authentifizierungs-Overhead**: Vereinfachter Zugriff ohne herkömmliche Benutzername/Passwort-Systeme
+
+<div id="privacy-features">
+  ### Datenschutzfunktionen
+</div>
+
+- **Datenisolation**: Benutzer‑Speicher‑Einträge sind vollständig durch eindeutige URLs voneinander getrennt
+- **Option für lokale Kontrolle**: Self‑Hosting für Enterprise‑ oder besonders sensible Anwendungsfälle
+- **Sichere Infrastruktur**: Auf der Enterprise‑Security‑Plattform von Cloudflare aufgebaut
+
+<div id="future-developments-and-ecosystem">
+  ## Zukünftige Entwicklungen und Ökosystem
+</div>
+
+Das Projekt stellt einen **Durchbruch in der Portabilität von KI‑Speichern** dar, mit laufenden Entwicklungen, darunter:
+
+- **Infinite Chat API**: Verbesserte Inline‑Speicherverwaltung mit Gesprächsverlauf
+- **Erweiterte Client‑Unterstützung**: Mehr MCP‑Clients mit SSE‑Verbindungsfunktionen
+- **Enterprise‑Funktionen**: Erweiterte Sicherheits‑ und Compliance‑Optionen für den Unternehmenseinsatz
+- **Erweiterung der Integrationen**: Mögliche Anbindungen an Google Drive, Notion, OneDrive und andere Produktivitätsplattformen
+
+supermemory MCP zeigt überzeugend, wie sich attraktive Consumer‑Anwendungen auf Basis der Infrastruktur von supermemory bauen lassen, und erzielt durch exzellentes User‑Experience‑Design in Kombination mit robuster technischer Architektur eine breite Akzeptanz. Der Erfolg bestätigt die Marktnachfrage nach universellen KI‑Speicherlösungen und bietet eine überzeugende Vorlage für Entwickler, die eigene Speicher‑fähige Anwendungen erstellen.

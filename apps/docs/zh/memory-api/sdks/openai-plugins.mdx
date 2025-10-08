@@ -1,0 +1,615 @@
+---
+title: "OpenAI SDK 插件"
+description: "用于与 Supermemory 集成的 OpenAI 函数调用的 memory 工具"
+---
+
+使用 Supermemory 的函数调用工具为官方 OpenAI SDK 添加 memory 能力。这些插件可与 OpenAI 的聊天补全和函数调用功能无缝集成。
+
+<CardGroup>
+  <Card title="npm 上的 Supermemory 工具" icon="npm" href="https://www.npmjs.com/package/@supermemory/tools">
+    前往 npm 页面了解更多详情
+  </Card>
+
+  <Card title="Supermemory AI SDK" icon="python" href="https://pypi.org/project/supermemory-openai-sdk/">
+    前往 PyPI 页面了解更多详情
+  </Card>
+</CardGroup>
+
+<div id="installation">
+  ## 安装
+</div>
+
+<CodeGroup>
+  ```bash Python
+  # 使用 uv（推荐）
+  uv add supermemory-openai-sdk
+
+  # 或使用 pip
+  pip install supermemory-openai-sdk
+  ```
+
+  ```bash JavaScript/TypeScript
+  npm install @supermemory/tools
+  ```
+</CodeGroup>
+
+<div id="quick-start">
+  ## 快速开始
+</div>
+
+<CodeGroup>
+  ```python Python SDK
+  import asyncio
+  import openai
+  from supermemory_openai import SupermemoryTools, execute_memory_tool_calls
+
+  async def main():
+      # 初始化 OpenAI 客户端
+      client = openai.AsyncOpenAI(api_key="your-openai-api-key")
+
+      # 初始化 Supermemory 工具
+      tools = SupermemoryTools(
+          api_key="your-supermemory-api-key",
+          config={"project_id": "my-project"}
+      )
+
+      # 使用 Memory 工具进行对话
+      response = await client.chat.completions.create(
+          model="gpt-5",
+          messages=[
+              {
+                  "role": "system",
+                  "content": "You are a helpful assistant with access to user memories."
+              },
+              {
+                  "role": "user",
+                  "content": "Remember that I prefer tea over coffee"
+              }
+          ],
+          tools=tools.get_tool_definitions()
+      )
+
+      # 如存在工具调用则进行处理
+      if response.choices[0].message.tool_calls:
+          tool_results = await execute_memory_tool_calls(
+              api_key="your-supermemory-api-key",
+              tool_calls=response.choices[0].message.tool_calls,
+              config={"project_id": "my-project"}
+          )
+          print("Tool results:", tool_results)
+
+      print(response.choices[0].message.content)
+
+  asyncio.run(main())
+  ```
+
+  ```typescript JavaScript/TypeScript SDK
+  import { supermemoryTools, getToolDefinitions, createToolCallExecutor } from "@supermemory/tools/openai"
+  import OpenAI from "openai"
+
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY!,
+  })
+
+  // 获取用于 OpenAI 的工具定义
+  const toolDefinitions = getToolDefinitions()
+
+  // 创建工具执行器
+  const executeToolCall = createToolCallExecutor(process.env.SUPERMEMORY_API_KEY!, {
+    projectId: "your-project-id",
+  })
+
+  // 搭配 OpenAI Chat Completions 使用
+  const completion = await client.chat.completions.create({
+    model: "gpt-5",
+    messages: [
+      {
+        role: "user",
+        content: "What do you remember about my preferences?",
+      },
+    ],
+    tools: toolDefinitions,
+  })
+
+  // 如有工具调用则执行
+  if (completion.choices[0]?.message.tool_calls) {
+    for (const toolCall of completion.choices[0].message.tool_calls) {
+      const result = await executeToolCall(toolCall)
+      console.log(result)
+    }
+  }
+  ```
+</CodeGroup>
+
+<div id="configuration">
+  ## 配置
+</div>
+
+<div id="memory-tools-configuration">
+  ### Memory Tools 配置
+</div>
+
+<CodeGroup>
+  ```python Python Configuration
+  from supermemory_openai import SupermemoryTools
+
+  tools = SupermemoryTools(
+      api_key="your-supermemory-api-key",
+      config={
+          "project_id": "my-project",  # 或使用 container_tags
+          "base_url": "https://custom-endpoint.com",  # 可选
+      }
+  )
+  ```
+
+  ```typescript JavaScript Configuration
+  import { supermemoryTools } from "@supermemory/tools/openai"
+
+  const tools = supermemoryTools(process.env.SUPERMEMORY_API_KEY!, {
+    containerTags: ["your-user-id"],
+    baseUrl: "https://custom-endpoint.com", // 可选
+  })
+  ```
+</CodeGroup>
+
+<div id="available-tools">
+  ## 可用的工具
+</div>
+
+<div id="search-memories">
+  ### 搜索记忆存储
+</div>
+
+使用语义搜索在用户记忆存储中进行查找：
+
+<CodeGroup>
+  ```python Python
+  # 搜索记忆存储
+  result = await tools.search_memories(
+      information_to_get="user preferences",
+      limit=10,
+      include_full_docs=True
+  )
+  print(f"Found {len(result.memories)} memories")
+  ```
+
+  ```typescript JavaScript
+  // 搜索记忆存储
+  const searchResult = await tools.searchMemories({
+    informationToGet: "user preferences",
+    limit: 10,
+  })
+  console.log(`Found ${searchResult.memories.length} memories`)
+  ```
+</CodeGroup>
+
+<div id="add-memory">
+  ### 添加 memory
+</div>
+
+将新信息存入 memory：
+
+<CodeGroup>
+  ```python Python
+  # 添加 memory
+  result = await tools.add_memory(
+      memory="User prefers tea over coffee"
+  )
+  print(f"Added memory with ID: {result.memory.id}")
+  ```
+
+  ```typescript JavaScript
+  // 添加 memory
+  const addResult = await tools.addMemory({
+    memory: "User prefers dark roast coffee",
+  })
+  console.log(`Added memory with ID: ${addResult.memory.id}`)
+  ```
+</CodeGroup>
+
+<div id="fetch-memory">
+  ### 获取 memory
+</div>
+
+根据 ID 获取指定的 memory：
+
+<CodeGroup>
+  ```python Python
+  # 获取指定的 memory
+  result = await tools.fetch_memory(
+      memory_id="memory-id-here"
+  )
+  print(f"Memory content: {result.memory.content}")
+  ```
+
+  ```typescript JavaScript
+  // 获取指定的 memory
+  const fetchResult = await tools.fetchMemory({
+    memoryId: "memory-id-here"
+  })
+  console.log(`Memory content: ${fetchResult.memory.content}`)
+  ```
+</CodeGroup>
+
+<div id="individual-tools">
+  ## 独立工具
+</div>
+
+分别使用各个工具以获得更细粒度的控制：
+
+<CodeGroup>
+  ```python Python Individual Tools
+  from supermemory_openai import (
+      create_search_memories_tool,
+      create_add_memory_tool,
+      create_fetch_memory_tool
+  )
+
+  search_tool = create_search_memories_tool("your-api-key")
+  add_tool = create_add_memory_tool("your-api-key")
+  fetch_tool = create_fetch_memory_tool("your-api-key")
+
+  # 在 OpenAI 函数调用中使用独立工具
+  tools_list = [search_tool, add_tool, fetch_tool]
+  ```
+
+  ```typescript JavaScript Individual Tools
+  import {
+    createSearchMemoriesTool,
+    createAddMemoryTool,
+    createFetchMemoryTool
+  } from "@supermemory/tools/openai"
+
+  const searchTool = createSearchMemoriesTool(process.env.SUPERMEMORY_API_KEY!)
+  const addTool = createAddMemoryTool(process.env.SUPERMEMORY_API_KEY!)
+  const fetchTool = createFetchMemoryTool(process.env.SUPERMEMORY_API_KEY!)
+
+  // 使用独立工具
+  const toolDefinitions = [searchTool, addTool, fetchTool]
+  ```
+</CodeGroup>
+
+<div id="complete-chat-example">
+  ## 完整聊天示例
+</div>
+
+下面展示了一个包含 memory 的多轮对话完整示例：
+
+<CodeGroup>
+  ```python Complete Python Example
+  import asyncio
+  import openai
+  from supermemory_openai import SupermemoryTools, execute_memory_tool_calls
+
+  async def chat_with_memory():
+      client = openai.AsyncOpenAI()
+      tools = SupermemoryTools(
+          api_key="your-supermemory-api-key",
+          config={"project_id": "chat-example"}
+      )
+
+      messages = [
+          {
+              "role": "system",
+              "content": """You are a helpful assistant with memory capabilities.
+              When users share personal information, remember it using addMemory.
+              When they ask questions, search your memories to provide personalized responses."""
+          }
+      ]
+
+      while True:
+          user_input = input("You: ")
+          if user_input.lower() == 'quit':
+              break
+
+          messages.append({"role": "user", "content": user_input})
+
+          # 使用工具获取 AI 回复
+          response = await client.chat.completions.create(
+              model="gpt-5",
+              messages=messages,
+              tools=tools.get_tool_definitions()
+          )
+
+          # 处理工具调用
+          if response.choices[0].message.tool_calls:
+              messages.append(response.choices[0].message)
+
+              tool_results = await execute_memory_tool_calls(
+                  api_key="your-supermemory-api-key",
+                  tool_calls=response.choices[0].message.tool_calls,
+                  config={"project_id": "chat-example"}
+              )
+
+              messages.extend(tool_results)
+
+              # 执行工具后获取最终回复
+              final_response = await client.chat.completions.create(
+                  model="gpt-5",
+                  messages=messages
+              )
+
+              assistant_message = final_response.choices[0].message.content
+          else:
+              assistant_message = response.choices[0].message.content
+              messages.append({"role": "assistant", "content": assistant_message})
+
+          print(f"Assistant: {assistant_message}")
+
+  # 运行聊天
+  asyncio.run(chat_with_memory())
+  ```
+
+  ```typescript Complete JavaScript Example
+  import OpenAI from "openai"
+  import { getToolDefinitions, createToolCallExecutor } from "@supermemory/tools/openai"
+  import readline from 'readline'
+
+  const client = new OpenAI()
+  const executeToolCall = createToolCallExecutor(process.env.SUPERMEMORY_API_KEY!, {
+    projectId: "chat-example",
+  })
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  })
+
+  async function chatWithMemory() {
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      {
+        role: "system",
+        content: `You are a helpful assistant with memory capabilities.
+        When users share personal information, remember it using addMemory.
+        When they ask questions, search your memories to provide personalized responses.`
+      }
+    ]
+
+    const askQuestion = () => {
+      rl.question("You: ", async (userInput) => {
+        if (userInput.toLowerCase() === 'quit') {
+          rl.close()
+          return
+        }
+
+        messages.push({ role: "user", content: userInput })
+
+        // 使用工具获取 AI 回复
+        const response = await client.chat.completions.create({
+          model: "gpt-5",
+          messages,
+          tools: getToolDefinitions(),
+        })
+
+        const choice = response.choices[0]
+        if (choice?.message.tool_calls) {
+          messages.push(choice.message)
+
+          // 执行工具调用
+          for (const toolCall of choice.message.tool_calls) {
+            const result = await executeToolCall(toolCall)
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: JSON.stringify(result),
+            })
+          }
+
+          // 执行工具后获取最终回复
+          const finalResponse = await client.chat.completions.create({
+            model: "gpt-5",
+            messages,
+          })
+
+          const assistantMessage = finalResponse.choices[0]?.message.content || "No response"
+          console.log(`Assistant: ${assistantMessage}`)
+          messages.push({ role: "assistant", content: assistantMessage })
+        } else {
+          const assistantMessage = choice?.message.content || "No response"
+          console.log(`Assistant: ${assistantMessage}`)
+          messages.push({ role: "assistant", content: assistantMessage })
+        }
+
+        askQuestion()
+      })
+    }
+
+    console.log("已启动带 memory 的聊天。输入 'quit' 退出。")
+    askQuestion()
+  }
+
+  chatWithMemory()
+  ```
+</CodeGroup>
+
+<div id="error-handling">
+  ## 错误处理
+</div>
+
+在应用中以稳健方式处理错误：
+
+<CodeGroup>
+  ```python Python Error Handling
+  from supermemory_openai import SupermemoryTools
+  import openai
+
+  async def safe_chat():
+      try:
+          client = openai.AsyncOpenAI()
+          tools = SupermemoryTools(api_key="your-api-key")
+
+          response = await client.chat.completions.create(
+              model="gpt-5",
+              messages=[{"role": "user", "content": "Hello"}],
+              tools=tools.get_tool_definitions()
+          )
+
+      except openai.APIError as e:
+          print(f"OpenAI API error: {e}")
+      except Exception as e:
+          print(f"Unexpected error: {e}")
+  ```
+
+  ```typescript JavaScript Error Handling
+  import OpenAI from "openai"
+  import { getToolDefinitions } from "@supermemory/tools/openai"
+
+  async function safeChat() {
+    try {
+      const client = new OpenAI()
+
+      const response = await client.chat.completions.create({
+        model: "gpt-5",
+        messages: [{ role: "user", content: "Hello" }],
+        tools: getToolDefinitions(),
+      })
+
+    } catch (error) {
+      if (error instanceof OpenAI.APIError) {
+        console.error("OpenAI API error:", error.message)
+      } else {
+        console.error("Unexpected error:", error)
+      }
+    }
+  }
+  ```
+</CodeGroup>
+
+<div id="api-reference">
+  ## API 参考文档
+</div>
+
+<div id="python-sdk">
+  ### Python SDK
+</div>
+
+<div id="supermemorytools">
+  #### `SupermemoryTools`
+</div>
+
+**构造器**
+
+```python
+SupermemoryTools(
+    api_key: str,
+    config: Optional[SupermemoryToolsConfig] = None
+)
+```
+
+**方法**
+
+* `get_tool_definitions()` - 获取 OpenAI 函数定义
+* `search_memories(information_to_get, limit, include_full_docs)` - 搜索用户记忆存储
+* `add_memory(memory)` - 添加新的记忆
+* `fetch_memory(memory_id)` - 通过 ID 获取特定记忆
+* `execute_tool_call(tool_call)` - 执行单个工具调用
+
+<div id="execute_memory_tool_calls">
+  #### `execute_memory_tool_calls`
+</div>
+
+```python
+execute_memory_tool_calls(
+    api_key: str,
+    tool_calls: List[ToolCall],
+    config: Optional[SupermemoryToolsConfig] = None
+) -> List[dict]
+```
+
+<div id="javascript-sdk">
+  ### JavaScript SDK
+</div>
+
+<div id="supermemorytools">
+  #### `supermemoryTools`
+</div>
+
+```typescript
+supermemoryTools(
+  apiKey: string,
+  config?: { projectId?: string; baseUrl?: string }
+)
+```
+
+<div id="createtoolcallexecutor">
+  #### `createToolCallExecutor`
+</div>
+
+```typescript
+createToolCallExecutor(
+  apiKey: string,
+  config?: { projectId?: string; baseUrl?: string }
+) -> (toolCall: OpenAI.Chat.ChatCompletionMessageToolCall) => Promise<any>
+```
+
+<div id="environment-variables">
+  ## 环境变量
+</div>
+
+请设置以下环境变量：
+
+```bash
+SUPERMEMORY_API_KEY=your_supermemory_key
+OPENAI_API_KEY=your_openai_key
+SUPERMEMORY_BASE_URL=https://custom-endpoint.com  # 可选
+```
+
+<div id="development">
+  ## 开发
+</div>
+
+<div id="python-setup">
+  ### Python 设置
+</div>
+
+```bash
+# 安装 uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 项目设置
+git clone <repository-url>
+cd packages/openai-sdk-python
+uv sync --dev
+
+# 运行测试
+uv run pytest
+
+# 类型检查
+uv run mypy src/supermemory_openai
+
+# 代码格式化
+uv run black src/ tests/
+uv run isort src/ tests/
+```
+
+<div id="javascript-setup">
+  ### JavaScript 设置
+</div>
+
+```bash
+# 安装依赖
+npm install
+
+# 运行测试
+npm test
+
+# 类型检查
+npm run type-check
+
+# 代码规范检查
+npm run lint
+```
+
+<div id="next-steps">
+  ## 后续步骤
+</div>
+
+<CardGroup cols={2}>
+  <Card title="AI SDK 集成" icon="triangle" href="/zh/ai-sdk/overview">
+    搭配 Vercel AI SDK 使用，加速与简化开发
+  </Card>
+
+  <Card title="Memory API" icon="database" href="/zh/memory-api/overview">
+    直接通过 API 进行高级 memory 管理
+  </Card>
+</CardGroup>

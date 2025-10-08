@@ -1,0 +1,191 @@
+---
+title: "概要"
+description: "あらゆる LLM を無制限のコンテキストと永続メモリーを備えたインテリジェントなエージェントに変える"
+sidebarTitle: "概要"
+---
+
+Memory Router は、アプリケーションと LLM のプロバイダの間にある透過的なプロキシで、コード変更なしにコンテキストとメモリーを自動で管理します。
+
+<Note>
+  **ライブデモ**: [supermemory.chat](https://supermemory.chat) で Memory Router を試して、実際の動作をご確認ください。
+</Note>
+
+<Tip>
+  **Vercel AI SDK を使っていますか？** 新規プロジェクトに最適な実装として、`@supermemory/tools/ai-sdk` を用いた[AI SDK 連携](/ja/ai-sdk/overview)をご覧ください。これは推奨のアプローチです。
+</Tip>
+
+<div id="what-is-the-memory-router">
+  ## Memory Router とは？
+</div>
+
+Memory Router は、LLM（大規模言語モデル）アプリケーションに次の機能を提供します:
+
+* **無制限のコンテキスト**: トークン上限を気にせず、会話を無期限に継続可能
+* **自動メモリー管理**: 関連コンテキストを賢く chunks 化・保存・検索
+* **コード変更不要**: 既存の OpenAI 互換クライアントでそのまま利用可能
+* **コスト最適化**: インテリジェントなコンテキスト管理でトークンコストを最大70%削減
+
+<div id="how-it-works">
+  ## 仕組み
+</div>
+
+<Steps>
+  <Step title="プロキシリクエスト">
+    アプリケーションは LLM プロバイダに直接ではなく、Supermemory にリクエストを送信します
+  </Step>
+
+  <Step title="コンテキスト管理">
+    Supermemory は自動的に以下を行います:
+
+    * 長い会話から不要なコンテキストを削減する
+    * 過去のやり取りから関連する保存メモリを検索する
+    * 最も関連性の高いコンテキストをプロンプトに付加する
+  </Step>
+
+  <Step title="LLM への転送">
+    最適化されたリクエストが、選択した LLM プロバイダに転送されます
+  </Step>
+
+  <Step title="非同期メモリー作成">
+    新しいメモリーはレスポンスを妨げることなく非同期で作成されます
+  </Step>
+</Steps>
+
+<div id="key-benefits">
+  ## 主要な利点
+</div>
+
+<div id="for-developers">
+  ### 開発者向け
+</div>
+
+* **ドロップイン統合**: ベースURLを差し替えるだけ—そのほかのコード変更は不要
+* **プロバイダ非依存**: OpenAI、Anthropic、Google、Groq などに対応
+* **共有メモリープール**: API 経由で作成した保存メモリは Router からも利用可能（その逆も同様）
+* **自動フォールバック**: Supermemory に問題が発生した場合、リクエストはそのまま素通しされる
+
+<div id="for-applications">
+  ### アプリケーション向け
+</div>
+
+* **長文対話に強い**: 何千件ものメッセージ後でも文脈を保持
+* **一貫した応答**: 保存メモリによりセッションをまたいでも情報の整合性を維持
+* **スマートな検索・取得**: 関連する文脈のみを取り込み、応答品質を向上
+* **コスト削減**: 自動チャンク化（分割処理）でトークン使用量を大幅に削減
+
+<div id="when-to-use-the-memory-router">
+  ## Memory Router を使うべきタイミング
+</div>
+
+Memory Router は次の用途に最適です:
+
+<Tabs>
+  <Tab title="Perfect For">
+    * **チャットアプリケーション**: カスタマーサポート、AIアシスタント、チャットボット
+    * **長時間の会話**: モデルのコンテキストウィンドウを超えるセッション
+    * **マルチセッションのメモリー**: ユーザーが再訪して会話を継続する場合
+    * **迅速なプロトタイピング**: 基盤を構築せずにメモリー機能を導入
+  </Tab>
+
+  <Tab title="Consider API Instead">
+    * **カスタムな取得ロジック**: 取得するメモリーを細かく制御する必要がある場合
+    * **非会話型のユースケース**: ドキュメント処理、分析ツール
+    * **複雑なフィルタリング**: 高度なメタデータフィルタリングが必要な場合
+    * **バッチ処理**: 複数のdocumentsをまとめて処理
+  </Tab>
+</Tabs>
+
+<div id="supported-providers">
+  ## サポート対象のプロバイダ
+</div>
+
+Memory Router は、OpenAI 互換の任意のエンドポイントで動作します。
+
+| プロバイダ | ベースURL | ステータス |
+|----------|----------|---------|
+| OpenAI | `api.openai.com/v1` | ✅ 完全対応 |
+| Anthropic | `api.anthropic.com/v1` | ✅ 完全対応 |
+| Google Gemini | `generativelanguage.googleapis.com/v1beta/openai` | ✅ 完全対応 |
+| Groq | `api.groq.com/openai/v1` | ✅ 完全対応 |
+| DeepInfra | `api.deepinfra.com/v1/openai` | ✅ 完全対応 |
+| OpenRouter | `openrouter.ai/api/v1` | ✅ 完全対応 |
+| Custom | OpenAI 互換であれば可 | ✅ 対応 |
+
+<Warning>
+  **未対応**:
+
+  * OpenAI Assistants API (`/v1/assistants`)
+</Warning>
+
+<div id="authentication">
+  ## 認証
+</div>
+
+Memory Router には 2 つの API キーが必要です：
+
+1. **Supermemory API Key**：メモリー管理用
+2. **Provider API Key**：選択した LLM プロバイダ用
+
+これらは次の方法で指定できます：
+
+* ヘッダー（本番環境で推奨）
+* URL パラメータ（テストに便利）
+* リクエストボディ（互換性のため）
+
+<div id="how-memories-work">
+  ## メモリーの仕組み
+</div>
+
+Memory Router を使用する場合:
+
+1. **自動抽出**: 会話から重要な情報が自動的に抽出されます
+2. **インテリジェントなチャンク化**: 長いメッセージは意味的な chunks に分割されます
+3. **関係構築**: 新しいメモリーが既存の知識と結び付きます
+4. **スマートな取得**: 文脈には最も関連性の高いメモリーだけが含まれます
+
+<Note>
+  同じ `user_id` を使用している場合、保存メモリは Memory Router と Memory API 間で共有され、両方を併用できます。
+</Note>
+
+<div id="response-headers">
+  ## レスポンスヘッダー
+</div>
+
+Memory Router は、状況の把握に役立つ診断用ヘッダーを追加します:
+
+| Header | 説明 |
+|--------|------|
+| `x-supermemory-conversation-id` | 会話の一意な識別子 |
+| `x-supermemory-context-modified` | コンテキストが変更されたか（`true`/`false`） |
+| `x-supermemory-tokens-processed` | 処理したトークン数 |
+| `x-supermemory-chunks-created` | 新規に作成されたメモリーの chunks（文書セグメント） |
+| `x-supermemory-chunks-retrieved` | コンテキストに追加されたメモリーの chunks（文書セグメント） |
+
+<div id="error-handling">
+  ## エラー処理
+</div>
+
+Memory Router は高い信頼性を念頭に設計されています。
+
+* **自動フォールバック**: Supermemory でエラーが発生した場合、リクエストは変更されずにそのまま通過します
+* **エラーヘッダー**: `x-supermemory-error` ヘッダーでエラーの詳細を確認できます
+* **ゼロダウンタイム**: メモリー機能が利用できない場合でも、アプリケーションは継続して動作します
+
+<div id="rate-limits-pricing">
+  ## レート制限と料金
+</div>
+
+<div id="rate-limits">
+  ### レート制限
+</div>
+
+* Supermemory 固有のレート制限はありません
+* ご利用の LLM プロバイダの制限のみが適用されます
+
+<div id="pricing">
+  ### 料金
+</div>
+
+* **Free Tier**: 無料で10万トークンを保存可能
+* **Standard Plan**: 無料枠終了後は月額 $20
+* **Usage-Based**: 各会話につき2万トークンの無料枠を含み、その後は100万トークンあたり $1

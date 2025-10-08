@@ -1,0 +1,71 @@
+---
+title: "Por que supermemory?"
+description: "Entenda os problemas e desafios de construir uma camada de memory e como a supermemory os resolve!"
+---
+
+<div id="the-problem">
+  ### O problema
+</div>
+
+...então você quer construir sua própria camada de memory. Vamos passar pelo seu processo de decisão:
+
+<Steps>
+  <Step title="Vamos escolher um banco de dados vetorial">
+    <Card title="Encontrou um banco de dados vetorial?">
+      - Ah não, é caro demais. Hora de trocar.
+      - Acontece que é dolorosamente lento. Vamos tentar outro.
+      - Ótimo, agora não escala. De volta à estaca zero.
+      - A manutenção é um pesadelo. Precisamos de outra coisa.
+    </Card>
+  </Step>
+  <Step title="Agora, o modelo de embedding">
+    <Card title="A menos que você tenha um PhD em IA, boa sorte para descobrir:">
+      - Qual modelo se adequa ao seu caso de uso
+      - Quais são os trade-offs de desempenho
+      - Como acompanhar os novos lançamentos
+    </Card>
+  </Step>
+  <Step title="Hora de construir a camada de memory">
+    <CardGroup cols="1">
+      <Card title="Tantos tipos de conteúdo">
+        - Sites: como lidar com JavaScript? E os limites de taxa?
+        - PDFs: OCR (Reconhecimento Óptico de Caracteres) continua falhando, a extração de texto é inconsistente
+        - Imagens: preciso de modelos de visão computacional agora?
+        - Áudio/Vídeo: os custos de transcrição aumentam rapidamente
+      </Card>
+    </CardGroup>
+  </Step>
+</Steps>
+
+E no meio de tudo isso, você se pergunta...
+
+> "Quando vou realmente lançar meu produto?"
+
+<div id="the-solution">
+  ### A solução
+</div>
+
+Se você não é fã de reinventar a roda, use o supermemory.
+
+<CardGroup cols="1">
+  <Card title="Acessível e fácil de usar" icon="banknote">
+    - Comece de graça, escale conforme cresce
+    - API simples, faça o deploy em minutos
+    - Sem configuração nem manutenção complexas
+    - Preços claros e previsíveis
+  </Card>
+  <Card title="Conectores simples" icon="plug">
+    - Notion, Google Drive, Slack
+    - Web scraping e processamento de PDF
+    - Sincronização de e-mail e calendário
+    - SDK para conectores personalizados
+  </Card>
+  <Card title="Pronto para produção" icon="activity">
+    - Segurança em nível empresarial
+    - Latency abaixo de 200 ms em escala
+    - Failover e redundância automáticos
+    - Garantia de 99,9% de uptime
+  </Card>
+</CardGroup>
+
+Pare de reinventar a roda. Foque em construir seu produto enquanto cuidamos da infraestrutura de memory.

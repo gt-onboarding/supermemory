@@ -1,0 +1,170 @@
+---
+title: "参数"
+description: "添加 memory 所需参数的完整参考"
+---
+
+将记忆存储添加到 Supermemory 的参数详解。
+
+<div id="request-parameters">
+  ## 请求参数
+</div>
+
+<div id="required-parameters">
+  ### 必填参数
+</div>
+
+<ParamField body="content" type="string" required>
+  要处理为记忆存储的内容。可以是：
+  - 纯文本
+  - 待处理的 URL
+  - HTML 内容
+  - Markdown 文本
+
+  ```json
+  {
+    "content": "Machine learning is a subset of AI..."
+  }
+  ```
+
+  **URL 示例：**
+  ```json
+  {
+    "content": "https://youtube.com/watch?v=dQw4w9WgXcQ"
+  }
+  ```
+</ParamField>
+
+<div id="optional-parameters">
+  ### 可选参数
+</div>
+
+<ParamField body="containerTag" type="string">
+  **推荐。** 使用单个标签对相关记忆存储进行分组，可提升搜索性能。
+
+  默认值："sm_project_default"
+
+  ```json
+  {
+    "containerTag": "project_alpha"
+  }
+  ```
+
+  <Note>
+  使用 `containerTag`（单数）相比 `containerTags`（数组）具有更佳的性能。
+  </Note>
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  以键值对形式提供额外的 Metadata。取值必须为字符串、数字或布尔值。
+
+  ```json
+  {
+    "metadata": {
+      "source": "research-paper",
+      "author": "John Doe",
+      "priority": 1,
+      "reviewed": true
+    }
+  }
+  ```
+
+  **限制：**
+  - 不允许嵌套对象
+  - 不允许将数组作为值
+  - 键必须为字符串
+  - 值仅限字符串、数字或布尔值
+</ParamField>
+
+<ParamField body="customId" type="string">
+  你为该 Documents 提供的自定义标识符。用于去重与更新。
+
+  **最大长度：**255 个字符
+
+  ```json
+  {
+    "customId": "doc_2024_01_research_ml"
+  }
+  ```
+
+  **适用场景：**
+  - 防止重复上传
+  - 更新现有 Documents
+  - 与外部系统同步
+</ParamField>
+
+<ParamField body="raw" type="string">
+  与处理后的内容一并存储的原始内容，用于保留原始格式。
+
+  ```json
+  {
+    "content": "# Machine Learning\n\nML is a subset of AI...",
+    "raw": "# Machine Learning\n\nML is a subset of AI..."
+  }
+  ```
+</ParamField>
+
+<div id="file-upload-parameters">
+  ## 文件上传参数
+</div>
+
+适用于 `POST /v3/documents/file` 端点：
+
+<ParamField body="file" type="file" required>
+  待上传的文件。支持的格式：
+  - **Documents：** PDF、DOC、DOCX、TXT、MD
+  - **图片：** JPG、PNG、GIF、WebP
+  - **视频：** MP4、WebM、AVI
+
+  **最大尺寸：** 50MB
+</ParamField>
+
+<ParamField body="containerTags" type="string">
+  上传文件的 container tag（作为表单字段发送）。
+
+  ```bash
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -F "file=@document.pdf" \
+    -F "containerTags=research"
+  ```
+</ParamField>
+
+<div id="container-tag-patterns">
+  ## 容器标签模式
+</div>
+
+<div id="recommended-patterns">
+  ### 推荐实践
+</div>
+
+```typescript
+// 按用户
+"user_123"
+
+// 按项目
+"project_alpha"
+
+// 按组织和类型
+"org_456_research"
+
+// 按时间段
+"2024_q1_reports"
+
+// 按数据源
+"slack_channel_general"
+```
+
+
+<div id="performance-considerations">
+  ### 性能考虑
+</div>
+
+```typescript
+// ✅ 快速：单个标签
+{ "containerTag": "project_alpha" }
+
+// ⚠️ 较慢：多个标签
+{ "containerTags": ["project_alpha", "backend", "auth"] }
+
+// ❌ 避免：标签过多
+{ "containerTags": ["tag1", "tag2", "tag3", "tag4", "tag5"] }
+```

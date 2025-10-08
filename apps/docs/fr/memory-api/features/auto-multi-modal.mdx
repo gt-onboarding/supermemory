@@ -1,0 +1,193 @@
+---
+title: "Multi‑modalité automatique"
+description: "supermemory détecte automatiquement le type de contenu du document que vous ajoutez."
+icon: "sparkles"
+---
+
+supermemory est nativement multimodal et peut détecter automatiquement le type de contenu du document que vous ajoutez.
+
+Nous utilisons les meilleurs outils du marché pour extraire le contenu depuis des URLs et le traiter en vue d’un stockage de memory optimal.
+
+<div id="automatic-content-type-detection">
+  ## Détection automatique du type de contenu
+</div>
+
+supermemory détecte automatiquement le type de contenu du document que vous ajoutez. Il vous suffit d’envoyer votre contenu à l’API, et supermemory s’occupe du reste.
+
+<Tabs>
+  <Tab title="Fonctionnement">
+    Le système de détection analyse :
+    - Les schémas d’URL et les domaines
+    - Les extensions de fichier et les types MIME
+    - La structure du contenu et les Metadata
+    - Les en-têtes et les types de réponse
+  </Tab>
+  <Tab title="Bonnes pratiques">
+    <Accordion title="Bonnes pratiques pour les types de contenu" defaultOpen icon="sparkles">
+      1. **Sélection du type**
+         - Utilisez `note` pour du texte simple
+         - Utilisez `webpage` pour du contenu en ligne
+         - Utilisez les types natifs lorsque c’est possible
+
+      2. **Contenu d’URL**
+         - Envoyez des URL propres, sans paramètres de suivi
+         - Utilisez des URL d’article, pas des URL de page d’accueil
+         - Vérifiez l’accessibilité de l’URL avant l’envoi
+    </Accordion>
+
+  </Tab>
+</Tabs>
+
+<div id="quick-implementation">
+  ### Implémentation rapide
+</div>
+
+Il vous suffit de transmettre le contenu au point de terminaison `/documents` :
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/documents \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  -d '{"content": "https://example.com/article"}'
+```
+
+```typescript
+await client.add.create({
+  content: "https://example.com/article",
+});
+```
+
+```python
+client.add.create(
+    content="https://example.com/article"
+)
+```
+
+</CodeGroup>
+
+<Note>
+  supermemory utilise [Markdowner](https://md.dhr.wtf) pour extraire le contenu à partir d’URL.
+</Note>
+
+<div id="supported-content-types">
+  ## Types de contenu pris en charge
+</div>
+
+supermemory prend en charge un large éventail de formats de contenu pour assurer une grande souplesse dans la création de memory :
+
+<Grid cols={2}>
+  <Card title="Contenu textuel" icon="document-text">
+    - `note`: Notes et documents en texte brut
+    - Traite directement le texte brut
+    - Segmente automatiquement le contenu pour une recherche optimale
+    - Préserve la mise en forme et la structure
+  </Card>
+
+  <Card title="Contenu web" icon="globe">
+    - `webpage`: Pages web (il suffit de fournir l’URL)
+    - Extrait intelligemment le contenu principal
+    - Préserve les Metadata importantes (title, description, images)
+    - Extrait les Metadata OpenGraph lorsqu’elles sont disponibles
+
+    - `tweet`: Contenu Twitter
+    - Capture le texte, les médias et les Metadata du tweet
+    - Préserve la structure du fil le cas échéant
+
+  </Card>
+
+  <Card title="Types de documents" icon="document">
+    - `pdf`: Fichiers PDF
+    - Extrait le texte tout en conservant la structure
+    - Gère à la fois les PDF interrogeables et les documents numérisés avec OCR
+    - Préserve les sauts de page et la mise en forme
+
+    - `google_doc`: Documents Google
+    - S’intègre de manière transparente à l’API Google Docs
+    - Conserve la mise en forme et la structure du document
+    - Se met à jour automatiquement lorsque le document source change
+
+    - `notion_doc`: Pages Notion
+    - Extrait le contenu tout en préservant la structure en blocs de Notion
+    - Gère la mise en forme riche et le contenu intégré
+
+  </Card>
+
+  <Card title="Types de médias" icon="photo">
+    - `image`: Images contenant du texte
+    - OCR avancé pour l’extraction de texte
+    - Analyse et description du contenu visuel
+
+    - `video`: Contenu vidéo
+    - Transcription et extraction de contenu
+    - Analyse des images clés
+  </Card>
+</Grid>
+
+<div id="processing-pipeline">
+  ## Pipeline de traitement
+</div>
+
+<Steps>
+  <Step title="Détection du contenu">
+    supermemory identifie automatiquement le type de contenu à partir des données fournies.
+  </Step>
+
+<Step title="Extraction du contenu">
+  Des extracteurs spécifiques au type traitent le contenu avec : - Analyse dédiée pour
+  chaque format - Gestion des erreurs avec réessais - Gestion des limites de débit
+</Step>
+
+  <Step title="Amélioration par l’IA">
+    ```typescript
+    interface ProcessedContent {
+      content: string;      // Texte extrait
+      summary?: string;     // Résumé généré par l’IA
+      tags?: string[];     // Tags extraits
+      categories?: string[]; // Catégories de contenu
+    }
+    ```
+  </Step>
+
+  <Step title="Segmentation en chunks & indexation">
+    - Découpage au niveau de la phrase
+    - Chevauchement de 2 phrases
+    - Préservation du contexte
+    - Cohérence sémantique
+  </Step>
+</Steps>
+
+<div id="technical-specifications">
+  ## Caractéristiques techniques
+</div>
+
+<div id="size-limits">
+  ### Limites de taille
+</div>
+
+| Type de contenu | Taille max. |
+| --------------- | ----------- |
+| Texte/Note      | 1 Mo        |
+| PDF             | 10 Mo       |
+| Image           | 5 Mo        |
+| Vidéo           | 100 Mo      |
+| Page web        | N/A         |
+| Google Doc      | N/A         |
+| Page Notion     | N/A         |
+| Tweet           | N/A         |
+
+<div id="processing-time">
+  ### Temps de traitement
+</div>
+
+| Type de contenu | Temps de traitement |
+| --------------- | ------------------- |
+| Texte/Note      | Quasi instantané    |
+| PDF             | 1–5 secondes        |
+| Image           | 2–10 secondes       |
+| Vidéo           | 10+ secondes        |
+| Page web        | 1–3 secondes        |
+| Google Doc      | N/A                 |
+| Page Notion     | N/A                 |
+| Tweet           | N/A                 |

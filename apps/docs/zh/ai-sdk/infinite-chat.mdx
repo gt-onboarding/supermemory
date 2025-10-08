@@ -1,0 +1,236 @@
+---
+title: "Infinite Chat"
+description: "为聊天应用提供无限上下文，自动管理 memory"
+sidebarTitle: "Infinite Chat"
+---
+
+Infinite Chat 为聊天应用提供无限上下文，并自动管理 memory。
+
+<div id="setup">
+  ## 设置
+</div>
+
+```typescript
+import { streamText } from "ai"
+
+const infiniteChat = createAnthropic({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+
+const result = await streamText({
+  model: infiniteChat("claude-3-sonnet"),
+  messages: [
+    { role: "user", content: "你好！请记住我喜欢 TypeScript。" }
+  ]
+})
+```
+
+<div id="provider-configuration">
+  ## Provider 配置
+</div>
+
+<div id="named-providers">
+  ### 具名 provider
+</div>
+
+<CodeGroup>
+  ```typescript OpenAI
+  const infiniteChat = createOpenAI({
+    baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+    apiKey: 'your-provider-api-key',
+    headers: {
+      'x-supermemory-api-key': 'supermemory-api-key',
+      'x-sm-conversation-id': 'conversation-id'
+    }
+  })
+
+  const result = await streamText({
+    model: infiniteChat("gpt-5"),
+    messages: [...]
+  })
+  ```
+
+  ```typescript Anthropic
+  const infiniteChat = createAnthropic({
+    baseUrl: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+    apiKey: 'your-provider-api-key',
+    headers: {
+      'x-supermemory-api-key': 'supermemory-api-key',
+      'x-sm-conversation-id': 'conversation-id'
+    }
+  })
+
+  const result = await streamText({
+    model: infiniteChat("claude-3-sonnet"),
+    messages: [...]
+  })
+  ```
+
+  ```typescript Google
+  const infiniteChat = createGoogleGenerativeAI({
+    baseUrl: 'https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta',
+    apiKey: 'your-provider-api-key',
+    headers: {
+      'x-supermemory-api-key': 'supermemory-api-key',
+      'x-sm-conversation-id': 'conversation-id'
+    }
+  })
+
+  const result = await streamText({
+    model: infiniteChat("gemini-pro"),
+    messages: [...]
+  })
+  ```
+
+  ```typescript Groq
+  const infiniteChat = createGroq({
+    baseUrl: 'https://api.supermemory.ai/v3/https://api.groq.com/v1',
+    apiKey: 'your-provider-api-key',
+    headers: {
+      'x-supermemory-api-key': 'supermemory-api-key',
+      'x-sm-conversation-id': 'conversation-id'
+    }
+  })
+
+  const result = await streamText({
+    model: infiniteChat("mixtral-8x7b"),
+    messages: [...]
+  })
+  ```
+</CodeGroup>
+
+<div id="custom-provider-url">
+  ### 自定义 provider 的 URL
+</div>
+
+```typescript
+const infiniteChat = createOpenAI({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+```
+
+<div id="example-usage">
+  ## 使用示例
+</div>
+
+```typescript
+import { streamText } from "ai"
+
+const infiniteChat = createOpenAI({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+
+const result = await streamText({
+  model: infiniteChat("gpt-5"),
+  messages: [
+    { role: "user", content: "我们昨天讨论了什么？" }
+  ]
+})
+
+return result.toAIStreamResponse()
+```
+
+<div id="configuration-options">
+  ## 配置选项
+</div>
+
+```typescript
+interface ConfigWithProviderName {
+  providerName: 'openai' | 'anthropic' | 'openrouter' |
+                'deepinfra' | 'groq' | 'google' | 'cloudflare'
+  providerApiKey: string
+  headers?: Record<string, string>
+}
+
+interface ConfigWithProviderUrl {
+  providerUrl: string
+  providerApiKey: string
+  headers?: Record<string, string>
+}
+```
+
+<div id="custom-headers">
+  ### 自定义请求头
+</div>
+
+添加用户 ID、会话 ID或其他 Metadata：
+
+```typescript
+const infiniteChat = createOpenAI({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+```
+
+<div id="comparison-with-memory-tools">
+  ## 与 Memory Tools 的比较
+</div>
+
+| 功能 | Infinite Chat | Memory Tools |
+|---------|--------------|--------------|
+| memory 管理 | 自动 | 手动 |
+| 上下文处理 | 自动 | 手动 |
+| 工具调用 | 无 | searchMemories, addMemory, fetchMemory |
+| 最适用对象 | 聊天应用 | AI 代理 |
+| 配置复杂度 | 简单 | 中等 |
+
+<div id="headers">
+  ## 标头
+</div>
+
+添加用户与会话上下文：
+
+```typescript
+const infiniteChat = createOpenAI({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+```
+
+<div id="comparison">
+  ## 比较
+</div>
+
+| 功能 | Infinite Chat | Memory Tools |
+|---------|--------------|-------------|
+| memory 管理 | 自动 | 手动 |
+| 上下文处理 | 自动 | 手动 |
+| 工具调用 | 无 | searchMemories, addMemory, fetchMemory |
+| 最适用场景 | 聊天应用 | AI 代理 |
+
+<div id="next-steps">
+  ## 后续步骤
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Memory Tools" icon="wrench" href="/zh/ai-sdk/memory-tools">
+    探索对 memory 的显式控制
+  </Card>
+
+  <Card title="Examples" icon="code" href="/zh/cookbook/ai-sdk-integration">
+    查看完整实现示例
+  </Card>
+</CardGroup>

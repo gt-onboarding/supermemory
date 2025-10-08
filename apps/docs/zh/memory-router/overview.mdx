@@ -1,0 +1,191 @@
+---
+title: "概览"
+description: "将任意 LLM 转化为具备无限上下文与持久 memory 的智能代理"
+sidebarTitle: "概览"
+---
+
+Memory Router 是一个位于你的应用与 LLM provider 之间的透明代理，无需更改任何代码即可自动管理上下文与记忆存储。
+
+<Note>
+  **在线演示**：在 [supermemory.chat](https://supermemory.chat) 试用 Memory Router，了解其实际效果。
+</Note>
+
+<Tip>
+  **在用 Vercel AI SDK 吗？** 查看我们的 [AI SDK 集成](/zh/ai-sdk/overview)，通过 `@supermemory/tools/ai-sdk` 获得最简洁的实现——这是我们对新项目的推荐方案。
+</Tip>
+
+<div id="what-is-the-memory-router">
+  ## 什么是 Memory Router？
+</div>
+
+Memory Router 为你的 LLM（大型语言模型）应用带来：
+
+* **无限上下文**：不再受 token 限制——对话可无限延展
+* **自动化 memory 管理**：智能切分 chunk（文档片段）、存储并检索相关上下文
+* **零代码改动**：可与现有的 OpenAI 兼容客户端直接配合使用
+* **成本优化**：通过智能上下文管理，token 成本最高可节省 70%
+
+<div id="how-it-works">
+  ## 工作原理
+</div>
+
+<Steps>
+  <Step title="代理请求">
+    你的应用将请求发送到 Supermemory，而不是直接发送给你的 LLM provider
+  </Step>
+
+  <Step title="上下文管理">
+    Supermemory 会自动：
+
+    * 从冗长对话中去除不必要的上下文
+    * 从先前交互中检索相关的记忆存储
+    * 将最相关的上下文追加到你的提示词
+  </Step>
+
+  <Step title="转发至 LLM">
+    优化后的请求会被转发到你选择的 LLM provider
+  </Step>
+
+  <Step title="异步创建 memory">
+    新的记忆存储将以异步方式创建，不会阻塞响应
+  </Step>
+</Steps>
+
+<div id="key-benefits">
+  ## 主要优势
+</div>
+
+<div id="for-developers">
+  ### 面向开发者
+</div>
+
+* **即插即用集成**：只需更改基础 URL，无需修改其他代码
+* **与 provider 解耦**：可与 OpenAI、Anthropic、Google、Groq 等配合使用
+* **共享 memory 池**：通过 API 创建的记忆存储可供 Router 使用，反之亦然
+* **自动降级**：若 Supermemory 出现故障，请求将直接透传
+
+<div id="for-applications">
+  ### 面向应用
+</div>
+
+* **更长的对话能力**：即使经过成千上万条消息也能保持上下文
+* **响应一致性**：记忆存储确保跨会话的信息一致
+* **智能检索**：只纳入相关上下文，提升回复质量
+* **节省成本**：自动内容分块可显著减少 token 使用量
+
+<div id="when-to-use-the-memory-router">
+  ## 何时使用 Memory Router
+</div>
+
+Memory Router 非常适合：
+
+<Tabs>
+  <Tab title="Perfect For">
+    * **聊天应用**：客户支持、AI 助手、聊天机器人
+    * **长时对话**：会话超出模型上下文窗口
+    * **跨会话 memory**：用户多次回访并延续对话
+    * **快速原型**：无需自建基础设施即可具备 memory 能力
+  </Tab>
+
+  <Tab title="Consider API Instead">
+    * **自定义检索逻辑**：需要精细控制要获取的 memory
+    * **非对话式场景**：文档处理、分析工具
+    * **复杂过滤**：需要高级 Metadata 过滤
+    * **批量操作**：一次处理多个 Documents
+  </Tab>
+</Tabs>
+
+<div id="supported-providers">
+  ## 支持的 provider
+</div>
+
+Memory Router 适用于所有与 OpenAI 兼容的端点：
+
+| Provider | Base URL | 状态 |
+|----------|----------|---------|
+| OpenAI | `api.openai.com/v1` | ✅ 完全支持 |
+| Anthropic | `api.anthropic.com/v1` | ✅ 完全支持 |
+| Google Gemini | `generativelanguage.googleapis.com/v1beta/openai` | ✅ 完全支持 |
+| Groq | `api.groq.com/openai/v1` | ✅ 完全支持 |
+| DeepInfra | `api.deepinfra.com/v1/openai` | ✅ 完全支持 |
+| OpenRouter | `openrouter.ai/api/v1` | ✅ 完全支持 |
+| Custom | 任何与 OpenAI 兼容的端点 | ✅ 已支持 |
+
+<Warning>
+  **尚未支持**：
+
+  * OpenAI Assistants API (`/v1/assistants`)
+</Warning>
+
+<div id="authentication">
+  ## 身份验证
+</div>
+
+Memory Router 需要两个 API 密钥：
+
+1. **Supermemory API Key**：用于 memory 管理
+2. **Provider API Key**：用于你选择的 LLM provider
+
+你可以通过以下方式提供：
+
+* 请求头（生产环境推荐）
+* URL 参数（适合测试）
+* 请求体（为兼容性考虑）
+
+<div id="how-memories-work">
+  ## 记忆存储的工作原理
+</div>
+
+在使用 Memory Router 时：
+
+1. **自动提取**：自动从对话中抽取重要信息
+2. **智能内容分块**：将长消息拆分为语义性的 chunk（文档片段）
+3. **关系构建**：新的 memory 会与既有知识建立关联
+4. **智能检索**：仅将最相关的 memory 注入到上下文中
+
+<Note>
+  当使用相同的 `user_id` 时，Memory Router 与 Memory API 会共享记忆存储，便于你配合使用二者。
+</Note>
+
+<div id="response-headers">
+  ## 响应头
+</div>
+
+Memory Router 会添加用于诊断的响应头，帮助你了解处理情况：
+
+| Header | Description |
+|--------|-------------|
+| `x-supermemory-conversation-id` | 唯一会话标识符 |
+| `x-supermemory-context-modified` | 是否修改了上下文（`true`/`false`） |
+| `x-supermemory-tokens-processed` | 已处理的 token 数 |
+| `x-supermemory-chunks-created` | 新创建的 memory chunk（文档片段）数量 |
+| `x-supermemory-chunks-retrieved` | 添加到上下文的 memory chunk（文档片段）数量 |
+
+<div id="error-handling">
+  ## 错误处理
+</div>
+
+Memory Router 旨在确保可靠性：
+
+* **自动回退**：如果 Supermemory 出现错误，你的请求将被原样透传
+* **错误头**：`x-supermemory-error` 头部会提供错误详情
+* **零停机**：即使 memory 功能不可用，你的应用也能继续运行
+
+<div id="rate-limits-pricing">
+  ## 频率限制与定价
+</div>
+
+<div id="rate-limits">
+  ### 速率限制
+</div>
+
+* 无 Supermemory 专属的速率限制
+* 仅受你的 LLM provider 限制
+
+<div id="pricing">
+  ### 定价
+</div>
+
+* **免费套餐**：可免费存储 100k 个 token
+* **标准方案**：超出免费套餐后为 $20/月
+* **按用量计费**：每次会话包含 20k 个免费 token，之后每百万 token 收费 $1

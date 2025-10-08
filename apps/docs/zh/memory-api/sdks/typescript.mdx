@@ -1,0 +1,437 @@
+---
+title: 'TypeScript SDK'
+sidebarTitle: "TypeScript"
+description: '了解如何在 TypeScript 中使用 supermemory'
+---
+
+<div id="installation">
+  ## 安装
+</div>
+
+```sh
+npm install supermemory
+```
+
+
+<div id="usage">
+  ## 使用方法
+</div>
+
+```js
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // 这是默认值，可以省略
+});
+
+async function main() {
+  const response = await client.search.execute({ q: 'documents related to python' });
+
+  console.debug(response.results);
+}
+
+main();
+```
+
+
+<div id="request-response-types">
+  ### 请求与响应类型
+</div>
+
+该库为所有请求参数和响应字段提供了 TypeScript 类型定义。你可以按以下方式导入并使用它们：
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // 这是默认设置，可省略
+});
+
+async function main() {
+  const params: supermemory.MemoryAddParams = {
+    content: '这是一篇详细讲解机器学习概念的文章……',
+  };
+  const response: supermemory.MemoryAddResponse = await client.memories.add(params);
+}
+
+main();
+```
+
+每个方法、请求参数和响应字段的文档都写在 docstring 中，并可在大多数现代编辑器中悬停查看。
+
+
+<div id="file-uploads">
+  ## 文件上传
+</div>
+
+与文件上传对应的请求参数可以以多种形式传递：
+
+* `File`（或具有相同结构的对象）
+* `fetch` 的 `Response`（或具有相同结构的对象）
+* `fs.ReadStream`
+* 我们的 `toFile` 辅助函数的返回值
+
+```ts
+import fs from 'fs';
+import supermemory, { toFile } from 'supermemory';
+
+const client = new supermemory();
+
+// 如果可以使用 Node 的 `fs`，我们建议用 `fs.createReadStream()`：
+await client.memories.uploadFile({ file: fs.createReadStream('/path/to/file') });
+
+// 或者如果可用 Web 的 `File` API，你可以传入一个 `File` 实例：
+await client.memories.uploadFile({ file: new File(['my bytes'], 'file') });
+
+// 你也可以传入 `fetch` 的 `Response`：
+await client.memories.uploadFile({ file: await fetch('https://somesite/file') });
+
+// 最后，如果以上方式都不方便，可以使用我们的 `toFile` 辅助函数：
+await client.memories.uploadFile({ file: await toFile(Buffer.from('my bytes'), 'file') });
+await client.memories.uploadFile({ file: await toFile(new Uint8Array([0, 1, 2]), 'file') });
+```
+
+
+<div id="handling-errors">
+  ## 处理错误
+</div>
+
+当库无法连接到 API，
+或者 API 返回非成功的状态码（即 4xx 或 5xx 响应）时，
+将会抛出 `APIError` 的子类：
+
+```ts
+async function main() {
+  const response = await client.memories
+    .add({ content: '这是一篇关于机器学习概念的详细文章...' })
+    .catch(async (err) => {
+      if (err instanceof supermemory.APIError) {
+        console.debug(err.status); // 400
+        console.debug(err.name); // BadRequestError
+        console.debug(err.headers); // {server: 'nginx', ...}
+      } else {
+        throw err;
+      }
+    });
+}
+
+main();
+```
+
+错误代码如下：
+
+| 状态码 | 错误类型                     |
+| ------ | ---------------------------- |
+| 400    | `BadRequestError`            |
+| 401    | `AuthenticationError`        |
+| 403    | `PermissionDeniedError`      |
+| 404    | `NotFoundError`              |
+| 422    | `UnprocessableEntityError`   |
+| 429    | `RateLimitError`             |
+| &gt;=500 | `InternalServerError`        |
+| N/A    | `APIConnectionError`         |
+
+
+<div id="retries">
+  ### 重试
+</div>
+
+默认情况下，某些错误会自动重试 2 次，并采用短暂的指数退避策略。
+连接错误（例如网络连接问题）、408 Request Timeout、409 Conflict、
+429 Rate Limit，以及 &gt;=500 的内部错误都将默认重试。
+
+你可以使用 `maxRetries` 选项进行配置或禁用：
+
+```js
+// 为所有请求配置默认值：
+const client = new supermemory({
+  maxRetries: 0, // 默认值是 2
+});
+
+// 或者，按请求配置：
+await client.memories.add({ content: '这是一篇关于机器学习概念的详细文章...' }, {
+  maxRetries: 5,
+});
+```
+
+
+<div id="timeouts">
+  ### 超时
+</div>
+
+请求默认在 1 分钟后超时。你可以通过 `timeout` 选项进行配置：
+
+```ts
+// 为所有请求配置默认值：
+const client = new supermemory({
+  timeout: 20 * 1000, // 20 秒（默认为 1 分钟）
+});
+
+// 按请求覆盖：
+await client.memories.add({ content: '这是一篇关于机器学习概念的详细文章...' }, {
+  timeout: 5 * 1000,
+});
+```
+
+发生超时时将抛出 `APIConnectionTimeoutError`。
+
+请注意，超时的请求[默认会重试两次](#retries)。
+
+
+<div id="advanced-usage">
+  ## 进阶用法
+</div>
+
+<div id="accessing-raw-response-data-eg-headers">
+  ### 访问原始 Response 数据（例如 headers）
+</div>
+
+可以通过所有方法返回的 `APIPromise` 类型上的 `.asResponse()` 方法，访问由 `fetch()` 返回的“原始” `Response`。
+该方法会在成功响应的 headers 接收后立即返回，且不会消耗响应体，因此你可以自由编写自定义的解析或流式处理逻辑。
+
+你也可以使用 `.withResponse()` 方法同时获取原始 `Response` 和解析后的数据。
+与 `.asResponse()` 不同，该方法会消耗响应体，并在完成解析后返回。
+
+```ts
+const client = new supermemory();
+
+const response = await client.memories
+  .add({ content: '这是一篇关于机器学习概念的详细文章...' })
+  .asResponse();
+console.debug(response.headers.get('X-My-Header'));
+console.debug(response.statusText); // 访问底层 Response 对象
+
+const { data: response, response: raw } = await client.memories
+  .add({ content: '这是一篇关于机器学习概念的详细文章...' })
+  .withResponse();
+console.debug(raw.headers.get('X-My-Header'));
+console.debug(response.id);
+```
+
+
+<div id="logging">
+  ### 日志
+</div>
+
+<Warning>
+所有日志消息仅供调试使用。日志消息的格式和内容可能会在不同版本之间发生变化。
+</Warning>
+
+<div id="log-levels">
+  #### 日志级别
+</div>
+
+日志级别可以通过两种方式进行配置：
+
+1. 通过 `SUPERMEMORY_LOG` 环境变量
+2. 使用 `logLevel` 客户端选项（如已设置，则会覆盖环境变量）
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  logLevel: 'debug', // 显示所有日志记录
+});
+```
+
+可用的日志级别，从最详细到最简略：
+
+* `'debug'` - 显示调试、信息、警告和错误
+* `'info'` - 显示信息、警告和错误
+* `'warn'` - 显示警告和错误（默认）
+* `'error'` - 仅显示错误
+* `'off'` - 关闭所有日志
+
+在 `'debug'` 级别，会记录所有 HTTP 请求和响应，包括头部和主体。
+部分与认证相关的头部会被打码处理，但请求和响应主体中的敏感数据
+可能仍然可见。
+
+
+<div id="custom-logger">
+  #### 自定义日志记录器
+</div>
+
+默认情况下，本库将日志输出到 `globalThis.console`。你也可以提供自定义日志记录器。
+大多数日志库都受支持，包括 [pino](https://www.npmjs.com/package/pino)、[winston](https://www.npmjs.com/package/winston)、[bunyan](https://www.npmjs.com/package/bunyan)、[consola](https://www.npmjs.com/package/consola)、[signale](https://www.npmjs.com/package/signale) 和 [@std/log](https://jsr.io/@std/log)。如果你的日志记录器无法正常工作，请提交 issue。
+
+使用自定义日志记录器时，`logLevel` 选项仍然控制哪些消息会被输出；低于配置级别的消息将不会发送到你的日志记录器。
+
+```ts
+import supermemory from 'supermemory';
+import pino from 'pino';
+
+const logger = pino();
+
+const client = new supermemory({
+  logger: logger.child({ name: 'supermemory' }),
+  logLevel: 'debug', // 将所有消息发送到 pino，由其进行过滤
+});
+```
+
+
+<div id="making-customundocumented-requests">
+  ### 发起自定义/未文档化的请求
+</div>
+
+该库已进行了类型定义，便于访问文档中的 API。若需要访问未文档化的端点、参数或响应属性，仍可使用该库。
+
+<div id="undocumented-endpoints">
+  #### 未文档化的端点
+</div>
+
+要向未文档化的端点发起请求，可以使用 `client.get`、`client.post` 以及其他 HTTP 动词。
+在这些请求中，会遵循客户端上的选项（例如重试）。
+
+```ts
+await client.post('/some/path', {
+  body: { some_prop: 'foo' },
+  query: { some_query_arg: 'bar' },
+});
+```
+
+
+<div id="undocumented-request-params">
+  #### 未文档化的请求参数
+</div>
+
+如果要使用未文档化的参数发起请求，你可以在该未文档化的参数上使用 `// @ts-expect-error`。该库在运行时不会验证请求是否与类型匹配，因此你发送的任何额外值都会原样传递。
+
+```ts
+client.foo.create({
+  foo: 'my_param',
+  bar: 12,
+  // @ts-expect-error baz is not yet public
+  baz: '未文档化的选项',
+});
+```
+
+对于使用 `GET` 方法的请求，任何额外参数都会放在查询字符串中；其他请求会将额外参数放在请求体中。
+
+如果你想显式地传递额外参数，可以使用 `query`、`body` 和 `headers` 这三个请求选项。
+
+
+<div id="undocumented-response-properties">
+  #### 未公开记录的响应属性
+</div>
+
+要访问未公开记录的响应属性，你可以在响应对象上使用 `// @ts-expect-error` 后再访问，或者将该响应对象断言（cast）为所需类型。与请求参数类似，我们不会对来自 API 的响应进行验证，也不会剔除多余的属性。
+
+<div id="customizing-the-fetch-client">
+  ### 自定义 fetch 客户端
+</div>
+
+默认情况下，该库假定已定义全局 `fetch` 函数。
+
+如果你想使用不同的 `fetch` 实现，可以通过为全局进行 polyfill 来实现：
+
+```ts
+import fetch from 'my-fetch';
+
+globalThis.fetch = fetch;
+```
+
+或者将它传给客户端：
+
+```ts
+import supermemory from 'supermemory';
+import fetch from 'my-fetch';
+
+const client = new supermemory({ fetch });
+```
+
+
+<div id="fetch-options">
+  ### Fetch options
+</div>
+
+如果你想在不重写 `fetch` 函数的情况下设置自定义 `fetch` 选项，可以在实例化客户端或发起请求时传入一个 `fetchOptions` 对象。（请求级选项会覆盖客户端级选项。）
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  fetchOptions: {
+    // `RequestInit` 配置
+  },
+});
+```
+
+
+<div id="configuring-proxies">
+  #### 配置代理
+</div>
+
+要调整代理行为，你可以提供自定义的 `fetchOptions`，在请求中添加特定于运行时的代理选项：
+
+```ts
+import supermemory from 'supermemory';
+import * as undici from 'undici';
+
+const proxyAgent = new undici.ProxyAgent('http://localhost:8888');
+const client = new supermemory({
+  fetchOptions: {
+    dispatcher: proxyAgent,
+  },
+});
+```
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  fetchOptions: {
+    proxy: 'http://localhost:8888',
+  },
+});
+```
+
+```ts
+import supermemory from 'npm:supermemory';
+
+const httpClient = Deno.createHttpClient({ proxy: { url: 'http://localhost:8888' } });
+const client = new supermemory({
+  fetchOptions: {
+    client: httpClient,
+  },
+});
+```
+
+
+<div id="frequently-asked-questions">
+  ## 常见问题解答
+</div>
+
+<div id="semantic-versioning">
+  ## 语义化版本控制
+</div>
+
+此软件包通常遵循 [SemVer](https://semver.org/spec/v2.0.0.html) 规范，但某些向后不兼容的更改可能会以次要版本发布：
+
+1. 仅影响静态类型、不改变运行时行为的更改。
+2. 针对库的内部实现所做的更改，这些接口在技术上虽为公开，但并非为外部使用而设计或文档化。（如果你依赖了此类内部实现，请在 GitHub 提交 issue 告诉我们。）
+3. 我们预计在实际使用中不会影响绝大多数用户的更改。
+
+我们高度重视向后兼容性，并努力确保你能够顺畅完成升级。
+
+我们期待你的反馈；如有问题、漏洞或建议，请提交 [issue](https://www.github.com/supermemoryai/sdk-ts/issues)。
+
+<div id="requirements">
+  ## 系统要求
+</div>
+
+支持 TypeScript >= 4.9。
+
+支持以下运行时：
+
+- Web 浏览器（最新的 Chrome、Firefox、Safari、Edge 等）
+- Node.js 20 LTS 或更高（[未到 EOL](https://endoflife.date/nodejs)）的版本。
+- Deno v1.28.0 或更高。
+- Bun 1.0 或更高。
+- Cloudflare Workers。
+- Vercel Edge Runtime。
+- 使用 `"node"` 环境的 Jest 28 或更高版本（当前不支持 `"jsdom"`）。
+- Nitro v2.6 或更高。
+
+注意：目前不支持 React Native。
+
+如需其他运行时环境，请在 GitHub 上创建或给相关 issue 点赞。

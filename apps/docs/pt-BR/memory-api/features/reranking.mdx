@@ -1,0 +1,48 @@
+---
+title: "Reranking"
+description: "Resultados de busca com Reranking no supermemory"
+icon: "chart-bar-increasing"
+---
+
+Reranking é um recurso que permite reordenar os resultados de busca com base na consulta.
+
+![Reranking](/images/rerank.png)
+
+<div id="usage">
+  ### Uso
+</div>
+
+No supermemory, você pode habilitar a reescrita de respostas definindo o parâmetro `rerank` como `true` na API de busca.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search?q=What+is+the+capital+of+France?&rerank=true \
+  --request GET \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rerank: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rerank=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### Observações e limitações
+</div>
+
+- Atualmente usamos o modelo `bge-reranker-base` para reranking.
+- Não há custos adicionais associados ao reranking.
+- Embora o reranking melhore bastante a qualidade, ele também **acarreta latência adicional**.
+- Todos os outros recursos, como filtragem, busca híbrida, viés de recência etc., também funcionam com resultados reranqueados.

@@ -1,0 +1,54 @@
+---
+title: "Reescrita de Consulta"
+description: "Reescrita de Consulta no supermemory"
+icon: "blend"
+---
+
+A Reescrita de Consulta é um recurso que reformula consultas para torná-las mais precisas.
+
+![Reescrita de Consulta](/images/query-rewriting.png)
+
+<div id="usage">
+  ### Uso
+</div>
+
+No Supermemory, você pode ativar a Reescrita de Consulta definindo o parâmetro `rewriteQuery` como `true` na API de busca.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --header 'Content-Type: application/json' \
+  -d '{
+    "q": "What is the capital of France?",
+    "rewriteQuery": true
+  }'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rewriteQuery: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rewriteQuery=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### Notas e limitações
+</div>
+
+- supermemory gera várias reescritas e executa a busca por todas elas.
+- Os resultados são então combinados e retornados a você.
+- Não há custos adicionais associados à Reescrita de Consulta.
+- Embora a Reescrita de Consulta melhore bastante a qualidade, ela também **acarreta Latency adicional**.
+- Todos os demais recursos, como filtragem, busca híbrida, viés de recência etc., também funcionam com resultados reescritos.

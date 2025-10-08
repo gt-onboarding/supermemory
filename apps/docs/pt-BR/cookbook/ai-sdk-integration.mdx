@@ -1,0 +1,440 @@
+---
+title: "Integração com o AI SDK"
+description: "Exemplos completos de como usar o Supermemory com o Vercel AI SDK para criar aplicações inteligentes"
+---
+
+Esta página apresenta exemplos abrangentes de uso do Supermemory com o Vercel AI SDK, cobrindo tanto a abordagem com Memory Tools quanto com Infinite Chat.
+
+<div id="personal-assistant-with-memory-tools">
+  ## Assistente pessoal com Memory Tools
+</div>
+
+Crie um assistente de IA que se lembra das preferências do usuário e das interações anteriores:
+
+<CodeGroup>
+  ```typescript Next.js API Route
+  import { streamText } from 'ai'
+  import { createAnthropic } from '@ai-sdk/anthropic'
+  import { supermemoryTools } from '@supermemory/tools/ai-sdk'
+
+  const anthropic = createAnthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY!
+  })
+
+  export async function POST(request: Request) {
+    const { messages } = await request.json()
+
+    const result = await streamText({
+      model: anthropic('claude-3-sonnet-20240229'),
+      messages,
+      tools: supermemoryTools(process.env.SUPERMEMORY_API_KEY!),
+      system: `You are a helpful personal assistant. When users share information about themselves,
+      remember it using the addMemory tool. When they ask questions, search your memories to provide
+      personalized responses. Always be proactive about remembering important details.`
+    })
+
+    return result.toAIStreamResponse()
+  }
+  ```
+
+  ```typescript Client Component
+  'use client'
+
+  import { useChat } from 'ai/react'
+
+  export default function PersonalAssistant() {
+    const { messages, input, handleInputChange, handleSubmit } = useChat()
+
+    return (
+      <div className="flex flex-col h-screen max-w-2xl mx-auto p-4">
+        <div className="flex-1 overflow-y-auto space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`p-4 rounded-lg ${
+                message.role === 'user' ? 'bg-blue-100 ml-auto' : 'bg-gray-100'
+              }`}
+            >
+              <p>{message.content}</p>
+            </div>
+          ))}
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4">
+          <input
+            value={input}
+            onChange={handleInputChange}
+            placeholder="Fale sobre você ou faça qualquer pergunta..."
+            className="w-full p-2 border rounded"
+          />
+        </form>
+      </div>
+    )
+  }
+  ```
+</CodeGroup>
+
+**Exemplo de conversa:**
+
+* Usuário: &quot;Sou alérgico a amendoim e adoro comida italiana&quot;
+* IA: *Usa a ferramenta addMemory* &quot;Memorizei que você é alérgico a amendoim e adora comida italiana!&quot;
+* Usuário: &quot;Sugira um restaurante para o jantar&quot;
+* IA: *Usa a ferramenta searchMemories* &quot;Com base no que sei sobre você, eu recomendaria um restaurante italiano sem amendoim...&quot;
+
+<div id="customer-support-with-context">
+  ## Suporte ao cliente com contexto
+</div>
+
+Crie um sistema de suporte que lembre o histórico do cliente:
+
+```typescript
+import { streamText } from 'ai'
+import { createOpenAI } from '@ai-sdk/openai'
+import { supermemoryTools } from '@supermemory/tools/ai-sdk'
+
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY!
+})
+
+export async function POST(request: Request) {
+  const { messages, customerId } = await request.json()
+
+  const result = await streamText({
+    model: openai('gpt-5'),
+    messages,
+    tools: supermemoryTools(process.env.SUPERMEMORY_API_KEY!, {
+      containerTags: [customerId]
+    }),
+    system: `Você é um agente de atendimento ao cliente. Antes de responder a qualquer pergunta:
+    1. Busque pelas interações e problemas anteriores do cliente
+    2. Lembre-se de qualquer nova informação compartilhada nesta conversa
+    3. Forneça ajuda personalizada com base no histórico do cliente
+    4. Sempre seja empático e focado em soluções`
+  })
+
+  return result.toAIStreamResponse()
+}
+```
+
+<div id="infinite-chat-for-documentation">
+  ## Infinite Chat para Documentação
+</div>
+
+Crie um assistente de documentação com contexto ilimitado:
+
+<CodeGroup>
+  ```typescript Documentation Chat
+  import { streamText } from 'ai'
+
+  const infiniteChat = createOpenAI({
+    baseUrl: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+    apiKey: 'your-provider-api-key',
+    headers: {
+      'x-supermemory-api-key': 'supermemory-api-key',
+      'x-sm-conversation-id': 'conversation-id'
+    }
+  })
+
+  export async function POST(request: Request) {
+    const { messages } = await request.json()
+
+    const result = await streamText({
+      model: infiniteChat('gpt-5'),
+      messages,
+      system: `Você é um assistente de documentação. Você tem acesso a todas as
+      conversas anteriores e pode se referir a discussões passadas. Ajude os usuários a entender
+      a documentação aproveitando o contexto prévio.`
+    })
+
+    return result.toAIStreamResponse()
+  }
+  ```
+
+  ```typescript Upload Documentation
+  // Endpoint separado para enviar documentação para a memory
+  import { addMemory } from '@supermemory/tools'
+
+  export async function POST(request: Request) {
+    const { content, title, url } = await request.json()
+
+    const memory = await addMemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!,
+      content,
+      title,
+      url,
+      headers: {
+        'x-sm-conversation-id': 'documentation'
+      }
+    })
+
+    return Response.json({ success: true, memory })
+  }
+  ```
+</CodeGroup>
+
+<div id="multi-user-learning-assistant">
+  ## Assistente de Aprendizado Multiusuário
+</div>
+
+Crie um assistente que aprende com vários usuários, mas mantém os dados separados:
+
+```typescript
+import { streamText } from 'ai'
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { supermemoryTools } from '@supermemory/tools/ai-sdk'
+
+const anthropic = createAnthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!
+})
+
+export async function POST(request: Request) {
+  const { messages, userId, courseId } = await request.json()
+
+  const result = await streamText({
+    model: anthropic('claude-3-haiku-20240307'),
+    messages,
+    tools: supermemoryTools(process.env.SUPERMEMORY_API_KEY!, {
+      containerTags: [userId]
+    }),
+    system: `Você é um assistente de aprendizagem. Ajude os estudantes com seus trabalhos acadêmicos:
+    1. Lembrando do progresso de aprendizagem e dificuldades deles
+    2. Buscando informações relevantes de suas sessões anteriores
+    3. Fornecendo explicações personalizadas baseadas no estilo de aprendizagem deles
+    4. Acompanhando tópicos que eles dominaram versus tópicos que precisam de mais ajuda`
+  })
+
+  return result.toAIStreamResponse()
+}
+```
+
+<div id="research-assistant-with-file-processing">
+  ## Assistente de pesquisa com processamento de arquivos
+</div>
+
+Combine upload de arquivos com as Memory Tools para assistência em pesquisa:
+
+<CodeGroup>
+  ```typescript API Route
+  import { streamText } from 'ai'
+  import { createOpenAI } from '@ai-sdk/openai'
+  import { supermemoryTools } from '@supermemory/tools/ai-sdk'
+
+  const openai = createOpenAI({
+    apiKey: process.env.OPENAI_API_KEY!
+  })
+
+  export async function POST(request: Request) {
+    const { messages, projectId } = await request.json()
+
+    const result = await streamText({
+      model: openai('gpt-5'),
+      messages,
+      tools: supermemoryTools(process.env.SUPERMEMORY_API_KEY!, {
+        containerTags: [projectId]
+      }),
+      system: `You are a research assistant. You can:
+      1. Search through uploaded research papers and documents
+      2. Remember key findings and insights from conversations
+      3. Help synthesize information across multiple sources
+      4. Track research progress and important discoveries`
+    })
+
+    return result.toAIStreamResponse()
+  }
+  ```
+
+  ```typescript File Upload Handler
+  import { addMemory } from '@supermemory/tools'
+
+  export async function POST(request: Request) {
+    const formData = await request.formData()
+    const file = formData.get('file') as File
+    const projectId = formData.get('projectId') as string
+
+    // Fazer upload do arquivo e adicionar à memory
+    const memory = await addMemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!,
+      content: file, // Supermemory faz o processamento do arquivo
+      title: file.name,
+      headers: {
+        'x-sm-conversation-id': projectId
+      }
+    })
+
+    return Response.json({
+      success: true,
+      message: "Documento enviado e processado para pesquisa",
+      memoryId: memory.id
+    })
+  }
+  ```
+</CodeGroup>
+
+<div id="code-assistant-with-project-memory">
+  ## Assistente de Código com memory do Projeto
+</div>
+
+Crie um assistente de programação que se lembre da sua base de código e das suas preferências:
+
+```typescript
+import { streamText } from 'ai'
+import { createAnthropic } from '@ai-sdk/anthropic'
+import {
+  supermemoryTools,
+  searchMemoriesTool,
+  addMemoryTool
+} from '@supermemory/tools/ai-sdk'
+
+const anthropic = createAnthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY!
+})
+
+export async function POST(request: Request) {
+  const { messages, repositoryId } = await request.json()
+
+  const result = await streamText({
+    model: anthropic('claude-3-sonnet-20240229'),
+    messages,
+    tools: {
+      // Use ferramentas individuais para maior controle
+      searchMemories: searchMemoriesTool(process.env.SUPERMEMORY_API_KEY!, {
+        headers: {
+        }
+      }),
+      addMemory: addMemoryTool(process.env.SUPERMEMORY_API_KEY!, {
+        headers: {
+        }
+      }),
+      // Adicione ferramentas personalizadas
+      executeCode: {
+        description: 'Executar código em um ambiente sandbox',
+        parameters: z.object({
+          code: z.string(),
+          language: z.string()
+        }),
+        execute: async ({ code, language }) => {
+          // Sua lógica de execução de código
+          return { result: "Código executado com sucesso" }
+        }
+      }
+    },
+    system: `Você é um assistente de programação com memória. Você pode:
+    1. Lembrar padrões de codificação e preferências de conversas anteriores
+    2. Pesquisar exemplos de código e soluções anteriores
+    3. Acompanhar arquitetura de projeto e decisões de design
+    4. Aprender com sessões de depuração e problemas comuns`
+  })
+
+  return result.toAIStreamResponse()
+}
+```
+
+<div id="advanced-custom-tool-integration">
+  ## Avançado: Integração de ferramentas personalizadas
+</div>
+
+Combine as ferramentas do Supermemory com suas próprias ferramentas personalizadas:
+
+```typescript
+import { streamText } from 'ai'
+import { createOpenAI } from '@ai-sdk/openai'
+import { supermemoryTools } from '@supermemory/tools/ai-sdk'
+import { z } from 'zod'
+
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY!
+})
+
+// Ferramenta personalizada para integração com calendário
+const calendarTool = {
+  description: 'Criar eventos de calendário',
+  parameters: z.object({
+    title: z.string(),
+    date: z.string(),
+    duration: z.number()
+  }),
+  execute: async ({ title, date, duration }) => {
+    // Sua integração com API de calendário
+    return { eventId: "cal_123", message: "Evento criado" }
+  }
+}
+
+export async function POST(request: Request) {
+  const { messages } = await request.json()
+
+  const result = await streamText({
+    model: openai('gpt-5'),
+    messages,
+    tools: {
+      // Incluir ferramentas do Supermemory
+      ...supermemoryTools(process.env.SUPERMEMORY_API_KEY!),
+      // Adicionar ferramentas personalizadas
+      createEvent: calendarTool,
+    },
+    system: `Você é um assistente pessoal que pode lembrar informações e
+    gerenciar calendários. Quando os usuários mencionarem eventos ou compromissos:
+    1. Lembre-se dos detalhes usando addMemory
+    2. Crie eventos de calendário usando createEvent
+    3. Busque por conflitos usando searchMemories`
+  })
+
+  return result.toAIStreamResponse()
+}
+```
+
+<div id="environment-setup">
+  ## Configuração do ambiente
+</div>
+
+Para todos os exemplos, certifique-se de que você tenha estas variáveis de ambiente:
+
+```bash .env.local
+SUPERMEMORY_API_KEY=your_supermemory_key
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
+```
+
+<div id="best-practices">
+  ## Boas práticas
+</div>
+
+<div id="memory-tools">
+  ### Memory Tools
+</div>
+
+* Use conteúdo de memory descritivo para obter melhores resultados de busca
+* Inclua contexto nos prompts do sistema sobre quando usar cada ferramenta
+* Use cabeçalhos de projeto para separar diferentes casos de uso
+* Implemente tratamento de erros para falhas das ferramentas
+
+<div id="infinite-chat">
+  ### Infinite Chat
+</div>
+
+* Use IDs de conversa para manter contextos de chat separados
+* Inclua IDs de usuário para experiências personalizadas
+* Teste com diferentes providers para encontrar a melhor opção para o seu caso de uso
+* Monitore o uso de tokens para otimizar custos
+
+<div id="general-tips">
+  ### Dicas gerais
+</div>
+
+* Comece com exemplos simples e vá adicionando complexidade
+* Use a busca para evitar memórias duplicadas
+* Implemente autenticação adequada para uso em produção
+* Considere aplicar rate limiting em aplicações de alto volume
+
+<div id="next-steps">
+  ## Próximos passos
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Memory API" icon="database" href="/pt-BR/memory-api/overview">
+    Gerenciamento avançado de memories com controle total via API
+  </Card>
+
+  <Card title="Memory Router" icon="route" href="/pt-BR/memory-router/overview">
+    Proxy de fácil integração para aplicativos LLM existentes
+  </Card>
+</CardGroup>

@@ -1,0 +1,75 @@
+---
+title: "设置与使用"
+description: "如何设置和使用 supermemory MCP"
+---
+
+<div id="hosted-setup-recommended">
+  ### 托管部署（推荐）
+</div>
+
+1. **访问** https://mcp.supermemory.ai
+2. **获取** 自动生成的唯一 URL（例如：`https://mcp.supermemory.ai/TN-IKxAcDdHWTJkMhtGLF/sse`）
+3. **在下拉菜单中选择** 你的 MCP 客户端
+4. **复制** 已生成的安装命令
+5. **运行** 命令：`npx install-mcp [YOUR_URL] --client [CLIENT_NAME]`
+
+或者参考下方的客户端配置示例。
+
+<div id="self-hosted-configuration">
+  ### 自托管配置
+</div>
+
+适用于需要完全掌控数据的用户：
+
+1. 访问 https://console.supermemory.ai **获取 API 密钥**
+2. **创建 `.env` 文件**，内容为 `SUPERMEMORY_API_KEY=your_key`
+3. **克隆仓库**：`git clone https://github.com/supermemoryai/supermemory-mcp.git`
+4. **配置 MCP 客户端**，连接到本地服务器实例
+
+<div id="client-configuration-example">
+  ### 客户端配置示例
+</div>
+
+1. 适用于支持 `url` 配置的客户端：
+
+```json
+{
+  "mcpServers": {
+    "supermemory": {
+      "transport": "sse",
+      "url": "https://mcp.supermemory.ai/[USER_ID]/sse"
+    }
+  }
+}
+```
+
+2. 使用 `npx` 调用 `supergateway`：
+
+```json
+{
+    "command": "npx",
+    "args": ["-y", "supergateway", "--sse", "YOUR_URL"]
+}
+```
+
+3. 搭配 `docker` 使用 `supergateway`：
+
+对应的 MCP 命令为：
+
+```json
+{
+  "mcpServers": {
+    "supermachineExampleDocker": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "supercorp/supergateway",
+        "--sse",
+        "YOUR_SUPERMEMORY_URL"
+      ]
+    }
+  }
+}
+```

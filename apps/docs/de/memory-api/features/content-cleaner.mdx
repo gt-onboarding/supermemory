@@ -1,0 +1,114 @@
+---
+title: "Bereinigung und Kategorisierung"
+description: "Zusammenfassungen zur Dokumentbereinigung in supermemory"
+icon: "washing-machine"
+---
+
+supermemory bietet erweiterte Konfigurationsoptionen, um Ihre Inhaltsverarbeitungspipeline anzupassen. Im Kern steht ein KI-gestütztes System, das Ihre Inhalte automatisch analysieren, kategorisieren und filtern kann – basierend auf Ihren spezifischen Anforderungen.
+
+<div id="configuration-schema">
+  ## Konfigurationsschema
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["Feature-Request", "Bug-Report", "positiv", "negativ"],
+  "filterPrompt": "Analysiere die Stimmung des Feedbacks und identifiziere Feature-Requests",
+  "includeItems": ["kritisch", "hohe Priorität"],
+  "excludeItems": ["Spam", "irrelevant"]
+}
+```
+
+
+<div id="core-settings">
+  ## Grundeinstellungen
+</div>
+
+<div id="shouldllmfilter">
+  ### shouldLLMFilter
+</div>
+
+- **Typ**: `boolean`
+- **Erforderlich**: Nein (Standardwert: `false`)
+- **Beschreibung**: Hauptschalter für KI-gestützte Inhaltsanalyse. Muss aktiviert sein, um alle erweiterten Filterfunktionen nutzen zu können.
+
+<div id="categories">
+  ### categories
+</div>
+
+- **Typ**: `string[]`
+- **Beschränkungen**: Jede Kategorie muss 1–50 Zeichen lang sein
+- **Erforderlich**: Nein
+- **Beschreibung**: Definieren Sie benutzerdefinierte Kategorien für die Inhaltsklassifizierung. Wenn angegeben, verwendet die KI nur diese Kategorien. Wenn nicht angegeben, generiert sie automatisch 3–5 relevante Kategorien.
+
+<div id="filterprompt">
+  ### filterPrompt
+</div>
+
+- **Typ**: `string`
+- **Umfang**: 1–750 Zeichen
+- **Erforderlich**: Nein
+- **Beschreibung**: Benutzerdefinierte Anweisungen für die KI, wie Inhalte analysiert und kategorisiert werden sollen. Nutzen Sie dies, um den Kategorisierungsprozess gezielt an Ihre Anforderungen anzupassen.
+
+<div id="includeitems-excludeitems">
+  ### includeItems & excludeItems
+</div>
+
+- **Typ**: `string[]`
+- **Beschränkungen**: Jedes Element muss 1–20 Zeichen lang sein
+- **Erforderlich**: Nein
+- **Beschreibung**: Verfeinern Sie die Inhaltsfilterung, indem Sie Elemente angeben, die während der Verarbeitung ausdrücklich ein- oder ausgeschlossen werden sollen.
+
+<div id="content-processing-pipeline">
+  ## Pipeline zur Inhaltsverarbeitung
+</div>
+
+Wenn Inhalte mit aktiviertem LLM-Filtering aufgenommen werden:
+
+1. **Erstverarbeitung**
+   - Inhalte werden extrahiert und normalisiert
+   - Basis-Metadata (title, Beschreibung) wird erfasst
+
+2. **KI-Analyse**
+   - Inhalte werden anhand deines `filterPrompt` analysiert
+   - Kategorien werden zugewiesen (entweder aus deiner vordefinierten Liste oder automatisch generiert)
+   - Tags werden bewertet und mit einem Relevanzwert versehen
+
+3. **Chunking & Indexierung**
+   - Inhalte werden in semantische Chunks aufgeteilt
+   - Jeder Chunk wird für effiziente Suche eingebettet
+   - Metadata und Klassifizierungen werden gespeichert
+
+<div id="example-use-cases">
+  ## Beispielanwendungen
+</div>
+
+<div id="1-customer-feedback-system">
+  ### 1. Kunden-Feedbacksystem
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["positiv", "negativ", "neutral"],
+  "filterPrompt": "Analysiere die Kund:innenstimmung und identifiziere zentrale Themen",
+}
+```
+
+
+<div id="2-content-moderation">
+  ### 2. Inhaltskontrolle
+</div>
+
+```json
+{
+  "shouldLLMFilter": true,
+  "categories": ["sicher", "prüfbedarf", "markiert"],
+  "filterPrompt": "Identify potentially inappropriate or sensitive content",
+  "excludeItems": ["Spam", "anstößig"],
+  "includeItems": ["von Nutzern erstellt"]
+}
+```
+
+> **Wichtig**: Alle Filterfunktionen (`categories`, `filterPrompt`, `includeItems`, `excludeItems`) setzen voraus, dass `shouldLLMFilter` aktiviert ist. Wenn Sie diese Funktionen ohne aktiviertes `shouldLLMFilter` verwenden, führt das zu einem 400-Fehler.

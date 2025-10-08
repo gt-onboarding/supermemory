@@ -1,0 +1,468 @@
+---
+title: "クエリ リライト"
+description: "自動クエリ拡張とリライトで検索精度を向上"
+---
+
+![query rewriting](/images/query-rewriting.png)
+
+クエリ リライトは、検索クエリの複数のバリエーションを自動生成し、結果の網羅性と精度を高めます。Supermemory は複数のリライトを生成し、それぞれで検索を実行してから、結果を統合し重複を除去します。
+
+<div id="how-query-rewriting-works">
+  ## クエリ リライトの仕組み
+</div>
+
+`rewriteQuery: true` を有効にすると、Supermemory は次を行います:
+
+1. 意図や主要概念を捉えるために**元のクエリを分析**します
+2. **複数のリライトを生成**し、言い換えや同義語を展開します
+3. 元のクエリとリライト済みクエリの双方で**並行して検索を実行**します
+4. すべてのクエリ結果を**統合し、重複を除去**します
+5. 関連度でランク付けした**統合結果を返す**します
+
+この処理により約 400ms のレイテンシーが追加されますが、特に次のケースで結果の品質が大幅に向上します:
+
+- **自然言語の質問**（"How do neural networks learn?"）
+- 複数の意味を持ちうる**曖昧な用語**
+- 複数の概念を含む**複雑なクエリ**
+- 同義語が存在しうる**ドメイン固有の用語**
+
+<div id="basic-query-rewriting">
+  ## 基本的なクエリ リライト
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    // クエリ リライトを無効化
+    const basicResults = await client.search.documents({
+      q: "How do transformers work in AI?",
+      rewriteQuery: false,
+      limit: 5
+    });
+
+    // クエリ リライトを有効化 - 複数のクエリ変種を生成
+    const rewrittenResults = await client.search.documents({
+      q: "How do transformers work in AI?",
+      rewriteQuery: true,
+      limit: 5
+    });
+
+    console.log(`基本検索: ${basicResults.total} 件`);
+    console.log(`リライト検索: ${rewrittenResults.total} 件`);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    # クエリ リライトを無効化
+    basic_results = client.search.documents(
+        q="How do transformers work in AI?",
+        rewrite_query=False,
+        limit=5
+    )
+
+    # クエリ リライトを有効化 - 複数のクエリ変種を生成
+    rewritten_results = client.search.documents(
+        q="How do transformers work in AI?",
+        rewrite_query=True,
+        limit=5
+    )
+
+    print(f"基本検索: {basic_results.total} 件")
+    print(f"リライト検索: {rewritten_results.total} 件")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # クエリ リライトを無効化
+    echo "基本検索:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "How do transformers work in AI?",
+        "rewriteQuery": false,
+        "limit": 5
+      }' | jq '.total'
+
+    # クエリ リライトを有効化
+    echo "リライト検索:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "How do transformers work in AI?",
+        "rewriteQuery": true,
+        "limit": 5
+      }' | jq '.total'
+    ```
+  </Tab>
+</Tabs>
+
+**サンプル出力の比較:**
+
+```json
+// リライトなし: 3件の結果
+{
+  "results": [...],
+  "total": 3,
+  "timing": 120
+}
+
+// リライトあり: 8件の結果（より関連性の高いコンテンツを発見）
+{
+  "results": [...],
+  "total": 8,
+  "timing": 520  // クエリ処理で+400ms
+}
+```
+
+
+<div id="natural-language-questions">
+  ## 自然言語による質問
+</div>
+
+クエリ リライトは、会話調の質問を効果的な検索クエリへ変換するのが得意です:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 自然言語の質問
+    const results = await client.search.documents({
+      q: "What are the best practices for training deep learning models?",
+      rewriteQuery: true,
+      limit: 10
+    });
+
+    // システムは次のようなリライトを生成することがあります:
+    // - "deep learning model training best practices"
+    // - "neural network training optimization techniques"
+    // - "machine learning model training guidelines"
+    // - "deep learning training methodology"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    # 自然言語の質問
+    results = client.search.documents(
+        q="What are the best practices for training deep learning models?",
+        rewrite_query=True,
+        limit=10
+    )
+
+    # システムは次のようなリライトを生成することがあります:
+    # - "deep learning model training best practices"
+    # - "neural network training optimization techniques"
+    # - "machine learning model training guidelines"
+    # - "deep learning training methodology"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "What are the best practices for training deep learning models?",
+        "rewriteQuery": true,
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**サンプル出力:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_123",
+      "title": "ディープラーニング訓練ガイド",
+      "score": 0.92,
+      "chunks": [
+        {
+          "content": "ディープニューラルネットワークの訓練におけるベストプラクティスには、適切な重み初期化、学習率スケジューリング、正則化手法などが含まれます...",
+          "score": 0.89,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_456",
+      "title": "ニューラルネットワーク最適化",
+      "score": 0.87,
+      "chunks": [
+        {
+          "content": "効果的な訓練手法には、過学習を防ぐためのバッチ正規化、ドロップアウト、勾配クリッピングが含まれます...",
+          "score": 0.85,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 12,
+  "timing": 445
+}
+```
+
+
+<div id="technical-term-expansion">
+  ## 技術用語の拡張
+</div>
+
+クエリ リライトは、異なる技術用語でも目的のコンテンツを見つけやすくします:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // 特定の用語を使った元のクエリ
+    const results = await client.search.documents({
+      q: "CNN architecture patterns",
+      rewriteQuery: true,
+      containerTags: ["research"],
+      limit: 8
+    });
+
+    // システムは次の語句を含むように拡張します:
+    // - "convolutional neural network architecture"
+    // - "CNN design patterns"
+    // - "convolutional network structures"
+    // - "CNN architectural components"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    # 特定の用語を使った元のクエリ
+    results = client.search.documents(
+        q="CNN architecture patterns",
+        rewrite_query=True,
+        container_tags=["research"],
+        limit=8
+    )
+
+    # システムは次の語句を含むように拡張します:
+    # - "convolutional neural network architecture"
+    # - "CNN design patterns"
+    # - "convolutional network structures"
+    # - "CNN architectural components"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "CNN architecture patterns",
+        "rewriteQuery": true,
+        "containerTags": ["research"],
+        "limit": 8
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**サンプル出力:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_789",
+      "title": "畳み込みニューラルネットワークアーキテクチャ",
+      "score": 0.94,
+      "chunks": [
+        {
+          "content": "ResNetやDenseNetなどの現代的なCNNアーキテクチャは、勾配消失問題に対処するためにスキップ接続を利用している...",
+          "score": 0.91,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_101",
+      "title": "深層学習設計パターン",
+      "score": 0.88,
+      "chunks": [
+        {
+          "content": "畳み込み層とそれに続くプーリング操作は、CNNアーキテクチャの基本的な構成要素を形成している...",
+          "score": 0.86,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 15,
+  "timing": 478
+}
+```
+
+
+<div id="memory-search-with-query-rewriting">
+  ## クエリ リライトを使ったメモリー検索
+</div>
+
+クエリ リライトはドキュメント検索とメモリー検索の両方で機能します:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // メモリー検索（クエリ リライトを有効化）
+    const memoryResults = await client.search.memories({
+      q: "explain quantum entanglement simply",
+      rewriteQuery: true,
+      containerTag: "physics_notes",
+      limit: 5
+    });
+
+    // 次のようなバリエーションを生成します:
+    // - "quantum entanglement explanation"
+    // - "what is quantum entanglement"
+    // - "quantum entanglement basics"
+    // - "simple quantum entanglement description"
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    # メモリー検索（クエリ リライトを有効化）
+    memory_results = client.search.memories(
+        q="explain quantum entanglement simply",
+        rewrite_query=True,
+        container_tag="physics_notes",
+        limit=5
+    )
+
+    # 次のようなバリエーションを生成します:
+    # - "quantum entanglement explanation"
+    # - "what is quantum entanglement"
+    # - "quantum entanglement basics"
+    # - "simple quantum entanglement description"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "explain quantum entanglement simply",
+        "rewriteQuery": true,
+        "containerTag": "physics_notes",
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**サンプル出力:**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_456",
+      "memory": "量子もつれは、2つの粒子が結びつき、一方を測定すると距離に関係なく瞬時にもう一方に影響を与える現象です。常に表裏反対になる2つの魔法のコインのようなものと考えてください。",
+      "similarity": 0.91,
+      "title": "量子もつれのシンプルな説明",
+      "metadata": {
+        "topic": "quantum-physics",
+        "difficulty": "beginner"
+      }
+    },
+    {
+      "id": "mem_789",
+      "memory": "アインシュタインは量子もつれを「遠隔での不気味な作用」と呼びました。もつれた粒子が広大な距離を越えて瞬時に通信しているように見え、物理学における局所性の理解に挑戦するからです。",
+      "similarity": 0.87,
+      "title": "量子もつれに対するアインシュタインの見解"
+    }
+  ],
+  "total": 7,
+  "timing": 412
+}
+```
+
+
+<div id="complex-multi-concept-queries">
+  ## 複数の概念を含む複合クエリ
+</div>
+
+クエリ リライトは、複数の概念を含むクエリの処理が得意です:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning bias fairness algorithmic discrimination",
+      rewriteQuery: true,
+      filters: {
+        AND: [
+          { key: "category", value: "ethics", negate: false }
+        ]
+      },
+      limit: 10
+    });
+
+    // 焦点を絞ったリライトに分解されます:
+    // - "machine learning bias detection"
+    // - "algorithmic fairness in AI"
+    // - "discrimination in machine learning algorithms"
+    // - "bias mitigation techniques ML"
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning bias fairness algorithmic discrimination",
+        rewrite_query=True,
+        filters={
+            "AND": [
+                {"key": "category", "value": "ethics", "negate": False}
+            ]
+        },
+        limit=10
+    )
+
+    # 焦点を絞ったリライトに分解されます:
+    # - "machine learning bias detection"
+    # - "algorithmic fairness in AI"
+    # - "discrimination in machine learning algorithms"
+    # - "bias mitigation techniques ML"
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning bias fairness algorithmic discrimination",
+        "rewriteQuery": true,
+        "filters": {
+          "AND": [
+            {"key": "category", "value": "ethics", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
