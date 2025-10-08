@@ -1,0 +1,408 @@
+---
+title: "रीरैंकिंग"
+description: "द्वितीयक रैंकिंग एल्गोरिदम से परिणामों की प्रासंगिकता में सुधार करें"
+---
+
+रीरैंकिंग खोज परिणामों की प्रासंगिकता के क्रम को बेहतर बनाने के लिए एक द्वितीयक रैंकिंग एल्गोरिदम लागू करती है। प्रारंभिक खोज के परिणाम आने के बाद, रीरैंकर आपकी क्वेरी और प्रत्येक परिणाम के बीच संबंध का विश्लेषण करता है ताकि बेहतर क्रम प्रस्तुत किया जा सके।
+
+<div id="how-reranking-works">
+  ## रीरैंकिंग कैसे काम करती है
+</div>
+
+Supermemory की रीरैंकिंग प्रक्रिया:
+
+1. **प्रारंभिक खोज** मानक सेमांटिक समानता के आधार पर परिणाम लौटाती है
+2. **रीरैंकर मॉडल** क्वेरी–परिणाम युग्मों का विश्लेषण करता है
+3. **स्कोर** गहन सेमांटिक समझ के आधार पर दोबारा गणना किए जाते हैं
+4. **परिणाम** नए प्रासंगिकता स्कोर के अनुसार पुन: क्रमित किए जाते हैं
+5. **अंतिम परिणाम** वही संरचना बनाए रखते हैं, बस क्रम बेहतर होता है
+
+रीरैंकर खासतौर पर इनमें प्रभावी है:
+
+- **संदर्भ को समझना** और सूक्ष्म संबंधों को पकड़ना
+- **अस्पष्ट क्वेरियों को संभालना** जिनके कई संभावित अर्थ हों
+- **जटिल तकनीकी विषयों के लिए शुद्धता/प्रेसिजन में सुधार करना**
+- **बेहतर रैंकिंग** जब परिणामों के प्रारंभिक स्कोर समान हों
+
+<div id="basic-reranking-comparison">
+  ## बेसिक रीरैंकिंग तुलना
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    // रीरैंकिंग के बिना खोज
+    const standardResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: false,
+      limit: 5
+    });
+
+    // रीरैंकिंग के साथ खोज
+    const rerankedResults = await client.search.documents({
+      q: "neural network optimization techniques",
+      rerank: true,
+      limit: 5
+    });
+
+    console.log("मानक शीर्ष परिणाम:", standardResults.results[0].score);
+    console.log("रीरैंक किया गया शीर्ष परिणाम:", rerankedResults.results[0].score);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    # रीरैंकिंग के बिना खोज
+    standard_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=False,
+        limit=5
+    )
+
+    # रीरैंकिंग के साथ खोज
+    reranked_results = client.search.documents(
+        q="neural network optimization techniques",
+        rerank=True,
+        limit=5
+    )
+
+    print("मानक शीर्ष परिणाम:", standard_results.results[0].score)
+    print("रीरैंक किया गया शीर्ष परिणाम:", reranked_results.results[0].score)
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # रीरैंकिंग के बिना
+    echo "मानक रैंकिंग:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": false,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+
+    # रीरैंकिंग के साथ
+    echo "रीरैंक किए गए परिणाम:"
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network optimization techniques",
+        "rerank": true,
+        "limit": 3
+      }' | jq '.results[0] | {title, score}'
+    ```
+  </Tab>
+</Tabs>
+
+**नमूना आउटपुट तुलना:**
+
+```json
+// रीरैंकिंग के बिना - परिणाम सिमेंटिक समानता के आधार पर क्रमबद्ध
+{
+  "results": [
+    {
+      "title": "डीप लर्निंग ऑप्टिमाइज़ेशन मेथड्स",
+      "score": 0.82,
+      "chunks": [
+        {
+          "content": "न्यूरल नेटवर्क ट्रेनिंग में Adam, RMSprop, और SGD जैसे विभिन्न ऑप्टिमाइज़ेशन एल्गोरिदम का उपयोग किया जाता है...",
+          "score": 0.79
+        }
+      ]
+    },
+    {
+      "title": "न्यूरल नेटवर्क ट्रेनिंग तकनीकें",
+      "score": 0.81,
+      "chunks": [
+        {
+          "content": "बैच नॉर्मलाइज़ेशन और ड्रॉपआउट न्यूरल नेटवर्क के लिए सामान्य रेगुलराइज़ेशन तकनीकें हैं...",
+          "score": 0.78
+        }
+      ]
+    }
+  ],
+  "timing": 145
+}
+
+// रीरैंकिंग के साथ - परिणाम संदर्भित प्रासंगिकता के आधार पर पुनः क्रमबद्ध
+{
+  "results": [
+    {
+      "title": "न्यूरल नेटवर्क ट्रेनिंग तकनीकें",
+      "score": 0.89,  // रीरैंकर द्वारा बूस्ट किया गया
+      "chunks": [
+        {
+          "content": "बैच नॉर्मलाइज़ेशन और ड्रॉपआउट न्यूरल नेटवर्क के लिए सामान्य रेगुलराइज़ेशन तकनीकें हैं...",
+          "score": 0.85
+        }
+      ]
+    },
+    {
+      "title": "डीप लर्निंग ऑप्टिमाइज़ेशन मेथड्स",
+      "score": 0.86,  // थोड़ा समायोजित
+      "chunks": [
+        {
+          "content": "न्यूरल नेटवर्क ट्रेनिंग में Adam, RMSprop, और SGD जैसे विभिन्न ऑप्टिमाइज़ेशन एल्गोरिदम का उपयोग किया जाता है...",
+          "score": 0.83
+        }
+      ]
+    }
+  ],
+  "timing": 267  // रीरैंकिंग के लिए अतिरिक्त ~120ms
+}
+```
+
+
+<div id="complex-query-reranking">
+  ## जटिल क्वेरी रीरैंकिंग
+</div>
+
+रीरैंकिंग जटिल, बहुआयामी क्वेरियों पर बेहतरीन काम करती है:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "sustainable machine learning carbon footprint energy efficiency",
+      rerank: true,
+      containerTags: ["research", "sustainability"],
+      limit: 8
+    });
+
+    // रीरैंकर इन विषयों के बीच संबंध समझता है:
+    // - मशीन लर्निंग की गणनात्मक लागत
+    // - AI प्रशिक्षण का पर्यावरणीय प्रभाव
+    // - ऊर्जा-कुशल मॉडल आर्किटेक्चर
+    // - ML में ग्रीन कंप्यूटिंग प्रथाएँ
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="sustainable machine learning carbon footprint energy efficiency",
+        rerank=True,
+        container_tags=["research", "sustainability"],
+        limit=8
+    )
+
+    # रीरैंकर इन विषयों के बीच संबंध समझता है:
+    # - मशीन लर्निंग की गणनात्मक लागत
+    # - AI प्रशिक्षण का पर्यावरणीय प्रभाव
+    # - ऊर्जा-कुशल मॉडल आर्किटेक्चर
+    # - ML में ग्रीन कंप्यूटिंग प्रथाएँ
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "sustainable machine learning carbon footprint energy efficiency",
+        "rerank": true,
+        "containerTags": ["research", "sustainability"],
+        "limit": 8
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**नमूना आउटपुट:**
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_green_ai",
+      "title": "Green AI: मशीन लर्निंग के कार्बन फुटप्रिंट को कम करना",
+      "score": 0.94,  // रीरैंकिंग के बाद अत्यधिक प्रासंगिक
+      "chunks": [
+        {
+          "content": "बड़े न्यूरल नेटवर्क्स को प्रशिक्षित करना उनके जीवनकाल में कई कारों जितनी ऊर्जा की खपत कर सकता है। टिकाऊ ML प्रथाएं मॉडल दक्षता, प्रूनिंग, और क्वांटाइज़ेशन पर ध्यान देती हैं ताकि कम्प्यूटेशनल मांगों को कम किया जा सके...",
+          "score": 0.92,
+          "isRelevant": true
+        }
+      ]
+    },
+    {
+      "documentId": "doc_efficient_models",
+      "title": "ऊर्जा-कुशल न्यूरल नेटवर्क आर्किटेक्चर",
+      "score": 0.91,  // मजबूत विषयगत प्रासंगिकता के लिए बढ़ाया गया
+      "chunks": [
+        {
+          "content": "MobileNets और EfficientNets विशेष रूप से ऊर्जा-सीमित वातावरण के लिए डिज़ाइन किए गए हैं, न्यूनतम कम्प्यूटेशनल ओवरहेड के साथ उच्च सटीकता प्राप्त करते हैं...",
+          "score": 0.88,
+          "isRelevant": true
+        }
+      ]
+    }
+  ],
+  "total": 12,
+  "timing": 298
+}
+```
+
+
+<div id="memory-search-reranking">
+  ## मेमोरी सर्च रीरैंकिंग
+</div>
+
+रीरैंकिंग memory सर्च परिणामों में भी सुधार करती है:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const memoryResults = await client.search.memories({
+      q: "explain transformer architecture attention mechanism",
+      rerank: true,
+      containerTag: "ai_notes",
+      threshold: 0.6,
+      limit: 5
+    });
+
+    // Reranker उन संग्रहित मेमोरी की पहचान करता है जो
+    // transformers और attention के बीच संबंध को सबसे अच्छी तरह समझाती हैं
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    memory_results = client.search.memories(
+        q="explain transformer architecture attention mechanism",
+        rerank=True,
+        container_tag="ai_notes",
+        threshold=0.6,
+        limit=5
+    )
+
+    # Reranker उन संग्रहित मेमोरी की पहचान करता है जो
+    # transformers और attention के बीच संबंध को सबसे अच्छी तरह समझाती हैं
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "explain transformer architecture attention mechanism",
+        "rerank": true,
+        "containerTag": "ai_notes",
+        "threshold": 0.6,
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+**नमूना आउटपुट:**
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_transformer_intro",
+      "memory": "ट्रांसफॉर्मर आर्किटेक्चर ने रिकरेंट लेयर्स को सेल्फ-अटेंशन मैकेनिज्म से बदलकर NLP में क्रांति ला दी। अटेंशन मैकेनिज्म मॉडल को प्रत्येक टोकन को प्रोसेस करते समय इनपुट सीक्वेंस के विभिन्न हिस्सों पर फोकस करने की अनुमति देता है, जिससे पैरेलल प्रोसेसिंग और बेहतर लॉन्ग-रेंज डिपेंडेंसी मॉडलिंग संभव होती है।",
+      "similarity": 0.93,  // व्यापक व्याख्या के लिए उच्च पुनः रैंकिंग
+      "title": "ट्रांसफॉर्मर आर्किटेक्चर ओवरव्यू",
+      "metadata": {
+        "topic": "deep-learning",
+        "subtopic": "transformers"
+      }
+    },
+    {
+      "id": "mem_attention_detail",
+      "memory": "सेल्फ-अटेंशन इनपुट एम्बेडिंग से प्राप्त क्वेरी, की, और वैल्यू वेक्टर्स के बीच डॉट प्रोडक्ट लेकर अटेंशन वेट्स की गणना करता है। यह प्रत्येक पोजीशन को पिछली लेयर की सभी पोजीशन्स पर अटेंड करने की अनुमति देता है, जिससे डेटा में जटिल संबंधों को कैप्चर किया जा सकता है।",
+      "similarity": 0.91,  // तकनीकी विवरण के लिए बूस्ट किया गया
+      "title": "सेल्फ-अटेंशन मैकेनिज्म विवरण"
+    }
+  ],
+  "total": 8,
+  "timing": 198
+}
+```
+
+
+<div id="domain-specific-reranking">
+  ## डोमेन-विशिष्ट रीरैंकिंग
+</div>
+
+रीरैंकिंग डोमेन-विशिष्ट संबंधों को समझती है:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // चिकित्सा डोमेन क्वेरी
+    const medicalResults = await client.search.documents({
+      q: "diabetes treatment insulin resistance metformin",
+      rerank: true,
+      filters: {
+        AND: [
+          { key: "domain", value: "medical", negate: false }
+        ]
+      },
+      limit: 10
+    });
+
+    // रीरैंकर चिकित्सा संबंधों को समझता है:
+    // - डायबिटीज के प्रकार और उपचार
+    // - इंसुलिन रेसिस्टेंस के तंत्र
+    // - डायबिटीज प्रबंधन में मेटफॉर्मिन की भूमिका
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # चिकित्सा डोमेन क्वेरी
+    medical_results = client.search.documents(
+        q="diabetes treatment insulin resistance metformin",
+        rerank=True,
+        filters={
+            "AND": [
+                {"key": "domain", "value": "medical", "negate": False}
+            ]
+        },
+        limit=10
+    )
+
+    # रीरैंकर चिकित्सा संबंधों को समझता है:
+    # - डायबिटीज के प्रकार और उपचार
+    # - इंसुलिन रेसिस्टेंस के तंत्र
+    # - डायबिटीज प्रबंधन में मेटफॉर्मिन की भूमिका
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "diabetes treatment insulin resistance metformin",
+        "rerank": true,
+        "filters": {
+          "AND": [
+            {"key": "domain", "value": "medical", "negate": false}
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>

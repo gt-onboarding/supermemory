@@ -1,0 +1,1113 @@
+---
+title: "समूहीकरण और फिल्टरिंग"
+description: "कंटेनर टैग, मेटाडेटा filters, और उन्नत खोज फिल्टरिंग तकनीकें"
+icon: "filter"
+---
+
+Supermemory `/v3/search` और `/v4/search` दोनों endpoints के लिए कंटेनर टैग, मेटाडेटा शर्तें, और उन्नत फिल्टरिंग तकनीकों के माध्यम से खोज परिणामों को फिल्टर करने का समर्थन करता है।
+
+<div id="container-tags">
+  ## कंटेनर टैग्स
+</div>
+
+कंटेनर टैग उपयोगकर्ता, प्रोजेक्ट या संगठन के अनुसार संग्रहीत मेमोरियाँ को समूहित करते हैं। खोज परिणामों को अलग रखने का यह प्राथमिक तरीका है।
+
+**महत्वपूर्ण**: कंटेनर टैग्स **exact array matching** का उपयोग करते हैं। `["technology", "quantum-computing"]` वाला कोई दस्तावेज़ `["technology"]` की खोज से मेल नहीं खाएगा। arrays बिलकुल समान होने चाहिए।
+
+<div id="document-search-v3search">
+  ### दस्तावेज़ खोज (v3/search)
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // एक container tag
+    const results = await client.search.documents({
+      q: "machine learning",
+      containerTags: ["user_123"],
+      limit: 10
+    });
+
+    // कई container tags
+    const results2 = await client.search.documents({
+      q: "project status",
+      containerTags: ["project_ai", "team_research"],
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # एक container tag
+    results = client.search.documents(
+        q="machine learning",
+        container_tags=["user_123"],
+        limit=10
+    )
+
+    # कई container tags
+    results2 = client.search.documents(
+        q="project status",
+        container_tags=["project_ai", "team_research"],
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # एक container tag
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning",
+        "containerTags": ["user_123"],
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="memory-search-v4search">
+  ### मेमोरी खोज (v4/search)
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // नोट: v4/search के लिए "containerTag" एकवचन है
+    const results = await client.search.memories({
+      q: "research findings",
+      containerTag: "user_123",  // एकल स्ट्रिंग, array नहीं
+      limit: 5
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # नोट: v4/search के लिए "container_tag" एकवचन है
+    results = client.search.memories(
+        q="research findings",
+        container_tag="user_123",  # एकल स्ट्रिंग, array नहीं
+        limit=5
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "research findings",
+        "containerTag": "user_123",
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+**Container Tag में अंतर**:
+- `/v3/search` `containerTags` (बहुवचन array) का उपयोग करता है, जिसमें exact array matching होता है
+- `/v4/search` एकल टैग फ़िल्टरिंग के लिए `containerTag` (एकवचन string) का उपयोग करता है
+- Exact matching का मतलब है `["user", "project"]` ≠ `["user"]`
+</Note>
+
+<div id="basic-metadata-filtering">
+  ## बेसिक मेटाडेटा फ़िल्टरिंग
+</div>
+
+सरल शर्तों के साथ मेटाडेटा फ़ील्ड के आधार पर फ़िल्टर करें:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "artificial intelligence",
+      filters: {
+        AND: [
+          {
+            key: "category",
+            value: "technology",
+            negate: false
+          }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="artificial intelligence",
+        filters={
+            "AND": [
+                {
+                    "key": "category",
+                    "value": "technology",
+                    "negate": False
+                }
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "artificial intelligence",
+        "filters": {
+          "AND": [
+            {
+              "key": "category",
+              "value": "technology",
+              "negate": false
+            }
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="numeric-filtering">
+  ## संख्यात्मक फ़िल्टरिंग
+</div>
+
+ऑपरेटर के साथ संख्यात्मक मानों पर फ़िल्टर करें:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "research papers",
+      filters: {
+        AND: [
+          {
+            filterType: "numeric",
+            key: "readingTime",
+            value: "10",
+            numericOperator: "<=",
+            negate: false
+          },
+          {
+            filterType: "numeric",
+            key: "wordCount",
+            value: "1000",
+            numericOperator: ">=",
+            negate: false
+          }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="research papers",
+        filters={
+            "AND": [
+                {
+                    "filterType": "numeric",
+                    "key": "readingTime",
+                    "value": "10",
+                    "numericOperator": "<=",
+                    "negate": False
+                },
+                {
+                    "filterType": "numeric",
+                    "key": "wordCount",
+                    "value": "1000",
+                    "numericOperator": ">=",
+                    "negate": False
+                }
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "research papers",
+        "filters": {
+          "AND": [
+            {
+              "filterType": "numeric",
+              "key": "readingTime",
+              "value": "10",
+              "numericOperator": "<=",
+              "negate": false
+            },
+            {
+              "filterType": "numeric",
+              "key": "wordCount",
+              "value": "1000",
+              "numericOperator": ">=",
+              "negate": false
+            }
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="array-contains-filtering">
+  ## Array Contains फ़िल्टरिंग
+</div>
+
+participants, tags या categories जैसी array मानों के आधार पर फ़िल्टर करें। `array_contains` फ़िल्टर प्रकार जाँचता है कि कोई array फ़ील्ड किसी विशिष्ट मान को शामिल करता है या नहीं।
+
+<div id="basic-array-contains">
+  ### मूलभूत Array Contains
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "meeting notes",
+      filters: {
+        AND: [
+          {
+            key: "participants",
+            value: "john.doe",
+            filterType: "array_contains"
+          }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="meeting notes",
+        filters={
+            "AND": [
+                {
+                    "key": "participants",
+                    "value": "john.doe",
+                    "filterType": "array_contains"
+                }
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "meeting notes",
+        "filters": {
+          "AND": [
+            {
+              "key": "participants",
+              "value": "john.doe",
+              "filterType": "array_contains"
+            }
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="array-contains-with-negation">
+  ### Negation के साथ Array Contains
+</div>
+
+ऐरे में विशिष्ट मान शामिल होने पर उन दस्तावेज़ों को बाहर करें:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "team meetings",
+      filters: {
+        AND: [
+          {
+            key: "participants",
+            value: "john.doe",
+            filterType: "array_contains",
+            negate: true  // john.doe वाली मीटिंग्स को बाहर करें
+          }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="team meetings",
+        filters={
+            "AND": [
+                {
+                    "key": "participants",
+                    "value": "john.doe",
+                    "filterType": "array_contains",
+                    "negate": True  # john.doe वाली मीटिंग्स को बाहर करें
+                }
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "team meetings",
+        "filters": {
+          "AND": [
+            {
+              "key": "participants",
+              "value": "john.doe",
+              "filterType": "array_contains",
+              "negate": true
+            }
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="multiple-array-contains-conditions">
+  ### एक से अधिक Array Contains शर्तें
+</div>
+
+ऐसे दस्तावेज़ खोजें जिनमें कई आवश्यक प्रतिभागी हों:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "project planning",
+      filters: {
+        AND: [
+          {
+            key: "participants",
+            value: "project.manager",
+            filterType: "array_contains"
+          },
+          {
+            key: "participants",
+            value: "lead.developer",
+            filterType: "array_contains"
+          },
+          {
+            key: "tags",
+            value: "urgent",
+            filterType: "array_contains"
+          }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="project planning",
+        filters={
+            "AND": [
+                {
+                    "key": "participants",
+                    "value": "project.manager",
+                    "filterType": "array_contains"
+                },
+                {
+                    "key": "participants",
+                    "value": "lead.developer",
+                    "filterType": "array_contains"
+                },
+                {
+                    "key": "tags",
+                    "value": "urgent",
+                    "filterType": "array_contains"
+                }
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "project planning",
+        "filters": {
+          "AND": [
+            {
+              "key": "participants",
+              "value": "project.manager",
+              "filterType": "array_contains"
+            },
+            {
+              "key": "participants",
+              "value": "lead.developer",
+              "filterType": "array_contains"
+            },
+            {
+              "key": "tags",
+              "value": "urgent",
+              "filterType": "array_contains"
+            }
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="array-contains-with-or-logic">
+  ### OR लॉजिक के साथ Array Contains
+</div>
+
+कई प्रतिभागियों में से किसी भी एक वाले दस्तावेज़ खोजें:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "weekly reports",
+      filters: {
+        OR: [
+          {
+            key: "reviewers",
+            value: "senior.manager",
+            filterType: "array_contains"
+          },
+          {
+            key: "reviewers",
+            value: "department.head",
+            filterType: "array_contains"
+          },
+          {
+            key: "reviewers",
+            value: "project.lead",
+            filterType: "array_contains"
+          }
+        ]
+      },
+      limit: 15
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="weekly reports",
+        filters={
+            "OR": [
+                {
+                    "key": "reviewers",
+                    "value": "senior.manager",
+                    "filterType": "array_contains"
+                },
+                {
+                    "key": "reviewers",
+                    "value": "department.head",
+                    "filterType": "array_contains"
+                },
+                {
+                    "key": "reviewers",
+                    "value": "project.lead",
+                    "filterType": "array_contains"
+                }
+            ]
+        },
+        limit=15
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "weekly reports",
+        "filters": {
+          "OR": [
+            {
+              "key": "reviewers",
+              "value": "senior.manager",
+              "filterType": "array_contains"
+            },
+            {
+              "key": "reviewers",
+              "value": "department.head",
+              "filterType": "array_contains"
+            },
+            {
+              "key": "reviewers",
+              "value": "project.lead",
+              "filterType": "array_contains"
+            }
+          ]
+        },
+        "limit": 15
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="or-conditions">
+  ## OR शर्तें
+</div>
+
+एक से अधिक शर्तों को OR लॉजिक के साथ मिलाएं:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "technology updates",
+      filters: {
+        OR: [
+          {
+            key: "category",
+            value: "ai",
+            negate: false
+          },
+          {
+            key: "category",
+            value: "machine-learning",
+            negate: false
+          },
+          {
+            key: "topic",
+            value: "neural-networks",
+            negate: false
+          }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="technology updates",
+        filters={
+            "OR": [
+                {
+                    "key": "category",
+                    "value": "ai",
+                    "negate": False
+                },
+                {
+                    "key": "category",
+                    "value": "machine-learning",
+                    "negate": False
+                },
+                {
+                    "key": "topic",
+                    "value": "neural-networks",
+                    "negate": False
+                }
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "technology updates",
+        "filters": {
+          "OR": [
+            {
+              "key": "category",
+              "value": "ai",
+              "negate": false
+            },
+            {
+              "key": "category",
+              "value": "machine-learning",
+              "negate": false
+            },
+            {
+              "key": "topic",
+              "value": "neural-networks",
+              "negate": false
+            }
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="complex-nested-conditions">
+  ## जटिल नेस्टेड शर्तें
+</div>
+
+एडवांस्ड फ़िल्टरिंग के लिए AND और OR लॉजिक को मिलाएँ:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "research publications",
+      filters: {
+        AND: [
+          {
+            key: "status",
+            value: "published",
+            negate: false
+          },
+          {
+            OR: [
+              {
+                key: "category",
+                value: "ai",
+                negate: false
+              },
+              {
+                key: "category",
+                value: "machine-learning",
+                negate: false
+              }
+            ]
+          },
+          {
+            filterType: "numeric",
+            key: "year",
+            value: "2023",
+            numericOperator: ">=",
+            negate: false
+          }
+        ]
+      },
+      limit: 15
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="research publications",
+        filters={
+            "AND": [
+                {
+                    "key": "status",
+                    "value": "published",
+                    "negate": False
+                },
+                {
+                    "OR": [
+                        {
+                            "key": "category",
+                            "value": "ai",
+                            "negate": False
+                        },
+                        {
+                            "key": "category",
+                            "value": "machine-learning",
+                            "negate": False
+                        }
+                    ]
+                },
+                {
+                    "filterType": "numeric",
+                    "key": "year",
+                    "value": "2023",
+                    "numericOperator": ">=",
+                    "negate": False
+                }
+            ]
+        },
+        limit=15
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "research publications",
+        "filters": {
+          "AND": [
+            {
+              "key": "status",
+              "value": "published",
+              "negate": false
+            },
+            {
+              "OR": [
+                {
+                  "key": "category",
+                  "value": "ai",
+                  "negate": false
+                },
+                {
+                  "key": "category",
+                  "value": "machine-learning",
+                  "negate": false
+                }
+              ]
+            },
+            {
+              "filterType": "numeric",
+              "key": "year",
+              "value": "2023",
+              "numericOperator": ">=",
+              "negate": false
+            }
+          ]
+        },
+        "limit": 15
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="negation-filters">
+  ## नकार filters
+</div>
+
+नकार का उपयोग करके विशिष्ट मानों को बाहर करें:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "machine learning",
+      filters: {
+        AND: [
+          {
+            key: "category",
+            value: "ai",
+            negate: false
+          },
+          {
+            key: "status",
+            value: "draft",
+            negate: true  // ड्राफ्ट को बाहर करें
+          },
+          {
+            key: "author",
+            value: "deprecated_user",
+            negate: true  // विशिष्ट लेखक को बाहर करें
+          }
+        ]
+      },
+      limit: 10
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="machine learning",
+        filters={
+            "AND": [
+                {
+                    "key": "category",
+                    "value": "ai",
+                    "negate": False
+                },
+                {
+                    "key": "status",
+                    "value": "draft",
+                    "negate": True  # ड्राफ्ट को बाहर करें
+                },
+                {
+                    "key": "author",
+                    "value": "deprecated_user",
+                    "negate": True  # विशिष्ट लेखक को बाहर करें
+                }
+            ]
+        },
+        limit=10
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "machine learning",
+        "filters": {
+          "AND": [
+            {
+              "key": "category",
+              "value": "ai",
+              "negate": false
+            },
+            {
+              "key": "status",
+              "value": "draft",
+              "negate": true
+            },
+            {
+              "key": "author",
+              "value": "deprecated_user",
+              "negate": true
+            }
+          ]
+        },
+        "limit": 10
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="document-specific-search">
+  ## दस्तावेज़-विशिष्ट खोज
+</div>
+
+किसी विशेष दस्तावेज़ के भीतर खोज करें:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    const results = await client.search.documents({
+      q: "neural network architecture",
+      docId: "doc_large_textbook_123",  // केवल इसी दस्तावेज़ में खोज करें
+      limit: 20
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    results = client.search.documents(
+        q="neural network architecture",
+        doc_id="doc_large_textbook_123",  # केवल इसी दस्तावेज़ में खोज करें
+        limit=20
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "neural network architecture",
+        "docId": "doc_large_textbook_123",
+        "limit": 20
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="filter-best-practices">
+  ## फ़िल्टर के सर्वोत्तम तरीके
+</div>
+
+<Callout type="info">
+**प्रदर्शन संबंधित टिप्स**:
+- प्राथमिक फ़िल्टर के रूप में कंटेनर टैग्स का उपयोग करें (सबसे तेज़)
+- अधिक सटीकता के लिए सरल मेटाडेटा filters के साथ संयोजन करें
+- बेहतर प्रदर्शन के लिए जटिल नेस्टेड OR शर्तों से बचें
+- केवल आवश्यक होने पर ही संख्यात्मक ऑपरेटरों का उपयोग करें
+</Callout>
+
+<Warning>
+**फ़िल्टर संरचना**: सभी शर्तों को `AND` या `OR` arrays में लपेटा जाना चाहिए। एक एकल शर्त को भी array रैपर की आवश्यकता होती है: `{"AND": [{"key": "category", "value": "ai"}]}`.
+</Warning>
+
+<Note>
+**समर्थित ऑपरेटर**:
+- **स्ट्रिंग**: केवल सटीक मिलान
+- **संख्यात्मक**: `<=`, `>=`, `<`, `>`, `=`
+- **एरे**: `array_contains` — यह जांचने के लिए कि एरे में मान शामिल है या नहीं
+- **निषेध (Negation)**: सभी filter प्रकारों के साथ काम करता है
+</Note>
+
+<div id="common-filter-patterns">
+  ## सामान्य फ़िल्टर पैटर्न
+</div>
+
+<div id="user-specific-content">
+  ### उपयोगकर्ता-विशेष सामग्री
+</div>
+
+```json
+{
+  "containerTags": ["user_123"],
+  "filters": {
+    "AND": [
+      {"key": "visibility", "value": "private", "negate": false}
+    ]
+  }
+}
+```
+
+
+<div id="recent-high-quality-content">
+  ### हाल की उच्च‑गुणवत्ता वाली सामग्री
+</div>
+
+```json
+{
+  "filters": {
+    "AND": [
+      {
+        "filterType": "numeric",
+        "key": "created_year",
+        "value": "2024",
+        "numericOperator": ">="
+      },
+      {
+        "filterType": "numeric",
+        "key": "quality_score",
+        "value": "7",
+        "numericOperator": ">="
+      }
+    ]
+  }
+}
+```
+
+
+<div id="multi-category-search">
+  ### बहु-श्रेणी खोज
+</div>
+
+```json
+{
+  "filters": {
+    "OR": [
+      {"key": "category", "value": "ai"},
+      {"key": "category", "value": "machine-learning"},
+      {"key": "category", "value": "data-science"}
+    ]
+  }
+}
+```
+
+
+<div id="team-member-participation">
+  ### टीम सदस्यों की भागीदारी
+</div>
+
+```json
+{
+  "filters": {
+    "AND": [
+      {
+        "key": "participants",
+        "value": "team.lead",
+        "filterType": "array_contains"
+      },
+      {
+        "key": "project_tags",
+        "value": "high-priority",
+        "filterType": "array_contains"
+      }
+    ]
+  }
+}
+```
+
+
+<div id="exclude-specific-teams">
+  ### विशेष टीमों को बाहर रखें
+</div>
+
+```json
+{
+  "filters": {
+    "AND": [
+      {
+        "key": "department",
+        "value": "marketing",
+        "filterType": "array_contains",
+        "negate": true
+      },
+      {
+        "key": "confidential_tags",
+        "value": "executive-only",
+        "filterType": "array_contains",
+        "negate": true
+      }
+    ]
+  }
+}
+```
+
+
+<div id="complex-meeting-filter">
+  ### उन्नत मीटिंग फ़िल्टर
+</div>
+
+```json
+{
+  "filters": {
+    "AND": [
+      {
+        "OR": [
+          {
+            "key": "attendees",
+            "value": "सीईओ",
+            "filterType": "array_contains"
+          },
+          {
+            "key": "attendees",
+            "value": "सीटीओ",
+            "filterType": "array_contains"
+          }
+        ]
+      },
+      {
+        "key": "meeting_type",
+        "value": "रद्द",
+        "उलटा करें": true
+      },
+      {
+        "filterType": "numeric",
+        "key": "duration_minutes",
+        "value": "30",
+        "numericOperator": ">="
+      }
+    ]
+  }
+}
+```

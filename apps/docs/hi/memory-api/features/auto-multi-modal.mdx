@@ -1,0 +1,193 @@
+---
+title: "ऑटो मल्टी-मोडल"
+description: "supermemory अपने आप उस दस्तावेज़ की सामग्री का प्रकार पहचानता है जिसे आप जोड़ रहे हैं।"
+icon: "sparkles"
+---
+
+supermemory मूल रूप से मल्टी-मोडल है और आपके जोड़े जा रहे दस्तावेज़ की सामग्री का प्रकार अपने आप पहचान सकता है।
+
+हम URL से सामग्री निकालने के लिए सर्वोत्तम टूल्स का उपयोग करते हैं और उसे उत्तम मेमोरी स्टोरेज के लिए प्रोसेस करते हैं।
+
+<div id="automatic-content-type-detection">
+  ## कंटेंट प्रकार की स्वचालित पहचान
+</div>
+
+supermemory आपके जोड़े गए दस्तावेज़ का कंटेंट प्रकार अपने आप पहचानता है। बस अपना कंटेंट API को भेजें, बाकी supermemory संभाल लेगा।
+
+<Tabs>
+  <Tab title="यह कैसे काम करता है">
+    कंटेंट डिटेक्शन सिस्टम निम्नलिखित का विश्लेषण करता है:
+    - URL पैटर्न और डोमेन
+    - फ़ाइल एक्सटेंशन और MIME प्रकार
+    - कंटेंट संरचना और मेटाडेटा
+    - हेडर और रिस्पॉन्स प्रकार
+  </Tab>
+  <Tab title="सर्वोत्तम प्रथाएँ">
+    <Accordion title="कंटेंट प्रकार के लिए सर्वोत्तम प्रथाएँ" defaultOpen icon="sparkles">
+      1. **टाइप चयन**
+         - साधारण टेक्स्ट के लिए `note` का उपयोग करें
+         - ऑनलाइन कंटेंट के लिए `webpage` का उपयोग करें
+         - जहाँ संभव हो, नैटिव टाइप का उपयोग करें
+
+      2. **URL कंटेंट**
+         - ट्रैकिंग पैरामीटर के बिना साफ URLs भेजें
+         - होमपेज URLs के बजाय आर्टिकल URLs का उपयोग करें
+         - भेजने से पहले URL की उपलब्धता जाँचें
+    </Accordion>
+
+  </Tab>
+</Tabs>
+
+<div id="quick-implementation">
+  ### त्वरित कार्यान्वयन
+</div>
+
+आपको बस कंटेंट को `/documents` endpoint पर भेजना है:
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/documents \
+  --request POST \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  -d '{"content": "https://example.com/article"}'
+```
+
+```typescript
+await client.add.create({
+  content: "https://example.com/article",
+});
+```
+
+```python
+client.add.create(
+    content="https://example.com/article"
+)
+```
+
+</CodeGroup>
+
+<Note>
+  supermemory URLs से कंटेंट निकालने के लिए [Markdowner](https://md.dhr.wtf) का उपयोग करता है।
+</Note>
+
+<div id="supported-content-types">
+  ## समर्थित कंटेंट प्रकार
+</div>
+
+supermemory मेमोरी बनाने में बहुमुखी क्षमता सुनिश्चित करने के लिए कंटेंट फ़ॉर्मैट्स की एक विस्तृत श्रेणी का समर्थन करता है:
+
+<Grid cols={2}>
+  <Card title="Text Content" icon="document-text">
+    - `note`: सादा टेक्स्ट नोट्स और Documents
+    - कच्चे टेक्स्ट कंटेंट को सीधे प्रोसेस करता है
+    - बेहतर रिट्रीवल के लिए कंटेंट को स्वतः चंक करता है
+    - फ़ॉर्मैटिंग और संरचना सुरक्षित रखता है
+  </Card>
+
+  <Card title="Web Content" icon="globe">
+    - `webpage`: वेब पेज (सिर्फ URL दें)
+    - मुख्य कंटेंट को बुद्धिमानी से एक्सट्रैक्ट करता है
+    - महत्वपूर्ण मेटाडेटा (title, description, images) सुरक्षित रखता है
+    - उपलब्ध होने पर OpenGraph मेटाडेटा एक्सट्रैक्ट करता है
+
+    - `tweet`: Twitter कंटेंट
+    - ट्वीट टेक्स्ट, मीडिया और मेटाडेटा कैप्चर करता है
+    - लागू होने पर थ्रेड संरचना सुरक्षित रखता है
+
+  </Card>
+
+  <Card title="Document Types" icon="document">
+    - `pdf`: PDF फ़ाइलें
+    - संरचना बनाए रखते हुए टेक्स्ट कंटेंट एक्सट्रैक्ट करता है
+    - searchable PDFs और स्कैन किए गए Documents दोनों को OCR के साथ संभालता है
+    - पेज ब्रेक्स और फ़ॉर्मैटिंग सुरक्षित रखता है
+
+    - `google_doc`: Google Documents
+    - Google Docs API के साथ सहज एकीकरण
+    - दस्तावेज़ की फ़ॉर्मैटिंग और संरचना बनाए रखता है
+    - स्रोत दस्तावेज़ में बदलाव होने पर स्वतः अपडेट होता है
+
+    - `notion_doc`: Notion पेज
+    - Notion की ब्लॉक संरचना सुरक्षित रखते हुए कंटेंट एक्सट्रैक्ट करता है
+    - रिच टेक्स्ट फ़ॉर्मैटिंग और एम्बेडेड कंटेंट संभालता है
+
+  </Card>
+
+  <Card title="Media Types" icon="photo">
+    - `image`: टेक्स्ट कंटेंट वाली इमेजेज
+    - उन्नत OCR से टेक्स्ट एक्सट्रैक्शन
+    - विज़ुअल कंटेंट विश्लेषण और विवरण
+
+    - `video`: वीडियो कंटेंट
+    - ट्रांसक्रिप्शन और कंटेंट एक्सट्रैक्शन
+    - की-फ़्रेम विश्लेषण
+
+  </Card>
+</Grid>
+
+<div id="processing-pipeline">
+  ## प्रोसेसिंग पाइपलाइन
+</div>
+
+<Steps>
+  <Step title="Content Detection">
+    supermemory दिए गए इनपुट के आधार पर कंटेंट के प्रकार की स्वचालित पहचान करता है।
+  </Step>
+
+<Step title="Content Extraction">
+  प्रकार-विशिष्ट एक्सट्रैक्टर्स कंटेंट को प्रोसेस करते हैं: - प्रत्येक फ़ॉर्मैट के लिए विशेष पार्सिंग - पुनःप्रयास के साथ त्रुटि प्रबंधन - रेट limit प्रबंधन
+</Step>
+
+  <Step title="AI Enhancement">
+    ```typescript
+    interface ProcessedContent {
+      content: string;      // निकाला गया पाठ
+      summary?: string;     // AI-निर्मित सारांश
+      tags?: string[];     // निकाले गए टैग
+      categories?: string[]; // कंटेंट श्रेणियाँ
+    }
+    ```
+  </Step>
+
+  <Step title="Chunking & Indexing">
+    - वाक्य-स्तरीय विभाजन
+    - 2-वाक्य ओवरलैप
+    - संदर्भ संरक्षित रखना
+    - सिमेंटिक संगति
+  </Step>
+</Steps>
+
+<div id="technical-specifications">
+  ## तकनीकी विवरण
+</div>
+
+<div id="size-limits">
+  ### आकार सीमाएँ
+</div>
+
+| सामग्री का प्रकार | अधिकतम आकार |
+| ----------------- | ------------ |
+| टेक्स्ट/नोट       | 1MB          |
+| PDF               | 10MB         |
+| छवि               | 5MB          |
+| वीडियो            | 100MB        |
+| वेब पेज           | N/A          |
+| Google Doc        | N/A          |
+| Notion पेज        | N/A          |
+| ट्वीट             | N/A          |
+
+<div id="processing-time">
+  ### प्रोसेसिंग समय
+</div>
+
+| सामग्री प्रकार | प्रोसेसिंग समय |
+| ------------- | --------------- |
+| टेक्स्ट/नोट   | लगभग तुरंत      |
+| PDF           | 1–5 सेकंड       |
+| छवि          | 2–10 सेकंड      |
+| वीडियो        | 10+ सेकंड       |
+| वेब पेज       | 1–3 सेकंड       |
+| Google Doc    | उपलब्ध नहीं     |
+| Notion पेज    | उपलब्ध नहीं     |
+| ट्वीट         | उपलब्ध नहीं     |

@@ -1,0 +1,108 @@
+---
+title: "मॉडल एन्हांसमेंट के साथ शुरुआत"
+sidebarTitle: "त्वरित प्रारंभ"
+description: "सिर्फ एक लाइन में अपने LLM को सुपरचार्ज करें"
+---
+
+import GettingAPIKey from '/snippets/hi/getting-api-key.mdx';
+
+
+<div id="get-your-supermemory-api-key">
+  ## अपना Supermemory API Key प्राप्त करें
+</div>
+
+<GettingAPIKey />
+
+<div id="get-your-llm-providers-api-key">
+  ## अपने LLM provider की API Key प्राप्त करें
+</div>
+
+अपने LLM provider के डैशबोर्ड पर जाएँ और अपनी API Key लें।
+
+- [OpenAI](https://platform.openai.com/api-keys)
+- [Gemini](https://aistudio.google.com/apikey)
+- [Anthropic](https://console.anthropic.com/account/keys)
+- [Groq](https://console.groq.com/keys)
+
+<div id="choose-your-endpoint">
+  ## अपना endpoint चुनें
+</div>
+
+<CodeGroup>
+
+```bash OpenAI
+https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions
+```
+
+
+```bash Gemini
+https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai
+```
+
+
+```bash Anthropic
+https://api.supermemory.ai/v3/https://api.anthropic.com/v1
+```
+
+
+```bash Groq
+https://api.supermemory.ai/v3/https://api.groq.com/openai/v1
+```
+
+
+```bash Other provider
+https://api.supermemory.ai/v3/<your-provider's-openai-endpoint>
+```
+
+</CodeGroup>
+
+<div id="making-your-first-request">
+  ## अपनी पहली रिक्वेस्ट करना
+</div>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "x-supermemory--api-key: $SUPERMEMORY_API_KEY" \
+  -H 'x-sm-user-id: user_id' \
+  -d '{
+    "model": "gpt-5",
+    "messages": [
+      {"role": "user", "content": "What is the capital of France?"}
+    ]
+  }'
+```
+
+
+```
+```
+
+
+```typescript TypeScript
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+  defaultHeaders: {
+    'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY,
+    'x-sm-user-id': 'your-user-id'
+  }
+});
+
+const completion = await openai.chat.completions.create({
+  model: "gpt-5",
+/// आप यहाँ user भी जोड़ सकते हैं
+  user: "user",
+  messages: [
+    { role: "user", content: "What is the capital of France?" }
+  ]
+});
+
+  console.debug(completion.choices[0].message);
+```
+
+</CodeGroup>

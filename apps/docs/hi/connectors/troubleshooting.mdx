@@ -1,0 +1,220 @@
+---
+title: "कनेक्टर समस्या निवारण"
+description: "Google Drive, Notion और OneDrive कनेक्टर्स से जुड़ी सामान्य समस्याओं का निदान और समाधान"
+---
+
+प्रमाणीकरण, सिंक और अनुमतियों से संबंधित सामान्य कनेक्टर समस्याओं को हल करने के लिए त्वरित मार्गदर्शिका।
+
+<div id="quick-health-check">
+  ## त्वरित हेल्थ चेक
+</div>
+
+जांचें कि आपके कनेक्टर्स सही से काम कर रहे हैं:
+
+<CodeGroup>
+
+```typescript TypeScript
+const connections = await client.connections.list({
+  containerTags: ['user-123']
+});
+
+connections.forEach(conn => {
+  console.log(`${conn.provider}: ${conn.email} - Connected ${conn.createdAt}`);
+});
+
+// अटके हुए documents की जांच करें
+const documents = await client.connections.listDocuments('notion', {
+  containerTags: ['user-123']
+});
+
+const failed = documents.filter(doc => doc.status === 'failed');
+if (failed.length > 0) {
+  console.log(`⚠️ ${failed.length} documents सिंक होने में विफल रहे`);
+}
+```
+
+```python Python
+connections = client.connections.list(container_tags=['user-123'])
+
+for conn in connections:
+    print(f"{conn.provider}: {conn.email} - Connected {conn.created_at}")
+
+# अटके हुए documents की जांच करें
+documents = client.connections.list_documents(
+    'notion',
+    container_tags=['user-123']
+)
+
+failed = [doc for doc in documents if doc.status == 'failed']
+if failed:
+    print(f"⚠️ {len(failed)} documents सिंक होने में विफल रहे")
+```
+
+```bash cURL
+# सभी लिंक्ड खातों की सूची देखें
+curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"]}'
+
+# document status जांचें
+curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"], "source": "notion"}'
+```
+
+</CodeGroup>
+
+<div id="common-issues">
+  ## सामान्य समस्याएं
+</div>
+
+<div id="oauth-callback-fails">
+  ### OAuth Callback विफल
+</div>
+
+**समस्या:** उपयोगकर्ता द्वारा अनुमतियाँ देने के बाद &quot;Invalid redirect URI&quot; त्रुटि
+
+**समाधान:** सुनिश्चित करें कि आपका redirect url आपके OAuth ऐप में कॉन्फ़िगर किए गए redirect url से बिल्कुल मेल खाता हो:
+
+```typescript
+// सही - OAuth ऐप सेटिंग्स के साथ बिल्कुल मैच
+const connection = await client.connections.create('notion', {
+  redirectUrl: 'https://yourapp.com/auth/notion/callback',
+  containerTags: ['user-123']
+});
+
+// गलत - URL मैच नहीं करता
+// redirectUrl: 'https://yourapp.com/callback'
+```
+
+**रोकथाम:**
+
+* प्रोडक्शन url के लिए HTTPS का उपयोग करें
+* अपने OAuth ऐप सेटिंग्स से वही url कॉपी करें
+* पहले डेवलपमेंट में फ़्लो का परीक्षण करें
+
+
+<div id="documents-not-syncing">
+  ### Documents सिंक नहीं हो रहे
+</div>
+
+**समस्या:** Documents 30 मिनट से अधिक समय से &quot;कतार में&quot; या &quot;extracting&quot; status में अटके हुए हैं
+
+**समाधान:** मैन्युअल सिंक ट्रिगर करें:
+
+```typescript
+// अटके हुए documents के लिए force sync करें
+await client.connections.import('notion', {
+  containerTags: ['user-123']
+});
+```
+
+यदि documents लगातार विफल हो रहे हैं:
+
+* जाँचें कि फ़ाइलें 50MB से बड़ी तो नहीं हैं (टाइमआउट हो सकता है)
+* सत्यापित करें कि आपको documents तक पहुँच की अनुमति है
+* सुनिश्चित करें कि document प्रकार समर्थित है
+
+
+<div id="permission-denied-errors">
+  ### Permission Denied Errors
+</div>
+
+**Problem:** कुछ documents में &quot;permission denied&quot; दिख रहा है या वे sync नहीं हो रहे हैं
+
+**Solution:** उचित permissions के साथ दोबारा authenticate करें:
+
+```typescript
+// लिंक्ड खाता को हटाएं और फिर से बनाएं
+await client.connections.deleteByProvider('google-drive', {
+  containerTags: ['user-123']
+});
+
+const newConnection = await client.connections.create('google-drive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['user-123']
+});
+
+// उपयोगकर्ता को फिर से प्रमाणित करना होगा
+window.location.href = newConnection.authLink;
+```
+
+
+<div id="sync-takes-too-long">
+  ### Sync में बहुत समय लग रहा है
+</div>
+
+**समस्या:** सैकड़ों documents को sync करने में घंटों लग रहे हैं
+
+**समाधान:** उपयुक्त document limit सेट करें:
+
+```typescript
+const connection = await client.connections.create('onedrive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['user-123'],
+  documentLimit: 500  // कम documents के साथ शुरुआत करें
+});
+```
+
+
+<div id="provider-specific-issues">
+  ## प्रदाता-विशिष्ट समस्याएँ
+</div>
+
+<div id="google-drive">
+  ### Google Drive
+</div>
+
+**Shared Drive से जुड़ी समस्याएँ**
+
+Shared drives के लिए विशेष अनुमतियाँ आवश्यक होती हैं। सुनिश्चित करें:
+
+- उपयोगकर्ता को shared drive तक पहुँच है
+- OAuth ऐप में drive.readonly स्कोप सक्षम है
+- उपयोगकर्ता shared drive का सदस्य है
+
+<div id="notion">
+  ### Notion
+</div>
+
+**डेटाबेस सिंक नहीं हो रहा है**
+
+Notion डेटाबेस के लिए स्पष्ट अनुमति आवश्यक होती है। यदि डेटाबेस सिंक नहीं हो रहे हैं:
+
+1. Notion वर्कस्पेस सेटिंग्स में जाएँ
+2. "Connections" के तहत अपनी इंटीग्रेशन खोजें
+3. इंटीग्रेशन पर क्लिक करें
+4. साझा करने के लिए विशिष्ट पेज/डेटाबेस चुनें
+5. एक्सेस देने के बाद फिर से सिंक करें
+
+**वर्कस्पेस एक्सेस**
+
+पूरा वर्कस्पेस एक्सेस के लिए, वर्कस्पेस एडमिन को:
+
+1. इंटीग्रेशन को स्वीकृत करना होगा
+2. सभी पेजों के लिए एक्सेस देना होगा
+3. "Read content" अनुमति सक्षम करनी होगी
+
+<div id="onedrive">
+  ### OneDrive
+</div>
+
+**व्यावसायिक बनाम व्यक्तिगत खाते**
+
+व्यावसायिक खातों में अतिरिक्त प्रतिबंध हो सकते हैं:
+
+- एडमिन की स्वीकृति आवश्यक हो सकती है
+- कुछ SharePoint साइटें प्रतिबंधित हो सकती हैं
+- अनुपालन नीतियाँ कुछ फ़ाइलों को अवरुद्ध कर सकती हैं
+
+<div id="best-practices">
+  ## सर्वोत्तम प्रथाएँ
+</div>
+
+1. **उचित दस्तावेज़ सीमाएँ निर्धारित करें** - 500–1000 documents से शुरू करें
+2. **वर्णनात्मक कंटेनर टैग्स का उपयोग करें** - डिबगिंग को आसान बनाता है
+3. **विफल documents की निगरानी करें** - सिंक समस्याओं के लिए साप्ताहिक जाँच करें
+4. **रेट limit को सुव्यवस्थित तरीके से संभालें** - एक्सपोनेंशियल बैकऑफ लागू करें
+5. **डेवलपमेंट में OAuth का परीक्षण करें** - प्रोडक्शन से पहले सुनिश्चित करें कि रीडायरेक्ट urls काम कर रहे हों

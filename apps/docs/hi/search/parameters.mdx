@@ -1,0 +1,250 @@
+---
+title: "खोज पैरामीटर"
+description: "सभी खोज पैरामीटर और उनके प्रभावों का संपूर्ण संदर्भ"
+---
+
+तीनों खोज एंडपॉइंट्स के लिए पूर्ण पैरामीटर संदर्भ: document search, memory search, और execute search।
+
+<div id="common-parameters">
+  ## सामान्य पैरामीटर
+</div>
+
+ये पैरामीटर सभी सर्च endpoints पर काम करते हैं:
+
+<ParamField query="q" type="string" required>
+  **सर्च क्वेरी स्ट्रिंग**
+
+  वह टेक्स्ट जिसे आप सर्च करना चाहते हैं। यह प्राकृतिक भाषा, कीवर्ड्स या प्रश्न हो सकते हैं।
+
+  ```typescript
+  q: "machine learning neural networks"
+  q: "What are the applications of quantum computing?"
+  q: "python tutorial beginner"
+  ```
+</ParamField>
+
+<ParamField query="limit" type="number" default="10">
+  **वापस किए जाने वाले परिणामों की अधिकतम संख्या**
+
+  तय करता है कि आपको कितने परिणाम मिलेंगे। अधिक limit से प्रतिक्रिया समय और रिस्पॉन्स का आकार बढ़ता है।
+
+  ```typescript
+  limit: 5    // तेज़, केंद्रित परिणाम
+  limit: 20   // व्यापक परिणाम
+  limit: 100  // अधिकतम अनुशंसित
+  ```
+</ParamField>
+
+<ParamField query="containerTags" type="Array<string>">
+  **कंटेनर टैग्स के आधार पर फ़िल्टर करें**
+
+  परिणामों को फ़िल्टर करने के लिए संगठनात्मक टैग्स। **सटीक array मिलान** का उपयोग करता है — सभी टैग्स उसी क्रम में मिलने चाहिए।
+
+  ```typescript
+  containerTags: ["user_123"]                    // एकल टैग
+  containerTags: ["user_123", "project_ai"]      // बहु टैग्स (सटीक मिलान)
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **SQL-सदृश संरचना के साथ मेटाडेटा फ़िल्टरिंग**
+
+  मेटाडेटा फ़ील्ड्स पर फ़िल्टर करने के लिए AND/OR लॉजिक वाला JSON स्ट्रिंग। memory listing filters की ही संरचना का उपयोग करता है।
+
+  ```typescript
+  filters: JSON.stringify({
+    AND: [
+      { key: "category", value: "tutorial", negate: false },
+      { key: "difficulty", value: "beginner", negate: false }
+    ]
+  })
+  ```
+
+  <Note>
+    पूर्ण सिंटैक्स और उदाहरणों के लिए [Metadata Filtering Guide](/hi/search/filtering) देखें।
+  </Note>
+</ParamField>
+
+<ParamField query="rerank" type="boolean" default="false">
+  **बेहतर प्रासंगिकता हेतु परिणामों को पुनः स्कोर करें**
+
+  परिणाम गुणवत्ता सुधारने के लिए द्वितीयक रैंकिंग एल्गोरिद्म लागू करता है। ~100–200ms लेटेंसी जोड़ता है, लेकिन सटीकता बढ़ाता है।
+
+  ```typescript
+  rerank: true   // बेहतर सटीकता, धीमा
+  rerank: false  // तेज़, मानक सटीकता
+  ```
+</ParamField>
+
+<ParamField query="rewriteQuery" type="boolean" default="false">
+  **क्वेरी का विस्तार और परिष्करण करें**
+
+  अधिक प्रासंगिक परिणाम पाने के लिए आपकी क्वेरी को पुनर्लेखित करता है। संक्षेपों और डोमेन-विशिष्ट शब्दों के लिए विशेष रूप से उपयोगी। **~400ms लेटेंसी जोड़ता है**।
+
+  ```typescript
+  // क्वेरी पुनर्लेखन उदाहरण:
+  "ML" → "machine learning artificial intelligence"
+  "JS" → "JavaScript programming language"
+  "API" → "application programming interface REST"
+  ```
+
+  <Warning>
+    क्वेरी पुनर्लेखन लेटेंसी को काफी बढ़ाता है। तभी उपयोग करें जब सर्च गुणवत्ता गति से अधिक महत्वपूर्ण हो।
+  </Warning>
+</ParamField>
+
+<div id="document-search-parameters-post-v3search">
+  ## Document Search Parameters (POST `/v3/search`)
+</div>
+
+ये पैरामीटर `client.search.documents()` के लिए विशिष्ट हैं:
+
+<ParamField query="chunkThreshold" type="number" range="0-1" default="0.5">
+  **चंक चयन की संवेदनशीलता**
+
+  नियंत्रित करता है कि कौन से टेक्स्ट चंक परिणामों में शामिल होंगे:
+
+  * **0.0** = सबसे कम संवेदनशील (अधिक चंक, अधिक परिणाम)
+  * **1.0** = सबसे अधिक संवेदनशील (कम चंक, उच्च गुणवत्ता)
+
+  ```typescript
+  chunkThreshold: 0.2   // व्यापक खोज, अधिक चंक
+  chunkThreshold: 0.8   // सटीक खोज, केवल प्रासंगिक चंक
+  ```
+</ParamField>
+
+<ParamField query="documentThreshold" type="number" range="0-1" default="0.5">
+  **Document चयन की संवेदनशीलता**
+
+  नियंत्रित करता है कि खोज के लिए किन Documents पर विचार किया जाएगा:
+
+  * **0.0** = अधिक Documents में खोजें (व्यापक)
+  * **1.0** = केवल अत्यधिक प्रासंगिक Documents में खोजें (केन्द्रित)
+
+  ```typescript
+  documentThreshold: 0.1   // व्यापक दायरा
+  documentThreshold: 0.9   // केवल बहुत प्रासंगिक Documents
+  ```
+</ParamField>
+
+<ParamField query="docId" type="string">
+  **किसी विशिष्ट Document के भीतर खोज**
+
+  खोज को एक ही Document के भीतर के चंक्स तक सीमित करें। बड़े Documents में सामग्री ढूंढ़ने के लिए उपयोगी।
+
+  ```typescript
+  docId: "doc_abc123"  // केवल इसी Document में खोजें
+  ```
+</ParamField>
+
+<ParamField query="onlyMatchingChunks" type="boolean" default="false">
+  **केवल सटीक मिलते-जुलते चंक लौटाएँ**
+
+  डिफ़ॉल्ट रूप से, Supermemory संदर्भ के लिए आस-पास के चंक शामिल करता है। केवल सटीक मिलते-जुलते टेक्स्ट पाने के लिए `true` सेट करें।
+
+  ```typescript
+  onlyMatchingChunks: false  // संदर्भ चंक शामिल करें (डिफ़ॉल्ट)
+  onlyMatchingChunks: true   // केवल मिलते-जुलते चंक
+  ```
+
+  <Note>
+    संदर्भ चंक LLM — Large Language Model (बड़ा भाषा मॉडल) को पूर्ण अर्थ समझने में मदद करते हैं। केवल तभी अक्षम करें जब आपको सटीक टेक्स्ट एक्सट्रैक्शन चाहिए।
+  </Note>
+</ParamField>
+
+<ParamField query="includeFullDocs" type="boolean" default="false">
+  **पूरा Document कंटेंट शामिल करें**
+
+  प्रत्येक परिणाम में पूरे Document का टेक्स्ट जोड़ता है। उन चैटबॉट्स के लिए उपयोगी जिन्हें पूर्ण संदर्भ चाहिए।
+
+  ```typescript
+  includeFullDocs: true   // प्रतिक्रिया में पूरा Document
+  includeFullDocs: false  // केवल चंक और मेटाडेटा
+  ```
+
+  <Warning>
+    पूर्ण Documents शामिल करने से प्रतिक्रियाएँ बहुत बड़ी हो सकती हैं। सोच-समझकर और उपयुक्त limit के साथ उपयोग करें।
+  </Warning>
+</ParamField>
+
+<ParamField query="includeSummary" type="boolean" default="false">
+  **Document सारांश शामिल करें**
+
+  परिणामों में AI-जनित Document सारांश जोड़ता है। चंक और पूर्ण Documents के बीच अच्छा मध्य-मार्ग।
+
+  ```typescript
+  includeSummary: true   // Document सारांश शामिल करें
+  includeSummary: false  // कोई सारांश नहीं
+  ```
+</ParamField>
+
+<ParamField query="filters" type="string">
+  **SQL क्वेरी का उपयोग करके मेटाडेटा द्वारा फ़िल्टर करें**
+
+  ```typescript
+
+  // इसके बजाय इसे उपयोग करें:
+  filters: JSON.stringify({
+    OR: [
+      { key: "category", value: "technology", negate: false },
+      { key: "category", value: "science", negate: false }
+    ]
+  })
+  ```
+</ParamField>
+
+<div id="memory-search-parameters-post-v4search">
+  ## Memory खोज पैरामीटर (POST `/v4/search`)
+</div>
+
+ये पैरामीटर `client.search.memories()` के लिए विशिष्ट हैं:
+
+<ParamField query="threshold" type="number" range="0-1" default="0.5">
+  **memory चयन के लिए संवेदनशीलता**
+
+  समानता के आधार पर कौन सी संग्रहीत मेमोरी लौटाई जाए, यह नियंत्रित करता है:
+
+  * **0.0** = अधिक संग्रहीत मेमोरी लौटाएँ (विस्तृत खोज)
+  * **1.0** = केवल अत्यंत समान संग्रहीत मेमोरी लौटाएँ (सटीक खोज)
+
+  ```typescript
+  threshold: 0.3   // व्यापक memory खोज
+  threshold: 0.8   // केवल बहुत समान memory
+  ```
+</ParamField>
+
+<ParamField query="containerTag" type="string">
+  **एकल कंटेनर टैग से फ़िल्टर करें**
+
+  नोट: Memory खोज `containerTag` (एकवचन) का उपयोग करती है, जबकि Document खोज `containerTags` (बहुवचन ऐरे) का उपयोग करती है।
+
+  ```typescript
+  containerTag: "user_123"  // Memory खोज के लिए एकल टैग
+  ```
+</ParamField>
+
+<ParamField query="include" type="object">
+  **कौन सा अतिरिक्त डेटा शामिल करना है, नियंत्रित करें**
+
+  यह ऑब्जेक्ट बताता है कि memory परिणामों के साथ कौन-सी संदर्भगत जानकारी शामिल करनी है।
+
+  <ParamField query="include.documents" type="boolean" default="false">
+    प्रत्येक memory के लिए संबद्ध Documents शामिल करें
+  </ParamField>
+
+  <ParamField query="include.relatedMemories" type="boolean" default="false">
+    पैरेंट और चाइल्ड संग्रहीत मेमोरी शामिल करें (संदर्भगत संबंध)
+  </ParamField>
+
+  <ParamField query="include.summaries" type="boolean" default="false">
+    memory सारांश शामिल करें
+  </ParamField>
+
+  ```typescript
+  include: {
+    documents: true,        // संबंधित Documents दिखाएँ
+    relatedMemories: true,  // पैरेंट/चाइल्ड संग्रहीत मेमोरी दिखाएँ
+    summaries: true         // सारांश शामिल करें
+  }
+  ```
+</ParamField>

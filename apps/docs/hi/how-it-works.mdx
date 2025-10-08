@@ -1,0 +1,171 @@
+---
+title: "Supermemory कैसे काम करता है"
+description: "बुद्धिमान memory को संचालित करने वाली knowledge graph आर्किटेक्चर को समझना"
+icon: "brain"
+---
+
+Supermemory सिर्फ एक और document storage सिस्टम नहीं है। इसे इस तरह डिज़ाइन किया गया है कि यह मानव memory के वास्तविक काम करने के तरीके को प्रतिबिंबित करता है — कड़ियाँ बनाना, समय के साथ विकसित होना, और संचित ज्ञान से insights उत्पन्न करना।
+
+![](/images/graph-view.png)
+
+<div id="the-mental-model">
+  ## मानसिक मॉडल
+</div>
+
+पारंपरिक सिस्टम फाइलें स्टोर करते हैं। Supermemory एक जीवंत नॉलेज ग्राफ बनाता है।
+
+<CardGroup cols={2}>
+  <Card title="Traditional Systems" icon="folder">
+    * फोल्डरों में स्थिर फाइलें
+    * सामग्री के बीच कोई कनेक्शन नहीं
+    * खोज केवल कीवर्ड से मेल खाती है
+    * जानकारी जमी हुई रहती है
+  </Card>
+
+  <Card title="Supermemory" icon="network">
+    * डायनेमिक नॉलेज ग्राफ
+    * memories के बीच समृद्ध संबंध
+    * सिमैंटिक समझ
+    * जानकारी विकसित होती है और जुड़ती रहती है
+  </Card>
+</CardGroup>
+
+<div id="documents-vs-memories">
+  ## दस्तावेज़ बनाम संग्रहीत स्मृतियाँ
+</div>
+
+इस अंतर को समझना Supermemory का प्रभावी उपयोग करने के लिए अत्यंत महत्वपूर्ण है।
+
+<div id="documents-your-raw-input">
+  ### दस्तावेज़: आपका मूल इनपुट
+</div>
+
+दस्तावेज़ वही हैं जो आप प्रदान करते हैं — मूल सामग्री:
+
+* आपके द्वारा अपलोड की गई PDF फ़ाइलें
+* वेब पेज जिन्हें आप सहेजते हैं
+* वह टेक्स्ट जिसे आप पेस्ट करते हैं
+* पाठ वाली छवियाँ
+* ट्रांसक्रिप्शन के लिए वीडियो
+
+दस्तावेज़ों को उन किताबों की तरह समझें जिन्हें आप Supermemory को सौंपते हैं।
+
+<div id="memories-intelligent-knowledge-units">
+  ### memory: बुद्धिमान ज्ञान इकाइयाँ
+</div>
+
+memory वही है जो Supermemory बनाता है — समझ:
+
+* अर्थपूर्ण सेमान्टिक चंक्स
+* समानता खोज के लिए एम्बेडेड
+* संबंधों के माध्यम से कनेक्टेड
+* समय के साथ गतिशील रूप से अपडेट
+
+memory को उन अंतर्दृष्टियों और कनेक्शनों के रूप में सोचें जो आपका मस्तिष्क किताबें पढ़ने के बाद बनाता है।
+
+<Note>
+  **मुख्य अंतर्दृष्टि**: जब आप 50-पेज का PDF अपलोड करते हैं, Supermemory उसे सिर्फ स्टोर नहीं करता। यह उसे सैकड़ों परस्पर जुड़ी संग्रहीत स्मृतियों में विभाजित कर देता है, जिनमें से प्रत्येक अपने संदर्भ और आपके अन्य ज्ञान से रिश्तों को समझती है।
+</Note>
+
+<div id="memory-relationships">
+  ## Memory Relationships
+</div>
+
+![](/images/memories-inferred.png)
+
+यह ग्राफ़ तीन प्रकार के संबंधों के माध्यम से memory को आपस में जोड़ता है:
+
+<div id="updates-information-changes">
+  ### अपडेट्स: सूचना में बदलाव
+</div>
+
+जब नई सूचना मौजूदा ज्ञान का खंडन करती है या उसे अपडेट करती है, तो Supermemory एक &quot;update&quot; संबंध बनाता है।
+
+<CodeGroup>
+  ```text Original Memory
+  "You work at Supermemory as a content engineer"
+  ```
+
+  ```text New Memory (Updates Original)
+  "You now work at Supermemory as the CMO"
+  ```
+</CodeGroup>
+
+सिस्टम `isLatest` फ़ील्ड के माध्यम से यह ट्रैक करता है कि कौन‑सी memory नवीनतम है, ताकि खोज में वर्तमान जानकारी वापस मिले।
+
+<div id="extends-information-enriches">
+  ### Extends: सूचना समृद्ध करती है
+</div>
+
+जब नई जानकारी बिना मौजूदा ज्ञान को बदले उसमें जुड़ती है, तो Supermemory एक &quot;extends&quot; संबंध बनाता है।
+
+हमारे &quot;working at supermemory&quot; उदाहरण को आगे बढ़ाते हुए, आप क्या काम करते हैं इस बारे में एक memory, ऊपर दी गई आपकी भूमिका वाली memory का विस्तार करेगी।
+
+<CodeGroup>
+  ```text Original Memory
+  "You work at Supermemory as the CMO"
+  ```
+
+  ```text New Memory (Extension) - Separate From Previous
+  "Your work consists of ensuring the docs are up to date, making marketing campaigns, SEO, etc."
+  ```
+</CodeGroup>
+
+दोनों memories मान्य और खोजयोग्य रहती हैं, जिससे संदर्भ और समृद्ध होता है।
+
+<div id="derives-information-infers">
+  ### व्युत्पन्न: सूचना से निष्कर्ष
+</div>
+
+सबसे परिष्कृत संबंध — जब Supermemory आपके ज्ञान में मौजूद पैटर्न से नई कनेक्शन्स का निष्कर्ष निकालता है।
+
+<CodeGroup>
+  ```text Memory 1
+  "Dhravya is the founder of Supermemory"
+  ```
+
+  ```text Memory 2
+  "Dhravya frequently discusses AI and machine learning innovations"
+  ```
+
+  ```text Derived Memory
+  "Supermemory is likely an AI-focused company"
+  ```
+</CodeGroup>
+
+ये निष्कर्ष उन अंतर्दृष्टियों को उजागर करने में मदद करते हैं जिन्हें आपने स्पष्ट रूप से नहीं कहा होगा।
+
+<div id="processing-pipeline">
+  ## प्रोसेसिंग पाइपलाइन
+</div>
+
+पाइपलाइन को समझना उपयोग को अनुकूलित करने में मदद करता है:
+
+| चरण | क्या होता है |
+|-------|-------------|
+| **Queued** | प्रोसेसिंग के लिए दस्तावेज़ प्रतीक्षारत |
+| **Extracting** | सामग्री निकाली जा रही है |
+| **Chunking** | memory चंक्स बनाए जा रहे हैं |
+| **Embedding** | वेक्टर बनाए जा रहे हैं |
+| **Indexing** | रिश्ते निर्मित किए जा रहे हैं |
+| **Done** | पूरी तरह खोजयोग्य |
+
+<Note>
+  **टिप**: बड़े दस्तावेज़ और वीडियो में अधिक समय लगता है। 100-पृष्ठ का PDF 1–2 मिनट ले सकता है, जबकि 1-घंटे का वीडियो 5–10 मिनट ले सकता है।
+</Note>
+
+<div id="next-steps">
+  ## आगे के चरण
+</div>
+
+अब जब आप समझ गए हैं कि Supermemory कैसे काम करता है:
+
+<CardGroup cols={2}>
+  <Card title="Add Memories" icon="plus" href="/hi/add-memories/overview">
+    अपने knowledge graph में सामग्री जोड़ना शुरू करें
+  </Card>
+
+  <Card title="Search Memories" icon="search" href="/hi/search/overview">
+    अपनी knowledge को प्रभावी ढंग से query करना सीखें
+  </Card>
+</CardGroup>

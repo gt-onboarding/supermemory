@@ -1,0 +1,81 @@
+---
+title: "Supermemory SDKs"
+sidebarTitle: "Python और JavaScript SDKs"
+description: "Python और JavaScript के साथ supermemory का उपयोग करना सीखें"
+---
+
+अधिक जानकारी के लिए, पूर्ण और अद्यतन संदर्श देखें
+
+<Columns cols={2}>
+  <Card title="Python SDK" icon="python" href="https://pypi.org/project/supermemory/">
+  </Card>
+
+  <Card title="JavaScript SDK" icon="js" href="https://www.npmjs.com/package/supermemory">
+  </Card>
+</Columns>
+
+<div id="python-sdk">
+  ## Python SDK
+</div>
+
+<div id="installation">
+  ## इंस्टॉलेशन
+</div>
+
+```sh
+# PyPI से install करें
+pip install --pre supermemory
+```
+
+
+<div id="usage">
+  ## उपयोग
+</div>
+
+```python
+import os
+from supermemory import Supermemory
+
+client = supermemory(
+    api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # यह डिफ़ॉल्ट है और इसे छोड़ा जा सकता है
+)
+
+response = client.search.documents(
+    q="python से संबंधित documents",
+)
+print(response.results)
+```
+
+
+<div id="javascript-sdk">
+  ## जावास्क्रिप्ट SDK
+</div>
+
+<div id="installation">
+  ## इंस्टॉलेशन
+</div>
+
+```sh
+npm install supermemory
+```
+
+
+<div id="usage">
+  ## उपयोग
+</div>
+
+```js
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // यह डिफ़ॉल्ट है और इसे छोड़ा जा सकता है
+});
+
+async function main() {
+  const response = await client.search.documents({ q: 'python से संबंधित documents' });
+
+  console.debug(response.results);
+}
+
+main();
+```

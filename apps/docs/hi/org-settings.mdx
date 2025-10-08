@@ -1,0 +1,305 @@
+---
+title: "Organization Settings"
+description: "Supermemory के लिए संगठन-व्यापी सेटिंग्स और सामग्री फ़िल्टरिंग कॉन्फ़िगर करें"
+icon: "settings"
+---
+
+Organization settings नियंत्रित करती हैं कि Supermemory आपकी पूरी organization में सामग्री को कैसे प्रोसेस करता है। ये सेटिंग्स सभी संग्रहीत मेमोरीज़ और connectors पर लागू होती हैं, जिससे आप:
+
+* इंडेक्सिंग से पहले सामग्री फ़िल्टर कर सकते हैं
+* connectors के लिए कस्टम OAuth applications कॉन्फ़िगर कर सकते हैं
+* संगठन-व्यापी processing नियम सेट कर सकते हैं
+* क्या indexed होगा और क्या exclude किया जाएगा, इसे नियंत्रित कर सकते हैं
+
+<Note>
+  Settings संगठन-व्यापी होती हैं और आपकी organization के सभी users और संग्रहीत मेमोरीज़ पर लागू होती हैं।
+</Note>
+
+<div id="why-settings-matter">
+  ## सेटिंग्स क्यों महत्वपूर्ण हैं
+</div>
+
+सेटिंग्स endpoint आपके विशिष्ट उपयोग‑केस के बारे में Supermemory को सिखाने के लिए महत्वपूर्ण है। यह Supermemory को समझने में मदद करता है:
+
+* **आप क्या हैं**: आपकी संगठन का विशिष्ट उपयोग‑केस और उद्देश्य
+* **क्या अपेक्षित है**: आपके सिस्टम से होकर गुजरने वाली सामग्री और जानकारी के प्रकार
+* **कैसे समझना है**: आपके विशिष्ट उपयोग‑केस में क्वेरियों को समझने का संदर्भ
+* **किसे प्राथमिकता देनी है**: आपके उपयोगकर्ताओं के लिए कौन‑सी सामग्री सबसे अधिक महत्वपूर्ण है
+
+<div id="example-brand-guidelines-use-case">
+  ### उदाहरण: ब्रांड गाइडलाइंस का उपयोग मामला
+</div>
+
+उचित सेटिंग्स न होने पर, जब कोई उपयोगकर्ता &quot;हमारे मूल्‍य क्या हैं?&quot; खोजता है, तो Supermemory ऐसे रैंडम Documents वापस कर सकता है जिनमें &quot;मूल्‍य&quot; का उल्लेख हो। लेकिन सही कॉन्फ़िगरेशन के साथ:
+
+```typescript
+await client.settings.update({
+  shouldLLMFilter: true,
+  filterPrompt: `आप Brand.ai के लिए ब्रांड दिशानिर्देशों का प्रबंधन कर रहे हैं।
+    आपको हमारे संगठन की सभी आउटगोइंग सामग्री प्राप्त होगी।
+    
+    जब उपयोगकर्ता खोज करते हैं, तो वे निम्नलिखित की तलाश कर रहे हैं:
+    - "हमारे मूल्य क्या हैं?" → आधिकारिक ब्रांड मूल्य दस्तावेज़ रिटर्न करें
+    - "हमारी आवाज़ का टोन क्या है?" → ब्रांड वॉइस दिशानिर्देश रिटर्न करें
+    - "हम अपने मिशन का वर्णन कैसे करते हैं?" → अनुमोदित मिशन स्टेटमेंट रिटर्न करें
+    
+    नवीनतम अनुमोदित ब्रांड सामग्री पर फोकस करें, ड्राफ्ट या पुराने संस्करणों पर नहीं।`
+});
+```
+
+अब Supermemory समझता है कि:
+
+* &quot;values&quot; से जुड़ी खोजें वित्तीय मूल्यों नहीं, बल्कि ब्रांड मूल्यों को संदर्भित करती हैं
+* &quot;Tone&quot; का अर्थ ऑडियो सेटिंग्स नहीं, बल्कि ब्रांड वॉयस है
+* आधिकारिक, स्वीकृत सामग्री को प्राथमिकता दी जानी चाहिए
+
+यह संदर्भ खोज की प्रासंगिकता को काफी बढ़ाता है और सुनिश्चित करता है कि उपयोगकर्ताओं को उनके विशिष्ट उपयोग मामले के लिए सही जानकारी मिले।
+
+<div id="api-endpoints">
+  ## API एंडपॉइंट
+</div>
+
+<div id="get-current-settings">
+  ### वर्तमान सेटिंग्स प्राप्त करें
+</div>
+
+अपनी संगठन की वर्तमान सेटिंग्स कॉन्फ़िगरेशन प्राप्त करें।
+
+<CodeGroup>
+  ```typescript TypeScript
+  const settings = await client.settings.get();
+  console.log('Current settings:', settings);
+  ```
+
+  ```python Python
+  settings = client.settings.get()
+  print(f'Current settings: {settings}')
+  ```
+
+  ```bash cURL
+  curl -X GET "https://api.supermemory.ai/v3/settings" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+  ```
+</CodeGroup>
+
+<div id="update-settings">
+  ### सेटिंग्स अपडेट करें
+</div>
+
+अपनी संगठन की सेटिंग्स अपडेट करें। आपको केवल वे फ़ील्ड शामिल करने की आवश्यकता है जिन्हें आप बदलना चाहते हैं।
+
+<CodeGroup>
+  ```typescript TypeScript
+  const updatedSettings = await client.settings.update({
+    shouldLLMFilter: true,
+    filterPrompt: "Only index technical documentation and code",
+    includeItems: ["*.md", "*.ts", "*.py"],
+    excludeItems: ["node_modules", ".git", "*.test.*"]
+  });
+
+  console.log('Updated fields:', updatedSettings.updated);
+  ```
+
+  ```python Python
+  updated_settings = client.settings.update(
+      should_llm_filter=True,
+      filter_prompt="Only index technical documentation and code",
+      include_items=["*.md", "*.ts", "*.py"],
+      exclude_items=["node_modules", ".git", "*.test.*"]
+  )
+
+  print(f'Updated fields: {updated_settings.updated}')
+  ```
+
+  ```bash cURL
+  curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "shouldLLMFilter": true,
+      "filterPrompt": "Only index technical documentation and code",
+      "includeItems": ["*.md", "*.ts", "*.py"],
+      "excludeItems": ["node_modules", ".git", "*.test.*"]
+    }'
+  ```
+</CodeGroup>
+
+<div id="content-filtering-settings">
+  ## कंटेंट फ़िल्टरिंग सेटिंग्स
+</div>
+
+यह नियंत्रित करें कि Supermemory में कौन‑सा कंटेंट इंडेक्स किया जाए।
+
+<div id="basic-filtering">
+  ### बेसिक फ़िल्टरिंग
+</div>
+
+कंटेंट को फ़िल्टर करने के लिए include/exclude पैटर्न का उपयोग करें:
+
+```typescript
+await client.settings.update({
+  includeItems: [
+    "*.md",           // सभी markdown फाइलें
+    "*.mdx",          // MDX डॉक्यूमेंटेशन
+    "docs/**",        // docs फोल्डर में सब कुछ
+    "src/**/*.ts"     // src में TypeScript फाइलें
+  ],
+  excludeItems: [
+    "node_modules",   // डिपेंडेंसीज
+    ".git",           // वर्जन कंट्रोल
+    "*.test.*",       // टेस्ट फाइलें
+    "build/**",       // बिल्ड आउटपुट
+    "*.tmp"           // अस्थायी फाइलें
+  ]
+});
+```
+
+<div id="intelligent-llm-filtering">
+  ### बुद्धिमान LLM फ़िल्टरिंग
+</div>
+
+सार्थक (semantic) समझ के लिए AI-संचालित सामग्री फ़िल्टरिंग सक्षम करें:
+
+```typescript
+await client.settings.update({
+  shouldLLMFilter: true,
+  filterPrompt: `आप एक तकनीकी दस्तावेज़ीकरण सिस्टम के लिए सामग्री को फ़िल्टर कर रहे हैं।
+    
+    शामिल करें:
+    - API दस्तावेज़ीकरण
+    - कोड उदाहरण और ट्यूटोरियल
+    - तकनीकी गाइड और संदर्भ
+    - आर्किटेक्चर दस्तावेज़ीकरण
+    
+    बाहर करें:
+    - मार्केटिंग सामग्री
+    - आंतरिक मीटिंग नोट्स
+    - व्यक्तिगत जानकारी
+    - पुरानी या अप्रचलित सामग्री
+    
+    उस सामग्री पर फोकस करें जो डेवलपर्स को हमारे APIs को समझने और उपयोग करने में मदद करती है।`
+});
+```
+
+<div id="connector-oauth-settings">
+  ## Connector OAuth Settings
+</div>
+
+कनेक्टर इंटीग्रेशन के लिए कस्टम OAuth ऐप्लिकेशन कॉन्फ़िगर करें।
+
+<div id="google-drive-custom-oauth">
+  ### Google Drive कस्टम OAuth
+</div>
+
+```typescript
+await client.settings.update({
+  googleDriveCustomKeyEnabled: true,
+  googleDriveClientId: "your-client-id.apps.googleusercontent.com",
+  googleDriveClientSecret: "your-client-secret"
+});
+```
+
+<div id="notion-custom-oauth">
+  ### Notion कस्टम OAuth
+</div>
+
+```typescript
+await client.settings.update({
+  notionCustomKeyEnabled: true,
+  notionClientId: "your-notion-oauth-client-id",
+  notionClientSecret: "your-notion-oauth-client-secret"
+});
+```
+
+<div id="onedrive-custom-oauth">
+  ### OneDrive कस्टम OAuth
+</div>
+
+```typescript
+await client.settings.update({
+  onedriveCustomKeyEnabled: true,
+  onedriveClientId: "your-azure-app-id",
+  onedriveClientSecret: "your-azure-app-secret"
+});
+```
+
+<div id="best-practices">
+  ## सर्वोत्तम अभ्यास
+</div>
+
+<div id="1-set-before-bulk-import">
+  ### 1. बल्क इम्पोर्ट से पहले सेट करें
+</div>
+
+बड़ी मात्रा में कंटेंट इम्पोर्ट करने से पहले सेटिंग्स कॉन्फ़िगर करें। बदलाव पहले से मौजूद संग्रहीत मेमोरीज़ को पिछली तारीख से लागू नहीं होंगे।
+
+<div id="2-be-specific-in-filter-prompts">
+  ### 2. फ़िल्टर प्रॉम्प्ट्स में स्पष्ट और विशिष्ट रहें
+</div>
+
+अपनी संगठन और अपेक्षित खोज पैटर्न के बारे में स्पष्ट संदर्भ दें:
+
+```typescript
+// अच्छा - स्पष्ट और संदर्भ-आधारित
+filterPrompt: `डेवलपर्स के लिए तकनीकी दस्तावेज़ीकरण।
+  शामिल करें: API रेफरेंस, कोड उदाहरण, त्रुटि समाधान।
+  बाहर करें: मार्केटिंग कंटेंट, व्यक्तिगत डेटा, टेस्ट फाइलें।
+  उपयोगकर्ता खोजते हैं: इम्प्लीमेंटेशन डिटेल्स, ट्रबलशूटिंग, बेस्ट प्रैक्टिसेज।`
+
+// खराब - बहुत अस्पष्ट
+filterPrompt: "केवल महत्वपूर्ण कंटेंट"
+```
+
+<div id="3-test-oauth-credentials">
+  ### 3. OAuth क्रेडेंशियल्स का परीक्षण
+</div>
+
+प्रोडक्शन में जाने से पहले हमेशा डेवलपमेंट में कस्टम OAuth क्रेडेंशियल्स का परीक्षण करें:
+
+```typescript
+// OAuth सेटिंग्स अपडेट करने के बाद लिंक्ड खाता टेस्ट करें
+const testConnection = await client.connections.create('google-drive', {
+  redirectUrl: 'https://yourapp.com/callback',
+  containerTags: ['test-connection']
+});
+```
+
+<div id="4-monitor-filter-effectiveness">
+  ### 4. फ़िल्टर की प्रभावशीलता मॉनिटर करें
+</div>
+
+यह जाँचें कि क्या इंडेक्स हो रहा है ताकि सुनिश्चित हो सके कि फ़िल्टर अपेक्षा के अनुसार काम कर रहे हैं:
+
+```typescript
+const memories = await client.memories.list({
+  containerTags: ['your-tags'],
+  limit: 10
+});
+
+// समीक्षा करें कि वास्तव में क्या index किया जा रहा है
+memories.memories.forEach(memory => {
+  console.log(`Indexed: ${memory.title} - ${memory.type}`);
+});
+```
+
+<div id="important-notes">
+  ## महत्वपूर्ण नोट्स
+</div>
+
+<Warning>
+  **सेटिंग्स सीमाएँ:**
+
+  * बदलाव पूरे संगठन पर लागू होते हैं, प्रति उपयोगकर्ता नहीं
+  * सेटिंग्स पहले से मौजूद संग्रहीत मेमोरीज़ पर पिछली तिथि से प्रभाव नहीं डालतीं
+  * OAuth क्रेडेंशियल्स संबंधित प्लेटफ़ॉर्म्स में ठीक से कॉन्फ़िगर होने चाहिए
+  * फ़िल्टर पैटर्न सामग्री के ingestion के दौरान लागू होते हैं
+</Warning>
+
+<div id="related-documentation">
+  ## संबंधित प्रलेखन
+</div>
+
+* [Connectors Overview](/hi/connectors/overview) - बाहरी इंटीग्रेशन सेटअप करना
+* [Google Drive Setup](/hi/connectors/google-drive) - Google Drive OAuth कॉन्फ़िगर करें
+* [Notion Setup](/hi/connectors/notion) - Notion OAuth कॉन्फ़िगर करें
+* [OneDrive Setup](/hi/connectors/onedrive) - OneDrive OAuth कॉन्फ़िगर करें

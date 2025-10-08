@@ -1,0 +1,290 @@
+---
+title: "Basic Usage"
+description: "Supermemory में टेक्स्ट सामग्री जोड़ने के सरल उदाहरण"
+---
+
+सरल और व्यावहारिक उदाहरणों के माध्यम से Supermemory में बुनियादी टेक्स्ट सामग्री जोड़ना सीखें।
+
+<div id="add-simple-text">
+  ## सरल टेक्स्ट जोड़ें
+</div>
+
+सबसे बुनियादी क्रिया — साधारण टेक्स्ट सामग्री जोड़ना।
+
+<CodeGroup>
+
+```typescript TypeScript
+const response = await client.memories.add({
+  content: "Artificial intelligence is transforming how we work and live"
+});
+
+console.log(response);
+// Output: { id: "abc123", status: "queued" }
+```
+
+```python Python
+response = client.memories.add(
+    content="Artificial intelligence is transforming how we work and live"
+)
+
+print(response)
+# Output: {"id": "abc123", "status": "queued"}
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Artificial intelligence is transforming how we work and live"
+  }'
+```
+
+</CodeGroup>
+
+<div id="add-with-container-tags">
+  ## Container Tags के साथ जोड़ें
+</div>
+
+संबंधित सामग्री को Container Tags का उपयोग करके समूहित करें।
+
+<CodeGroup>
+
+```typescript TypeScript
+const response = await client.memories.add({
+  content: "Q4 2024 revenue exceeded projections by 15%",
+  containerTag: "financial_reports"
+});
+
+console.log(response.id);
+// Output: xyz789
+```
+
+```python Python
+response = client.memories.add(
+    content="Q4 2024 revenue exceeded projections by 15%",
+    container_tag="financial_reports"
+)
+
+print(response['id'])
+# Output: xyz789
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Q4 2024 revenue exceeded projections by 15%",
+    "containerTag": "financial_reports"
+  }'
+
+# Response: {"id": "xyz789", "status": "queued"}
+```
+
+</CodeGroup>
+
+<div id="add-with-metadata">
+  ## मेटाडेटा के साथ जोड़ें
+</div>
+
+बेहतर सर्च और फ़िल्टरिंग के लिए मेटाडेटा जोड़ें।
+
+<CodeGroup>
+
+```typescript TypeScript
+await client.memories.add({
+  content: "New onboarding flow reduces drop-off by 30%",
+  containerTag: "product_updates",
+  metadata: {
+    impact: "high",
+    team: "product"
+  }
+});
+```
+
+```python Python
+client.memories.add(
+    content="New onboarding flow reduces drop-off by 30%",
+    container_tag="product_updates",
+    metadata={
+        "impact": "high",
+        "team": "product"
+    }
+)
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "New onboarding flow reduces drop-off by 30%",
+    "containerTag": "product_updates",
+    "metadata": {"impact": "high", "team": "product"}
+  }'
+```
+
+</CodeGroup>
+
+<div id="add-multiple-documents">
+  ## कई दस्तावेज़ जोड़ें
+</div>
+
+कई संबंधित दस्तावेज़ प्रोसेस करें।
+
+<CodeGroup>
+
+```typescript TypeScript
+const notes = [
+  "API redesign discussion",
+  "Security audit next month",
+  "New hire starting Monday"
+];
+
+const results = await Promise.all(
+  notes.map(note =>
+    client.memories.add({
+      content: note,
+      containerTag: "meeting_2024_01_15"
+    })
+  )
+);
+```
+
+```python Python
+notes = [
+    "API redesign discussion",
+    "Security audit next month",
+    "New hire starting Monday"
+]
+
+for note in notes:
+    client.memories.add(
+        content=note,
+        container_tag="meeting_2024_01_15"
+    )
+```
+
+```bash cURL
+# प्रत्येक नोट को अलग अनुरोध के साथ जोड़ें
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "API redesign discussion", "containerTag": "meeting_2024_01_15"}'
+```
+
+</CodeGroup>
+
+<div id="add-urls">
+  ## URL जोड़ें
+</div>
+
+वेब पेज, YouTube वीडियो और अन्य URL अपने आप प्रोसेस करें।
+
+<CodeGroup>
+
+```typescript TypeScript
+// वेब पेज
+await client.memories.add({
+  content: "https://example.com/article",
+  containerTag: "articles"
+});
+
+// YouTube वीडियो (ऑटो-ट्रांसक्राइब्ड)
+await client.memories.add({
+  content: "https://youtube.com/watch?v=dQw4w9WgXcQ",
+  containerTag: "videos"
+});
+
+// Google Docs
+await client.memories.add({
+  content: "https://docs.google.com/document/d/abc123/edit",
+  containerTag: "docs"
+});
+```
+
+```python Python
+# वेब पेज
+client.memories.add(
+    content="https://example.com/article",
+    container_tag="articles"
+)
+
+# YouTube वीडियो (ऑटो-ट्रांसक्राइब्ड)
+client.memories.add(
+    content="https://youtube.com/watch?v=dQw4w9WgXcQ",
+    container_tag="videos"
+)
+
+# Google Docs
+client.memories.add(
+    content="https://docs.google.com/document/d/abc123/edit",
+    container_tag="docs"
+)
+```
+
+```bash cURL
+# वेब पेज
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "https://example.com/article", "containerTag": "articles"}'
+
+# YouTube वीडियो
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "https://youtube.com/watch?v=dQw4w9WgXcQ", "containerTag": "videos"}'
+```
+
+</CodeGroup>
+
+<div id="add-markdown-content">
+  ## Markdown सामग्री जोड़ें
+</div>
+
+Supermemory Markdown फ़ॉर्मैटिंग को सुरक्षित रखता है।
+
+<CodeGroup>
+
+```typescript TypeScript
+const markdown = `
+# Project Documentation
+
+## Features
+- **Real-time sync**
+- **AI search**
+- **Enterprise security**
+`;
+
+await client.memories.add({
+  content: markdown,
+  containerTag: "docs"
+});
+```
+
+```python Python
+markdown = """
+# Project Documentation
+
+## Features
+- **Real-time sync**
+- **AI search**
+- **Enterprise security**
+"""
+
+client.memories.add(
+    content=markdown,
+    container_tag="docs"
+)
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "# Project Documentation\n\n## Features\n- **Real-time sync**\n- **AI search**", "containerTag": "docs"}'
+```
+
+</CodeGroup>

@@ -1,0 +1,170 @@
+---
+title: "पैरामीटर्स"
+description: "स्मृतियाँ जोड़ने के लिए पैरामीटर्स का पूर्ण संदर्भ"
+---
+
+Supermemory में स्मृतियाँ जोड़ने हेतु विस्तृत पैरामीटर दस्तावेज़।
+
+<div id="request-parameters">
+  ## अनुरोध पैरामीटर
+</div>
+
+<div id="required-parameters">
+  ### आवश्यक पैरामीटर
+</div>
+
+<ParamField body="content" type="string" required>
+  सामग्री जिसे संग्रहीत मेमोरीज़ में प्रोसेस किया जाना है। यह हो सकती है:
+  - सादा टेक्स्ट सामग्री
+  - प्रोसेस करने के लिए url
+  - HTML सामग्री
+  - Markdown टेक्स्ट
+
+  ```json
+  {
+    "content": "Machine learning is a subset of AI..."
+  }
+  ```
+
+  **url उदाहरण:**
+  ```json
+  {
+    "content": "https://youtube.com/watch?v=dQw4w9WgXcQ"
+  }
+  ```
+</ParamField>
+
+<div id="optional-parameters">
+  ### वैकल्पिक पैरामीटर
+</div>
+
+<ParamField body="containerTag" type="string">
+  **अनुशंसित।** संबंधित संग्रहीत मेमोरीज़ को समूहित करने के लिए एकल टैग। खोज प्रदर्शन बेहतर होता है।
+
+  डिफ़ॉल्ट: `"sm_project_default"`
+
+  ```json
+  {
+    "containerTag": "project_alpha"
+  }
+  ```
+
+  <Note>
+  बेहतर प्रदर्शन के लिए `containerTags` (array) की तुलना में `containerTag` (singular) का उपयोग करें।
+  </Note>
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  अतिरिक्त मेटाडेटा key-value जोड़ों के रूप में। मान string, number, या boolean होने चाहिए।
+
+  ```json
+  {
+    "metadata": {
+      "source": "research-paper",
+      "author": "John Doe",
+      "priority": 1,
+      "reviewed": true
+    }
+  }
+  ```
+
+  **प्रतिबंध:**
+  - नेस्टेड ऑब्जेक्ट नहीं
+  - मान के रूप में array नहीं
+  - keys string होने चाहिए
+  - मान: केवल string, number, या boolean
+</ParamField>
+
+<ParamField body="customId" type="string">
+  दस्तावेज़ के लिए आपका स्वयं का पहचानकर्ता। डीडुप्लिकेशन और अपडेट सक्षम करता है।
+
+  **अधिकतम लंबाई:** 255 अक्षर
+
+  ```json
+  {
+    "customId": "doc_2024_01_research_ml"
+  }
+  ```
+
+  **उपयोग परिदृश्य:**
+  - डुप्लिकेट अपलोड रोकें
+  - मौजूदा दस्तावेज़ अपडेट करें
+  - बाहरी सिस्टम्स के साथ सिंक करें
+</ParamField>
+
+<ParamField body="raw" type="string">
+  प्रोसेस्ड सामग्री के साथ-साथ संग्रहीत करने हेतु कच्ची सामग्री। मूल फ़ॉर्मेटिंग संरक्षित रखने में उपयोगी।
+
+  ```json
+  {
+    "content": "# Machine Learning\n\nML is a subset of AI...",
+    "raw": "# Machine Learning\n\nML is a subset of AI..."
+  }
+  ```
+</ParamField>
+
+<div id="file-upload-parameters">
+  ## फ़ाइल अपलोड पैरामीटर
+</div>
+
+`POST /v3/documents/file` एंडपॉइंट के लिए:
+
+<ParamField body="file" type="file" required>
+  अपलोड करने के लिए फ़ाइल। समर्थित फ़ॉर्मेट:
+  - **दस्तावेज़:** PDF, DOC, DOCX, TXT, MD
+  - **इमेज:** JPG, PNG, GIF, WebP
+  - **वीडियो:** MP4, WebM, AVI
+
+  **अधिकतम आकार:** 50MB
+</ParamField>
+
+<ParamField body="containerTags" type="string">
+  अपलोड की गई फ़ाइल के लिए container tag (form field के रूप में भेजा गया)।
+
+  ```bash
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -F "file=@document.pdf" \
+    -F "containerTags=research"
+  ```
+</ParamField>
+
+<div id="container-tag-patterns">
+  ## कंटेनर टैग पैटर्न्स
+</div>
+
+<div id="recommended-patterns">
+  ### अनुशंसित पैटर्न्स
+</div>
+
+```typescript
+// उपयोगकर्ता द्वारा
+"user_123"
+
+// प्रोजेक्ट द्वारा
+"project_alpha"
+
+// संगठन और प्रकार द्वारा
+"org_456_research"
+
+// समय अवधि द्वारा
+"2024_q1_reports"
+
+// डेटा स्रोत द्वारा
+"slack_channel_general"
+```
+
+
+<div id="performance-considerations">
+  ### प्रदर्शन संबंधी विचार-विमर्श
+</div>
+
+```typescript
+// ✅ तेज़: एकल टैग
+{ "containerTag": "project_alpha" }
+
+// ⚠️ धीमा: कई टैग
+{ "containerTags": ["project_alpha", "backend", "auth"] }
+
+// ❌ बचें: बहुत सारे टैग
+{ "containerTags": ["tag1", "tag2", "tag3", "tag4", "tag5"] }
+```

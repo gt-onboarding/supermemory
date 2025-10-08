@@ -1,0 +1,310 @@
+---
+title: "फ़िल्टरिंग"
+description: "supermemory में खोजते समय सामग्री को फ़िल्टर करना सीखें"
+icon: "list-filter-plus"
+---
+
+<div id="container-tag">
+  ## Container Tag
+</div>
+
+Container tag आपके एंड यूज़र्स के लिए एक पहचानकर्ता है, जिससे मेमोरीज़ को साथ में समूहित किया जा सके।
+
+यह हो सकता है:
+
+- आपका उत्पाद उपयोग करने वाला कोई यूज़र
+- SaaS का उपयोग करने वाला कोई संगठन
+
+एक प्रोजेक्ट ID, या `user_project_etc` जैसा कोई डायनेमिक पहचानकर्ता
+
+हम सभी API रिक्वेस्ट्स में एक ही containerTag उपयोग करने की सलाह देते हैं।
+
+ग्राफ Container Tags के आधार पर बनाया जाता है। उदाहरण के लिए, आपके Supermemory अकाउंट में प्रत्येक यूज़र/टैग के लिए एक अलग ग्राफ बनाया जाएगा।
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --data '{
+    "q": "machine learning",
+    "containerTags": ["user_123"]
+  }'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "machine learning",
+  containerTags: ["user_123"],
+});
+```
+
+```python Python
+client.search.execute(
+    q="machine learning",
+    containerTags=["user_123"]
+)
+```
+
+</CodeGroup>
+
+<div id="metadata">
+  ## Metadata
+</div>
+
+कभी-कभी आप metadata जोड़ना और उसके आधार पर उन्नत फ़िल्टरिंग करना चाहेंगे।
+
+metadata फ़िल्टरिंग के जरिए, आप इन आधारों पर खोज सकते हैं:
+
+- AND और OR शर्तें
+- स्ट्रिंग मिलान
+- संख्यात्मक मिलान
+- तारीख मिलान
+- समय-सीमा क्वेरी
+
+<div id="validation-rules-limits">
+  ### सत्यापन नियम और सीमाएँ
+</div>
+
+सर्वोत्तम प्रदर्शन और सुरक्षा सुनिश्चित करने के लिए, फ़िल्टरिंग सिस्टम में निम्न सीमाएँ लागू होती हैं:
+
+- **Metadata कुंजियाँ**: केवल अल्फ़ान्यूमेरिक अक्षर, अंडरस्कोर और हाइफ़न होने चाहिए (`/^[a-zA-Z0-9_-]+$/`)
+- **Metadata कुंजी की लंबाई**: अधिकतम 64 अक्षर
+- **अधिकतम शर्तें**: प्रति क्वेरी अधिकतम 200 शर्तें
+- **अधिकतम नेस्टिंग गहराई**: नेस्टेड AND/OR अभिव्यक्तियों के अधिकतम 8 स्तर
+- **मान्य ऑपरेटर**: संख्यात्मक फ़िल्टरिंग के लिए `=`, `!=`, `<`, `<=`, `>`, `>=`
+
+<Warning>
+ये सीमाएँ अत्यधिक जटिल क्वेरियों को रोकती हैं जो प्रदर्शन को प्रभावित कर सकती हैं। यदि आपको अधिक शर्तों पर फ़िल्टर करना हो, तो अपनी क्वेरी को कई अनुरोधों में विभाजित करने पर विचार करें या पोस्ट-प्रोसेसिंग के साथ व्यापक खोज शब्दों का उपयोग करें।
+</Warning>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --data '{
+    "q": "machine learning",
+    "filters": {
+        "AND": [
+            {
+                "key": "category",
+                "value": "technology",
+                "negate": false
+            },
+            {
+                "filterType": "numeric",
+                "key": "readingTime",
+                "value": "5",
+                "negate": false,
+                "numericOperator": "<="
+            }
+        ]
+    }
+}'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "machine learning",
+  filters: {
+    AND: [
+      {
+        key: "category",
+        value: "technology",
+        negate: false,
+      },
+      {
+        filterType: "numeric",
+        key: "readingTime",
+        value: "5",
+        negate: false,
+        numericOperator: "<=",
+      },
+    ],
+  },
+});
+```
+
+```python Python
+client.search.execute(
+    q="machine learning",
+    filters={
+        "AND": [
+            {
+                "key": "category",
+                "value": "technology",
+                "negate": false
+            },
+            {
+                "filterType": "numeric",
+                "key": "readingTime",
+                "value": "5",
+                "negate": false,
+                "numericOperator": "<="
+            }
+        ]
+    }
+)
+```
+
+</CodeGroup>
+
+<div id="array-contains-filtering">
+  ## Array Contains फ़िल्टरिंग
+</div>
+
+आप `array_contains` फ़िल्टर प्रकार का उपयोग करके array मानों के आधार पर memories को फ़िल्टर कर सकते हैं। यह विशेष रूप से प्रतिभागियों या अन्य array-आधारित metadata के अनुसार फ़िल्टर करने में उपयोगी है।
+
+सबसे पहले, metadata में प्रतिभागियों के साथ एक memory बनाएँ:
+
+<CodeGroup>
+
+```bash cURL
+curl --location 'https://api.supermemory.ai/v3/documents' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+--data '{
+    "content": "quarterly planning meeting discussion",
+    "metadata": {
+        "participants": ["john.doe", "sarah.smith", "mike.wilson"]
+    }
+  }'
+```
+
+```typescript Typescript
+await client.memories.create({
+  content: "quarterly planning meeting discussion",
+  metadata: {
+    participants: ["john.doe", "sarah.smith", "mike.wilson"]
+  }
+});
+```
+
+```python Python
+client.memories.create(
+    content="quarterly planning meeting discussion",
+    metadata={
+        "participants": ["john.doe", "sarah.smith", "mike.wilson"]
+    }
+)
+```
+
+</CodeGroup>
+
+इसके बाद `array_contains` फ़िल्टर का उपयोग करके खोजें:
+
+<CodeGroup>
+
+```bash cURL
+curl --location 'https://api.supermemory.ai/v3/search' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+--data '{
+    "q": "meeting",
+    "filters": {
+      "AND": [
+        {
+          "key": "participants",
+          "value": "john.doe",
+          "filterType": "array_contains"
+        }
+      ]
+    },
+    "limit": 5
+  }'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "meeting",
+  filters: {
+    AND: [
+      {
+        key: "participants",
+        value: "john.doe",
+        filterType: "array_contains"
+      }
+    ]
+  },
+  limit: 5
+});
+```
+
+```python Python
+client.search.execute(
+    q="meeting",
+    filters={
+        "AND": [
+            {
+                "key": "participants",
+                "value": "john.doe",
+                "filterType": "array_contains"
+            }
+        ]
+    },
+    limit=5
+)
+```
+
+</CodeGroup>
+
+<div id="migration-notes">
+  ## माइग्रेशन नोट्स
+</div>
+
+<Note>
+**ब्रेकिंग चेंजेज**: फ़िल्टरिंग सिस्टम के हालिया अपडेट में अधिक कड़े वैलिडेशन नियम जोड़े गए हैं। यदि आपको फ़िल्टर वैलिडेशन एरर मिल रहे हैं, तो कृपया निम्न देखें:
+
+1. **metadata कुंजी फ़ॉर्मेट**: सुनिश्चित करें कि सभी metadata कुंजियों में केवल अल्फ़ान्यूमेरिक अक्षर, अंडरस्कोर और हाइफ़न शामिल हों। स्पेस, डॉट या अन्य विशेष वर्णों वाली कुंजियाँ अब वैलिडेशन में असफल होंगी।
+
+2. **कुंजी की लंबाई**: metadata कुंजियाँ 64 वर्णों या उससे कम की होनी चाहिए।
+
+3. **फ़िल्टर की जटिलता**: 200 से अधिक शर्तों या 8 से अधिक नेस्टिंग लेवल वाली क्वेरीज़ अस्वीकार कर दी जाएँगी।
+
+**अपडेट की आवश्यकता वाली अमान्य कुंजियों के उदाहरण**:
+- `"user.email"` → `"user_email"`
+- `"reading time"` → `"reading_time"`
+- `"category-with-very-long-name-that-exceeds-the-limit"` → `"category_name"`
+</Note>
+
+<div id="document">
+  ## Documents
+</div>
+
+आप किसी विशिष्ट, बड़े Document के भीतर भी चंक खोज सकते हैं।
+
+यह विशेष रूप से अत्यंत बड़े Documents, जैसे Books, Podcasts आदि के लिए उपयोगी हो सकता है।
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+  --data '{
+    "q": "machine learning",
+    "docId": "doc_123"
+  }'
+```
+
+```typescript Typescript
+await client.search.execute({
+  q: "machine learning",
+  docId: "doc_123",
+});
+```
+
+```python Python
+client.search.execute(
+    q="machine learning",
+    docId="doc_123"
+)
+```
+
+</CodeGroup>

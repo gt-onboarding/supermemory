@@ -1,0 +1,186 @@
+---
+title: "मेमोरी खोजना"
+description: "supermemory से सामग्री खोजने और प्राप्त करने का तरीका सीखें"
+---
+
+<Accordion title="सर्वोत्तम प्रक्रियाएँ" defaultOpen icon="sparkles">
+  1. **क्वेरी तैयार करना**:
+     * प्राकृतिक भाषा में क्वेरी लिखें
+     * प्रासंगिक कीवर्ड शामिल करें
+     * स्पष्ट रहें, पर अनावश्यक विस्तार न करें
+
+  2. **फ़िल्टरिंग**:
+     * सटीकता के लिए मेटाडेटा filters का उपयोग करें
+     * आवश्यकता पड़ने पर कई filters को संयोजित करें
+     * उपयुक्त thresholds लागू करें
+
+  3. **प्रदर्शन**:
+     * उपयुक्त परिणाम limit सेट करें
+     * विशिष्ट document/chunk filters का उपयोग करें
+     * response timing पर ध्यान दें
+</Accordion>
+
+<div id="basic-search">
+  ## बुनियादी खोज
+</div>
+
+अपनी संग्रहित मेमोरी में खोज करने के लिए, `/search` पर एक GET अनुरोध भेजें:
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/search?q=machine+learning+concepts&limit=10 \
+    --request GET \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+  ```
+
+  ```typescript Typescript
+  await client.search.execute({
+    q: "machine learning concepts",
+    limit: 10,
+  });
+  ```
+
+  ```python Python
+  client.search.execute(
+      q="machine learning concepts",
+      limit=10
+  )
+  ```
+</CodeGroup>
+
+API संबंधित परिणाम उनकी समानता अंक के साथ लौटाएगा:
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_xyz789",
+      "chunks": [
+        {
+          "content": "मशीन लर्निंग कृत्रिम बुद्धिमत्ता का एक उपसमुच्चय है...",
+          "isRelevant": true,
+          "score": 0.85
+        }
+      ],
+      "score": 0.95,
+      "metadata": {
+        "source": "web",
+        "category": "technology"
+      },
+      "title": "मशीन लर्निंग का परिचय"
+    }
+  ],
+  "total": 1,
+  "timing": 123.45
+}
+```
+
+<div id="search-parameters">
+  ## खोज पैरामीटर
+</div>
+
+```json
+{
+  "q": "खोज क्वेरी", // आवश्यक: खोज क्वेरी स्ट्रिंग
+  "limit": 10, // वैकल्पिक: अधिकतम परिणाम (डिफ़ॉल्ट: 10)
+  "threshold": 0.6, // वैकल्पिक: न्यूनतम समानता अंक (0-1, डिफ़ॉल्ट: 0.6)
+  "containerTag": "user_123", // वैकल्पिक: containerTag द्वारा फ़िल्टर करें
+  "rerank": false, // वैकल्पिक: बेहतर प्रासंगिकता के लिए परिणामों को रीरैंक करें
+  "rewriteQuery": false, // वैकल्पिक: बेहतर मैचिंग के लिए क्वेरी को फिर से लिखें
+  "include": {
+    "documents": false, // वैकल्पिक: document मेटाडेटा शामिल करें
+    "summaries": false, // वैकल्पिक: document सारांश शामिल करें
+    "relatedMemories": false, // वैकल्पिक: संबंधित memory संदर्भ शामिल करें
+    "forgottenMemories": false // वैकल्पिक: परिणामों में भूली हुई संग्रहित मेमोरी शामिल करें
+  },
+  "filters": {
+    // वैकल्पिक: मेटाडेटा filters
+    "AND": [
+      {
+        "key": "category",
+        "value": "technology"
+      }
+    ]
+  }
+}
+```
+
+<div id="search-response">
+  ## खोज प्रतिक्रिया
+</div>
+
+खोज प्रतिक्रिया में शामिल होते हैं:
+
+```json
+{
+  "results": [
+    {
+      "documentId": "string", // दस्तावेज़ ID
+      "chunks": [
+        {
+          // मैचिंग चंक्स
+          "content": "string", // चंक सामग्री
+          "isRelevant": true, // प्रत्यक्ष रूप से प्रासंगिक है
+          "score": 0.95 // समानता अंक
+        }
+      ],
+      "score": 0.95, // दस्तावेज़ अंक
+      "metadata": {}, // दस्तावेज़ मेटाडेटा
+      "title": "string", // दस्तावेज़ शीर्षक
+      "createdAt": "string", // निर्माण तिथि
+      "updatedAt": "string" // अंतिम अपडेट तिथि
+    }
+  ],
+  "total": 1, // कुल परिणाम
+  "timing": 123.45 // खोज समय (ms)
+}
+```
+
+<div id="including-forgotten-memories">
+  ## भूल चुकी मेमोरी शामिल करना
+</div>
+
+डिफ़ॉल्ट रूप से, search API उन memory को बाहर रखता है जिन्हें भूलने के लिए चिह्नित किया गया है या जिनकी समाप्ति तिथि बीत चुकी है। इन्हें अपने खोज परिणामों में शामिल करने के लिए, `include.forgottenMemories` को `true` पर सेट करें:
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v4/search \
+    --request POST \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    --header 'Content-Type: application/json' \
+    --data '{
+      "q": "old project notes",
+      "include": {
+        "forgottenMemories": true
+      }
+    }'
+  ```
+
+  ```typescript Typescript
+  await client.search.memories({
+    q: "old project notes",
+    include: {
+      forgottenMemories: true
+    }
+  });
+  ```
+
+  ```python Python
+  await client.search.memories(
+      q="old project notes",
+      include={
+          "forgottenMemories": True
+      }
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  भूल चुकी memory वे memory होती हैं जिन्हें स्पष्ट रूप से forget API का उपयोग करके भुलाया गया है या जिनकी स्वचालित समाप्ति तिथि (`forgetAfter`) बीत चुकी है। उन्हें खोज परिणामों में शामिल करने से ऐसी जानकारी पुनर्प्राप्त करने में मदद मिल सकती है जो अब भी प्रासंगिक हो सकती है।
+</Note>
+
+<div id="next-steps">
+  ## अगले कदम
+</div>
+
+हमारे [API Reference](/hi/api-reference/search-memories/search-memories) में और उन्नत फीचर्स एक्सप्लोर करें।

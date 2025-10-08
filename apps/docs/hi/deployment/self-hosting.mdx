@@ -1,0 +1,291 @@
+---
+title: "Self Hosting"
+description: "Cloudflare Workers पर Supermemory API का अपना इंस्टेंस डिप्लॉय करें"
+---
+
+<Warning>
+यह गाइड केवल उन **एंटरप्राइज ग्राहकों** के लिए है जिन्होंने अपने एंटरप्राइज प्लान के तहत विशेष रूप से सेल्फ-होस्टिंग चुनी है। यदि आप स्टैंडर्ड प्लान पर हैं, तो कृपया हमारे होस्टेड API का उपयोग [console.supermemory.ai](https://console.supermemory.ai) पर करें।
+</Warning>
+
+<div id="prerequisites">
+  ## पूर्वापेक्षाएँ
+</div>
+
+शुरू करने से पहले, आपको कई API कुंजियाँ इकट्ठा करनी होंगी और विभिन्न सेवाओं पर खाते सेट अप करने होंगे। यह व्यापक मार्गदर्शिका आपको प्रत्येक आवश्यक घटक प्राप्त करने के चरणों से गुजरते हुए बताएगी।
+
+<div id="enterprise-deployment-package">
+  ### एंटरप्राइज़ डिप्लॉयमेंट पैकेज
+</div>
+
+आपका एंटरप्राइज़ डिप्लॉयमेंट पैकेज Supermemory टीम द्वारा प्रदान किया जाता है और इसमें शामिल हैं:
+
+- आपका यूनिक Host ID (`NEXT_PUBLIC_HOST_ID`)
+- कंपाइल किया हुआ JavaScript बंडल
+- डिप्लॉयमेंट स्क्रिप्ट
+
+अपना डिप्लॉयमेंट पैकेज प्राप्त करने के लिए अपने Supermemory एंटरप्राइज़ प्रतिनिधि से संपर्क करें।
+
+<div id="cloudflare">
+  ### Cloudflare
+</div>
+
+<div id="create-account">
+  #### खाता बनाएँ
+</div>
+
+1. [cloudflare.com](https://dash.cloudflare.com/sign-up) पर जाएँ और एक खाता बनाएँ
+3. आपका **Account ID** ब्राउज़र के url बार में दिखने वाली लंबी रैंडम स्ट्रिंग होती है
+
+<div id="create-api-token">
+  #### API टोकन बनाएँ
+</div>
+
+1. [Cloudflare API Tokens](https://dash.cloudflare.com/?to=/:account/api-tokens) पर जाएँ
+2. **"Create Token"** पर क्लिक करें
+3. **"Custom token"** टेम्पलेट चुनें
+4. टोकन को इन अनुमतियों के साथ कॉन्फ़िगर करें:
+   - **Account:AI Gateway:Edit**
+   - **Account:Hyperdrive:Edit**
+   - **Account:Workers KV Storage:Edit**
+   - **Account:Workers R2 Storage:Edit**
+7. **"Continue to summary"** → **"Create Token"** पर क्लिक करें
+8. **महत्वपूर्ण**: टोकन को तुरंत कॉपी करें और सुरक्षित रूप से सहेजें (यह दोबारा नहीं दिखेगा)
+
+<div id="enable-workers">
+  #### Workers सक्षम करें
+</div>
+
+1. अपने Cloudflare डैशबोर्ड में **Workers & Pages** पर जाएँ
+2. यदि संकेत मिले, तो Workers की सेवा शर्तें स्वीकार करें
+3. अपने Workers के लिए एक सबडोमेन चुनें (उदा., `yourcompany.workers.dev`)
+
+अब आपके `CLOUDFLARE_ACCOUNT_ID` और `CLOUDFLARE_API_TOKEN` तैयार हैं।
+
+<div id="database">
+  ### डेटाबेस
+</div>
+
+आपको `DATABASE_URL` environment variable के जरिए PostgreSQL connection string प्रदान करनी होगी।
+
+डेटाबेस में ये आवश्यकताएँ होनी चाहिए:
+
+* वेक्टर ऑपरेशंस के लिए **pgvector extension** का सपोर्ट
+* Cloudflare Workers से एक्सेसिबल होना
+* SSL connections का सपोर्ट
+* Cloudflare के IP ranges से connections की अनुमति
+
+आपकी connection string इस फ़ॉर्मेट का पालन करनी चाहिए:
+
+```
+postgresql://username:password@hostname:port/database
+```
+
+
+<div id="llm-providers">
+  ### LLM providers
+</div>
+
+<div id="openai">
+  #### OpenAI
+</div>
+
+1. [platform.openai.com](https://platform.openai.com) पर जाएँ
+2. साइन इन करें या खाता बनाएँ
+3. बाएँ साइडबार में **API Keys** पर जाएँ
+4. **"Create new secret key"** पर क्लिक करें
+5. अपनी कुंजी का नाम दें (जैसे, "Supermemory Self-Hosted")
+6. कुंजी कॉपी करें और इसे सुरक्षित रूप से सहेजें
+7. यदि अभी तक नहीं किया है, तो बिलिंग जानकारी जोड़ें
+
+<div id="anthropic">
+  #### Anthropic
+</div>
+
+1. [console.anthropic.com](https://console.anthropic.com) पर जाएँ
+2. खाता बनाएँ और सत्यापन पूरा करें
+3. **API Keys** पर जाएँ
+4. **"Create Key"** पर क्लिक करें
+5. कुंजी का नाम दें और उसे सुरक्षित रूप से कॉपी करें
+
+<div id="gemini">
+  #### Gemini
+</div>
+
+1. [Google AI Studio](https://aistudio.google.com) पर जाएँ
+2. अपने Google खाते से साइन इन करें
+3. **"Get API key"** → **"Create API key"** पर क्लिक करें
+4. मौजूदा Google Cloud प्रोजेक्ट चुनें या नया प्रोजेक्ट बनाएँ
+5. अपनी API कुंजी कॉपी करें
+
+<div id="groq">
+  #### Groq
+</div>
+
+1. [console.groq.com](https://console.groq.com) पर जाएँ
+2. एक खाता बनाएं
+3. **API Keys** पर जाएँ
+4. **"Create API Key"** पर क्लिक करें
+5. अपनी कुंजी का नाम दें और उसे कॉपी करें
+
+{/* TODO: OAuth दस्तावेज़ जोड़ें */}
+
+{/* ### Authentication Providers
+#### GitHub OAuth (वैकल्पिक)
+
+1. [GitHub Developer Settings](https://github.com/settings/developers) पर जाएँ
+2. **"New OAuth App"** पर क्लिक करें
+3. एप्लिकेशन विवरण भरें:
+   - **Application name**: आपके ऐप का नाम
+   - **Homepage URL**: आपका API डोमेन (उदा., `https://api.yourdomain.com`)
+   - **Authorization callback URL**: `https://api.yourdomain.com/api/auth/callback/github`
+4. **"Register application"** पर क्लिक करें
+5. **Client ID** नोट करें और एक **Client Secret** जेनरेट करें
+6. इन्हें `AUTH_GITHUB_ID` और `AUTH_GITHUB_SECRET` के लिए उपयोग करें
+
+#### Google OAuth (वैकल्पिक)
+
+1. [Google Cloud Console](https://console.cloud.google.com) पर जाएँ
+2. नया प्रोजेक्ट बनाएं या किसी मौजूदा का चयन करें
+3. **Google+ API** सक्षम करें
+4. **Credentials** → **Create Credentials** → **OAuth client ID** पर जाएँ
+5. **Web application** चुनें
+6. अपने डोमेन को **Authorized JavaScript origins** में जोड़ें
+7. `https://api.yourdomain.com/api/auth/callback/google` को **Authorized redirect URIs** में जोड़ें
+8. **Client ID** और **Client secret** कॉपी करें
+9. इन्हें `AUTH_GOOGLE_ID` और `AUTH_GOOGLE_SECRET` के लिए उपयोग करें */}
+
+<div id="email-service-setup">
+  ### ईमेल सेवा सेटअप
+</div>
+
+<div id="resend">
+  #### Resend
+</div>
+
+1. [resend.com](https://resend.com) पर जाएँ और एक खाता बनाएँ
+2. **API Keys** पर जाएँ
+3. **"Create API Key"** पर क्लिक करें
+4. अपनी कुंजी का नाम रखें (उदा., "supermemory Production")
+5. `RESEND_API_KEY` के लिए कुंजी कॉपी करें
+6. **Domains** अनुभाग में अपना सेंडिंग डोमेन सत्यापित करें
+
+<div id="connectors-optional">
+  ### कनेक्टर्स (वैकल्पिक)
+</div>
+
+<div id="google-drive">
+  #### Google Drive
+</div>
+
+1. [Google Cloud Console](https://console.cloud.google.com) पर जाएँ
+2. कोई प्रोजेक्ट बनाएँ या चुनें
+3. **Google Drive API** को सक्षम करें
+4. **Credentials** → **Create Credentials** → **OAuth client ID** पर जाएँ
+5. आवश्यकता होने पर OAuth consent स्क्रीन को कॉन्फ़िगर करें
+6. **Web application** चुनें
+7. अपने डोमेन के लिए authorized redirect URIs जोड़ें
+8. `GOOGLE_CLIENT_ID` और `GOOGLE_CLIENT_SECRET` को कॉपी करें
+
+<div id="microsoft-onedrive">
+  #### Microsoft OneDrive
+</div>
+
+1. [Azure Portal](https://portal.azure.com) पर जाएँ
+2. **Microsoft Entra ID** → **App registrations** पर जाएँ
+3. **"New registration"** पर क्लिक करें
+4. अपनी ऐप का नाम दें और Redirect URI सेट करें
+5. **Certificates & secrets** → **New client secret** पर जाएँ
+6. **Application (client) ID** और **Client secret** कॉपी करें
+7. इन्हें `MICROSOFT_CLIENT_ID` और `MICROSOFT_CLIENT_SECRET` के रूप में उपयोग करें
+
+<div id="notion">
+  #### Notion
+</div>
+
+1. [Notion Developers](https://developers.notion.com) पर जाएँ
+2. **"Create new integration"** पर क्लिक करें
+3. इंटीग्रेशन का विवरण भरें
+4. **Internal Integration Token** कॉपी करें
+5. यदि उपयोगकर्ता लिंक्ड अकाउंट्स की आवश्यकता हो तो OAuth सेट करें
+6. इसे `NOTION_CLIENT_ID` और `NOTION_CLIENT_SECRET` के रूप में उपयोग करें
+
+---
+
+<div id="setup-deployment-files">
+  ## डिप्लॉयमेंट फ़ाइलें सेट अप करें
+</div>
+
+Supermemory टीम द्वारा प्रदान किया गया डिप्लॉयमेंट पैकेज अपनी पसंदीदा डायरेक्टरी में एक्सट्रैक्ट करें:
+
+```bash
+# डिप्लॉयमेंट पैकेज को एक्सट्रैक्ट करें
+$ unzip supermemory-enterprise-deployment.zip
+$ cd supermemory-deployment
+```
+
+***
+
+
+<div id="configure-environment-variables">
+  ## एन्वायरनमेंट वेरिएबल्स कॉन्फ़िगर करें
+</div>
+
+डिप्लॉयमेंट स्क्रिप्ट रनटाइम पर आपके शेल से **सभी** एन्वायरनमेंट वेरिएबल्स पढ़ती है। हम एक उदाहरण फ़ाइल देते हैं जो वर्कर द्वारा समर्थित पूरे सेट को सूचीबद्ध करती है।
+
+```bash
+# टेम्प्लेट कॉपी करें और संपादन शुरू करें
+$ cp packages/alchemy/env.example .env
+
+# अपने पसंदीदा एडिटर में फ़ाइल खोलें और रिक्त स्थान भरें
+$ $EDITOR .env
+```
+
+नीचे एक त्वरित संदर्भ दिया गया है।\
+सफल डिप्लॉय के लिए **अनिवार्य** मान जरूरी हैं — यदि संबंधित फ़ीचर की आवश्यकता नहीं है, तो वैकल्पिक मान खाली छोड़ दें।
+
+| Name | Required? | Description |
+|------|-----------|-------------|
+| `NODE_ENV` | ✅ | `development`, `staging` या `production`. |
+| `NEXT_PUBLIC_HOST_ID` | ✅ | Supermemory टीम द्वारा प्रदान किया गया आपका यूनिक Host ID. |
+| `BETTER_AUTH_SECRET` | ✅ | रैंडम 32-बाइट स्ट्रिंग — `openssl rand -base64 32` चलाएँ। |
+| `BETTER_AUTH_URL` | ✅ | API के लिए सार्वजनिक बेस url (अंत में `/` न हो)। उदाहरण: `https://api.example.com`. |
+| `DATABASE_URL` | ✅ | Postgres कनेक्शन स्ट्रिंग (जैसे `postgres://user:pass@host:5432/db`). |
+| `CLOUDFLARE_ACCOUNT_ID` | ✅ | आपका Cloudflare अकाउंट id. |
+| `CLOUDFLARE_API_TOKEN` | ✅ | *Prerequisites* में बनाया गया टोकन। |
+| `OPENAI_API_KEY` | ✅ | [platform.openai.com](https://platform.openai.com) से key. |
+| `RESEND_API_KEY` | ✅ | यदि आप ईमेल भेजने की योजना बनाते हैं तो ईमेल provider key. |
+| `ANTHROPIC_API_KEY` |  | Claude मॉडलों के लिए आवश्यक। |
+| `GEMINI_API_KEY` |  | Google Gemini मॉडलों के लिए key. |
+| `GROQ_API_KEY` |  | Groq मॉडलों के लिए key. |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` |  | GitHub OAuth लॉगिन सक्षम करें। |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` |  | Google OAuth लॉगिन सक्षम करें। |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` |  | Google Drive कनेक्टर के लिए आवश्यक। |
+| `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` |  | OneDrive कनेक्टर के लिए आवश्यक। |
+| `NOTION_CLIENT_ID` / `NOTION_CLIENT_SECRET` |  | Notion कनेक्टर के लिए आवश्यक। |
+| `CLOUDFLARE_AI_GATEWAY_NAME` / `CLOUDFLARE_AI_GATEWAY_TOKEN` |  | केवल तब जब आप रिक्वेस्ट्स को AI Gateway के माध्यम से रूट करना चाहते हों। |
+| `SENTRY_DSN` |  | यदि आप एरर रिपोर्टिंग के लिए Sentry का उपयोग करते हैं। |
+
+***
+
+
+<div id="deploy">
+  ## डिप्लॉय
+</div>
+
+जब आपकी `.env` फ़ाइल तैयार हो, तो डिप्लॉयमेंट स्क्रिप्ट चलाएँ:
+
+```bash
+# अपने पैकेज में प्रदान की गई deployment script चलाएं
+$ bun ./deploy.ts
+```
+
+***
+
+
+<div id="updating-your-deployment">
+  ## अपने डिप्लॉयमेंट को अपडेट करना
+</div>
+
+अपने Supermemory डिप्लॉयमेंट को अपडेट करने के लिए, ऊपर दिए गए **Deploy** सेक्शन में बताए गए प्रारंभिक डिप्लॉयमेंट वाले ही चरणों का पालन करें। आप अपनी मौजूदा `.env` फ़ाइल को पुनः उपयोग कर सकते हैं और आवश्यकता के अनुसार नए environment variables जोड़ या हटाकर अपडेट कर सकते हैं।
+
+---

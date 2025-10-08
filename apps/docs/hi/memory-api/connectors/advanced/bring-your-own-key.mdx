@@ -1,0 +1,140 @@
+---
+title: "अपनी कुंजी साथ लाएँ (BYOK)"
+description: "बेहतर सुरक्षा और नियंत्रण के लिए अपनी OAuth एप्लिकेशन क्रेडेंशियल्स कॉन्फ़िगर करें"
+---
+
+डिफ़ॉल्ट रूप से, supermemory तृतीय-पक्ष प्रदाताओं से जुड़ने के लिए अपनी OAuth एप्लिकेशन का उपयोग करता है। हालांकि, आप बेहतर सुरक्षा और नियंत्रण के लिए अपनी OAuth एप्लिकेशन क्रेडेंशियल्स कॉन्फ़िगर कर सकते हैं। यह विशेष रूप से उन एंटरप्राइज़ ग्राहकों के लिए उपयोगी है जो अपने डेटा एक्सेस पर नियंत्रण बनाए रखना चाहते हैं।
+
+<Danger>
+  कुछ प्रदाता, जैसे Google Drive, कस्टम कुंजियों का उपयोग करने से पहले व्यापक सत्यापन और स्वीकृति की आवश्यकता करते हैं।
+</Danger>
+
+<div id="setting-up-custom-provider-keys">
+  ### कस्टम प्रदाता कुंजियाँ सेट करना
+</div>
+
+अपने संगठन के लिए कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करने के लिए `PATCH /v3/settings` endpoint का उपयोग करें:
+
+1. प्रदाता के डेवलपर कंसोल पर अपना OAuth एप्लिकेशन सेट अप करें।
+
+Google: https://console.developers.google.com/apis/credentials/oauthclient \
+Notion: https://www.notion.so/my-integrations \
+OneDrive: https://portal.azure.com/#view/Microsoft&#95;AAD&#95;RegisteredApps/ApplicationsMenu
+
+2. यदि आप Google Drive का उपयोग कर रहे हैं, तो:
+
+* एप्लिकेशन प्रकार के रूप में `Web application` चुनें
+* **Cloud Console में &quot;APIs and Services&quot; के भीतर Google Drive API सक्षम करें**
+
+3. रीडायरेक्ट URL कॉन्फ़िगर करें; इसे सेट करें:
+
+```
+https://api.supermemory.ai/v3/connections/auth/callback/{provider}
+```
+
+उदाहरण के लिए, यदि आप Google Drive का उपयोग कर रहे हैं, तो रीडायरेक्ट url होगा:
+
+```
+https://api.supermemory.ai/v3/connections/auth/callback/google-drive
+```
+
+4. `PATCH /v3/settings` endpoint में client ID और client secret कॉन्फ़िगर करें।
+
+<CodeGroup>
+  ```typescript Typescript
+  import Supermemory from 'supermemory';
+
+  const client = new Supermemory({
+    apiKey: process.env['SUPERMEMORY_API_KEY'],
+  });
+
+  // उदाहरण: Google Drive के कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करें
+  const settings = await client.settings.update({
+    googleCustomKeyEnabled: true,
+    googleDriveClientId: "your-google-client-id",
+    googleDriveClientSecret: "your-google-client-secret"
+  });
+
+  // उदाहरण: Notion के कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करें
+  const settings = await client.settings.update({
+    notionCustomKeyEnabled: true,
+    notionClientId: "your-notion-client-id",
+    notionClientSecret: "your-notion-client-secret"
+  });
+
+  // उदाहरण: OneDrive के कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करें
+  const settings = await client.settings.update({
+    onedriveCustomKeyEnabled: true,
+    onedriveClientId: "your-onedrive-client-id",
+    onedriveClientSecret: "your-onedrive-client-secret"
+  });
+  ```
+
+  ```python Python
+  from supermemory import supermemory
+
+  client = supermemory(
+      api_key=os.environ.get("SUPERMEMORY_API_KEY"),  # यह डिफ़ॉल्ट है और छोड़ा जा सकता है
+  )
+
+  # उदाहरण: Google Drive के कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करें
+  settings = client.settings.update(
+      google_custom_key_enabled=True,
+      google_client_id="your-google-client-id",
+      google_client_secret="your-google-client-secret"
+  )
+
+  # उदाहरण: Notion के कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करें
+  settings = client.settings.update(
+      notion_custom_key_enabled=True,
+      notion_client_id="your-notion-client-id",
+      notion_client_secret="your-notion-client-secret"
+  )
+
+  # उदाहरण: OneDrive के कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करें
+  settings = client.settings.update(
+      onedrive_custom_key_enabled=True,
+      onedrive_client_id="your-onedrive-client-id",
+      onedrive_client_secret="your-onedrive-client-secret"
+  )
+  ```
+
+  ```bash cURL
+  # उदाहरण: Google Drive के कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करें
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "googleDriveCustomKeyEnabled": true,
+    "googleDriveClientId": "your-google-client-id",
+    "googleDriveClientSecret": "your-google-client-secret"
+  }'
+
+  # उदाहरण: Notion के कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करें
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "notionCustomKeyEnabled": true,
+    "notionClientId": "your-notion-client-id",
+    "notionClientSecret": "your-notion-client-secret"
+  }'
+
+  # उदाहरण: OneDrive के कस्टम OAuth क्रेडेंशियल्स कॉन्फ़िगर करें
+  curl --request PATCH \
+    --url https://api.supermemory.ai/v3/settings \
+    --header 'Authorization: Bearer <token>' \
+    --header 'Content-Type: application/json' \
+    --data '{
+    "onedriveCustomKeyEnabled": true,
+    "onedriveClientId": "your-onedrive-client-id",
+    "onedriveClientSecret": "your-onedrive-client-secret"
+  }'
+  ```
+</CodeGroup>
+
+<Warning>
+  जब आप किसी प्रदाता के लिए कस्टम keys सक्षम करते हैं, तो उस प्रदाता के सभी नए लिंक्ड खाते आपकी कस्टम OAuth एप्लिकेशन का उपयोग करेंगे। मौजूदा लिंक्ड खातों को दोबारा अधिकृत करना आवश्यक होगा।
+</Warning>

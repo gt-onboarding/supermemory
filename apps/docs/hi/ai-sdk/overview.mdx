@@ -1,0 +1,90 @@
+---
+title: "AI SDK एकीकरण"
+description: "Vercel AI SDK के साथ Supermemory का उपयोग करके सहज संग्रहीत मेमोरी प्रबंधन करें"
+sidebarTitle: "अवलोकन"
+---
+
+Supermemory AI SDK, Vercel के AI SDK के साथ दो तरीकों से नैटिव एकीकरण प्रदान करता है: एजेंट-आधारित इंटरैक्शन के लिए **Memory Tools** और स्वचालित संदर्भ प्रबंधन के लिए **Infinite Chat**।
+
+<Card title="npm पर Supermemory tools" icon="npm" href="https://www.npmjs.com/package/@supermemory/tools">
+  अधिक जानकारी के लिए npm पेज देखें
+</Card>
+
+<div id="installation">
+  ## इंस्टॉलेशन
+</div>
+
+```bash
+npm install @supermemory/tools
+```
+
+<div id="memory-tools">
+  ## Memory Tools
+</div>
+
+खोज, जोड़ना और फ़ेच संचालन के साथ AI एजेंट्स में संग्रहीत मेमोरी की क्षमताएँ जोड़ें।
+
+```typescript
+import { streamText } from "ai"
+import { createAnthropic } from "@ai-sdk/anthropic"
+import { supermemoryTools } from "@supermemory/tools/ai-sdk"
+
+const anthropic = createAnthropic({
+  apiKey: "YOUR_ANTHROPIC_KEY"
+})
+
+const result = await streamText({
+  model: anthropic("claude-3-sonnet"),
+  prompt: "याद रखें कि मेरा नाम Alice है",
+  tools: supermemoryTools("YOUR_SUPERMEMORY_KEY")
+})
+```
+
+<div id="infinite-chat">
+  ## Infinite Chat
+</div>
+
+असीमित संदर्भ वाली चैट एप्लिकेशनों के लिए स्वचालित संग्रहीत मेमोरी प्रबंधन।
+
+```typescript
+import { streamText } from "ai"
+
+const infiniteChat = createAnthropic({
+  baseUrl: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+  apiKey: 'your-provider-api-key',
+  headers: {
+    'x-supermemory-api-key': 'supermemory-api-key',
+    'x-sm-conversation-id': 'conversation-id'
+  }
+})
+
+const result = await streamText({
+  model: infiniteChat("claude-3-sonnet"),
+  messages: [
+    { role: "user", content: "मेरा नाम क्या है?" }
+  ]
+})
+```
+
+<div id="when-to-use">
+  ## कब उपयोग करें
+</div>
+
+| Approach | Use Case |
+|----------|----------|
+| Memory Tools | ऐसे AI एजेंट जिन्हें स्पष्ट संग्रहीत मेमोरी नियंत्रण चाहिए |
+| Infinite Chat | स्वचालित संदर्भ वाले चैट अनुप्रयोग |
+
+<div id="next-steps">
+  ## अगले चरण
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Memory Tools" icon="wrench" href="/hi/ai-sdk/memory-tools">
+    एजेंट-आधारित संग्रहीत मेमोरी प्रबंधन
+  </Card>
+
+  <Card title="Infinite Chat" icon="infinity" href="/hi/ai-sdk/infinite-chat">
+    स्वचालित संदर्भ प्रबंधन
+  </Card>
+</CardGroup>

@@ -1,0 +1,232 @@
+---
+title: "उपयोग"
+description: "अपने एप्लिकेशन में Memory Router को कैसे लागू करें"
+sidebarTitle: "उपयोग"
+---
+
+केवल एक url बदलकर अपनी LLM ऐप्स में असीमित memory जोड़ें।
+
+<div id="prerequisites">
+  ## आवश्यकताएँ
+</div>
+
+आपको चाहिए:
+
+1. एक [Supermemory API कुंजी](https://console.supermemory.ai)
+2. आपके LLM provider की API कुंजी
+
+<div id="basic-setup">
+  ## बेसिक सेटअप
+</div>
+
+<Steps>
+  <Step title="अपनी API कुंजियाँ प्राप्त करें">
+    **Supermemory API कुंजी:**
+    1. [console.supermemory.ai](https://console.supermemory.ai) पर साइन अप करें
+    2. **API Keys** → **Create API Key** पर जाएँ
+    3. अपनी कुंजी कॉपी करें
+
+    **Provider API कुंजी:**
+    - [OpenAI](https://platform.openai.com/api-keys)
+    - [Anthropic](https://console.anthropic.com/settings/keys)
+    - [Google Gemini](https://aistudio.google.com/app/apikey)
+    - [Groq](https://console.groq.com/keys)
+  </Step>
+
+  <Step title="बेस URL अपडेट करें">
+    अपने provider के URL की शुरुआत में `https://api.supermemory.ai/v3/` जोड़ें:
+
+    ```
+    https://api.supermemory.ai/v3/[PROVIDER_URL]
+    ```
+  </Step>
+
+  <Step title="प्रमाणीकरण जोड़ें">
+    अपनी रिक्वेस्ट में दोनों API कुंजियाँ शामिल करें (नीचे दिए उदाहरण देखें)
+  </Step>
+</Steps>
+
+<div id="provider-urls">
+  ## प्रोवाइडर URLs
+</div>
+
+<CodeGroup>
+
+```text OpenAI
+https://api.supermemory.ai/v3/https://api.openai.com/v1/
+```
+
+```text Anthropic
+https://api.supermemory.ai/v3/https://api.anthropic.com/v1/
+```
+
+```text Google Gemini
+https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai/
+```
+
+```text Groq
+https://api.supermemory.ai/v3/https://api.groq.com/openai/v1/
+```
+
+</CodeGroup>
+
+<div id="implementation-examples">
+  ## इम्प्लीमेंटेशन उदाहरण
+</div>
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="YOUR_OPENAI_API_KEY",
+        base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/",
+        default_headers={
+            "x-supermemory-api-key": "YOUR_SUPERMEMORY_API_KEY",
+            "x-sm-user-id": "user123"  # विशिष्ट उपयोगकर्ता पहचानकर्ता
+        }
+    )
+
+    # सामान्य रूप से उपयोग करें
+    response = client.chat.completions.create(
+        model="gpt-5",
+        messages=[
+            {"role": "user", "content": "Hello!"}
+        ]
+    )
+
+    print(response.choices[0].message.content)
+    ```
+  </Tab>
+
+  <Tab title="TypeScript">
+    ```typescript
+    import OpenAI from 'openai';
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/',
+      defaultHeaders: {
+        'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY,
+        'x-sm-user-id': 'user123'  // विशिष्ट उपयोगकर्ता पहचानकर्ता
+      }
+    });
+
+    // सामान्य रूप से उपयोग करें
+    const response = await client.chat.completions.create({
+      model: 'gpt-5',
+      messages: [
+        { role: 'user', content: 'Hello!' }
+      ]
+    });
+
+    console.log(response.choices[0].message.content);
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions" \
+      -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+      -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user123" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "gpt-5",
+        "messages": [{"role": "user", "content": "Hello!"}]
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="alternative-url-parameters">
+  ## वैकल्पिक: URL पैरामीटर
+</div>
+
+यदि आप हेडर्स संशोधित नहीं कर सकते, तो प्रमाणीकरण को URL पैरामीटर के माध्यम से पास करें:
+
+<CodeGroup>
+
+```python Python
+client = OpenAI(
+    api_key="YOUR_OPENAI_API_KEY",
+    base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123"
+)
+
+# इसके बाद Supermemory API कुंजी को environment variable के रूप में सेट करें:
+# export SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```typescript TypeScript
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123'
+});
+
+// Supermemory API कुंजी को environment variable के रूप में सेट करें:
+// SUPERMEMORY_API_KEY="your_key_here"
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions?userId=user123" \
+  -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+  -H "x-supermemory-api-key: YOUR_SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "gpt-5", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+</CodeGroup>
+
+<div id="conversation-management">
+  ## बातचीत प्रबंधन
+</div>
+
+<div id="managing-conversations">
+  ### बातचीत प्रबंधन
+</div>
+
+अनुरोधों के बीच बातचीत का संदर्भ बनाए रखने के लिए `x-sm-conversation-id` का उपयोग करें:
+
+```python
+# एक नई बातचीत शुरू करें
+response1 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "मेरा नाम Alice है"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+
+# बाद में उसी बातचीत को जारी रखें
+response2 = client.chat.completions.create(
+    model="gpt-5",
+    messages=[{"role": "user", "content": "मेरा नाम क्या है?"}],
+    extra_headers={
+        "x-sm-conversation-id": "conv_123"
+    }
+)
+# Response "Alice" को याद रखेगा
+```
+
+
+<div id="user-identification">
+  ### उपयोगकर्ता पहचान
+</div>
+
+उपयोगकर्ताओं के बीच संग्रहीत स्मृतियाँ अलग रखने के लिए हमेशा एक अद्वितीय id प्रदान करें:
+
+```python
+# विभिन्न उपयोगकर्ताओं के पास अलग memory स्थान होते हैं
+client_alice = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "alice_123"}
+)
+
+client_bob = OpenAI(
+    api_key="...",
+    base_url="...",
+    default_headers={"x-sm-user-id": "bob_456"}
+)
+```

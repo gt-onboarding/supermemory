@@ -1,0 +1,158 @@
+---
+title: "क्विकस्टार्ट - 5 मिनट"
+description: "जानें कि अपने एप्लिकेशन में Supermemory को कैसे इंटीग्रेट करें"
+---
+
+<div id="authentication">
+  ## प्रमाणीकरण
+</div>
+
+[Supermemory के डेवलपर प्लेटफ़ॉर्म](https://console.supermemory.ai) पर जाएँ, जो API के हर पहलू की निगरानी और प्रबंधन में आपकी मदद के लिए बनाया गया है।
+
+सभी API अनुरोधों के लिए API की के साथ प्रमाणीकरण आवश्यक है। अपनी API की को इस प्रकार शामिल करें:
+
+<CodeGroup>
+  ```bash cURL
+  Authorization: Bearer YOUR_API_KEY
+  ```
+
+  ```typescript Typescript
+  // npm install supermemory
+
+  const client = new supermemory({
+    apiKey: "YOUR_API_KEY",
+  });
+  ```
+
+  ```python Python
+  # pip install supermemory
+
+  client = supermemory(
+      api_key="YOUR_API_KEY",
+  )
+  ```
+</CodeGroup>
+
+<div id="installing-the-clients">
+  ## क्लायंट्स इंस्टॉल करना
+</div>
+
+आप Supermemory को API के माध्यम से या हमारे SDKs का उपयोग करके इस्तेमाल कर सकते हैं
+
+<CodeGroup>
+  ```bash cURL
+  https://api.supermemory.ai/v3
+  ```
+
+  ```bash Typescript
+  npm i supermemory
+  ```
+
+  ```bash Python
+  pip install supermemory
+  ```
+</CodeGroup>
+
+<div id="add-your-first-memory">
+  ## अपनी पहली memory जोड़ें
+</div>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/documents \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{"content": "This is the content of my first memory."}'
+  ```
+
+  ```typescript Typescript
+  await client.memory.add({
+    content: "This is the content of my first memory.",
+  });
+  ```
+
+  ```python Python
+  client.memory.add(
+      content="This is the content of my first memory.",
+  )
+  ```
+</CodeGroup>
+
+यह आपके Supermemory खाते में एक नई memory जोड़ देगा।
+
+इसे [API Playground](/hi/api-reference/manage-memories/add-memory) में आज़माएँ।
+
+<div id="content-processing">
+  ## सामग्री प्रोसेसिंग
+</div>
+
+<Accordion title="Processing steps" icon="sparkles">
+  जब आप Supermemory में सामग्री जोड़ते हैं, तो वह कई प्रोसेसिंग चरणों से गुजरती है:
+
+  1. **कतार में**: सामग्री सबमिट होने पर शुरुआती स्थिति
+  2. **Extracting**: सामग्री स्रोत से निकाली जा रही है
+  3. **खंडन**: सामग्री को अर्थपूर्ण चंक्स में विभाजित किया जा रहा है
+  4. **एम्बेडिंग**: खोज के लिए वेक्टर एम्बेडिंग्स जनरेट करना
+  5. **इंडेक्सिंग**: सामग्री को सर्च इंडेक्स में जोड़ना
+  6. **Done**: प्रोसेसिंग पूर्ण
+</Accordion>
+
+<Accordion title="Advanced Chunking" icon="sparkles">
+  सिस्टम इष्टतम खंडन के लिए उन्नत NLP तकनीकों का उपयोग करता है:
+
+  * प्राकृतिक सीमाओं के लिए वाक्य-स्तरीय विभाजन
+  * ओवरलैपिंग चंक्स के साथ संदर्भ संरक्षित रखना
+  * लंबी सामग्री का स्मार्ट हैंडलिंग
+  * सैमantic कोहेरेंस का अनुकूलन
+</Accordion>
+
+<div id="search-your-memories">
+  ## अपनी संग्रहीत मेमोरीज़ खोजें
+</div>
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.supermemory.ai/v3/search \
+    --request POST \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer SUPERMEMORY_API_KEY' \
+    -d '{"q": "This is the content of my first memory."}'
+  ```
+
+  ```typescript Typescript
+  await client.search.execute({
+    q: "This is the content of my first memory.",
+  });
+  ```
+
+  ```python Python
+  client.search.execute(
+      q="This is the content of my first memory.",
+  )
+  ```
+</CodeGroup>
+
+इसे [API Playground](/hi/api-reference/search-memories/search-memories) में आज़माएँ।
+
+आप Supermemory के साथ बहुत कुछ कर सकते हैं, और हम आपको हर ज़रूरी चीज़ के बारे में चरण-दर-चरण बताएँगे।
+
+अब Supermemory में उपलब्ध फीचर्स को एक्सप्लोर करें
+
+<CardGroup cols={2}>
+  <Card title="मेमोरी जोड़ना" icon="plus" href="/hi/memory-api/creation">
+    मेमोरी जोड़ना
+  </Card>
+
+  <Card title="सर्चिंग और फ़िल्टरिंग" icon="search" href="/hi/memory-api/searching">
+    आइटम खोजना
+  </Card>
+
+  <Card title="कनेक्टर्स और सिंकिंग" icon="plug" href="/hi/memory-api/connectors">
+    बाहरी स्रोत जोड़ना
+  </Card>
+
+  <Card title="फीचर्स" icon="sparkles" href="/hi/memory-api/features">
+    फीचर्स एक्सप्लोर करें
+  </Card>
+</CardGroup>

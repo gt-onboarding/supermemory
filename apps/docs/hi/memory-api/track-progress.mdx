@@ -1,0 +1,299 @@
+---
+title: "प्रोसेसिंग status ट्रैक करें"
+description: "रीयल-टाइम में दस्तावेज़ प्रोसेसिंग status मॉनिटर करें"
+icon: "activity"
+---
+
+बेहतर उपयोगकर्ता अनुभव प्रदान करने और edge cases को संभालने के लिए अपने दस्तावेज़ों को प्रोसेसिंग पाइपलाइन में ट्रैक करें।
+
+<div id="processing-pipeline">
+  ## प्रोसेसिंग पाइपलाइन
+</div>
+
+![दस्तावेज़ों को संग्रहीत स्मृति में बदलने की प्रक्रिया](/images/pipeline.png)
+
+प्रत्येक चरण का एक विशिष्ट उद्देश्य होता है:
+
+- **पंक्तिबद्ध**: दस्तावेज़ प्रोसेसिंग कतार में प्रतीक्षा कर रहा है
+- **एक्सट्रैक्टिंग**: सामग्री निकाली जा रही है (छवियों के लिए OCR, वीडियो के लिए ट्रांसक्रिप्शन)
+- **चंकिंग**: सामग्री को सर्वोत्तम, खोजयोग्य हिस्सों में विभाजित किया जाता है
+- **Embedding**: प्रत्येक हिस्से को वेक्टर अभ्यावेदन में बदला जाता है
+- **इंडेक्सिंग**: वेक्टर को सर्च इंडेक्स में जोड़ा जाता है
+- **पूर्ण**: दस्तावेज़ पूरी तरह प्रोसेस हो चुका है और खोजयोग्य है
+
+<Note>
+प्रोसेसिंग समय सामग्री के प्रकार के अनुसार बदलता है। सादा टेक्स्ट कुछ सेकंड में प्रोसेस हो जाता है, जबकि 10 मिनट का वीडियो 2–3 मिनट ले सकता है।
+</Note>
+
+<div id="processing-documents">
+  ## प्रोसेसिंग में दस्तावेज़
+</div>
+
+अपने खाते में इस समय प्रोसेस हो रहे सभी दस्तावेज़ों की निगरानी करें।
+
+`GET /v3/documents/processing`
+
+<CodeGroup>
+
+```typescript
+// Direct API call (not in SDK)
+const response = await fetch('https://api.supermemory.ai/v3/documents/processing', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const processing = await response.json();
+console.log(`${processing.documents.length} documents processing`);
+```
+
+```python
+# Direct API call (not in SDK)
+import requests
+
+response = requests.get(
+    'https://api.supermemory.ai/v3/documents/processing',
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+processing = response.json()
+print(f"{len(processing['documents'])} documents processing")
+```
+
+```bash
+curl -X GET "https://api.supermemory.ai/v3/documents/processing" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### प्रतिक्रिया प्रारूप
+</div>
+
+```json
+{
+  "documents": [
+    {
+      "id": "doc_abc123",
+      "status": "extracting",
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:15Z",
+      "container_tags": ["research"],
+      "metadata": {
+        "source": "upload",
+        "filename": "report.pdf"
+      }
+    },
+    {
+      "id": "doc_def456",
+      "status": "chunking",
+      "created_at": "2024-01-15T10:29:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "container_tags": ["articles"],
+      "metadata": {
+        "source": "url",
+        "url": "https://example.com/article"
+      }
+    }
+  ],
+  "total": 2
+}
+```
+
+
+<div id="individual-documents">
+  ## व्यक्तिगत दस्तावेज़
+</div>
+
+किसी विशेष दस्तावेज़ की प्रोसेसिंग स्थिति ट्रैक करें।
+
+`GET /v3/documents/{id}`
+
+<CodeGroup>
+
+```typescript
+const memory = await client.memories.get("doc_abc123");
+
+console.log(`Status: ${memory.status}`);
+
+// Poll for completion
+while (memory.status !== 'done') {
+  await new Promise(r => setTimeout(r, 2000));
+  memory = await client.memories.get("doc_abc123");
+  console.log(`Status: ${memory.status}`);
+}
+```
+
+```python
+memory = client.memories.get("doc_abc123")
+
+print(f"Status: {memory['status']}")
+
+# Poll for completion
+import time
+while memory['status'] != 'done':
+    time.sleep(2)
+    memory = client.memories.get("doc_abc123")
+    print(f"Status: {memory['status']}")
+```
+
+```bash
+curl -X GET "https://api.supermemory.ai/v3/documents/doc_abc123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-format">
+  ### उत्तर प्रारूप
+</div>
+
+```json
+{
+  "id": "doc_abc123",
+  "status": "done",
+  "content": "मूल सामग्री...",
+  "container_tags": ["research"],
+  "metadata": {
+    "source": "upload",
+    "filename": "report.pdf"
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:31:00Z"
+}
+```
+
+
+<div id="status-values">
+  ## Status मान
+</div>
+
+| Status | विवरण | सामान्य अवधि |
+|--------|-------------|------------------|
+| `queued` | प्रोसेस होने के लिए पंक्तिबद्ध | < 5 सेकंड |
+| `extracting` | स्रोत से सामग्री निकालना | 5-30 सेकंड |
+| `chunking` | खोज योग्य हिस्सों में विभाजित करना | 5-15 सेकंड |
+| `embedding` | वेक्टर प्रतिनिधित्व बनाना | 10-30 सेकंड |
+| `indexing` | सर्च इंडेक्स में जोड़ना | 5-10 सेकंड |
+| `done` | पूरी तरह प्रोसेस्ड और खोज योग्य | - |
+| `failed` | प्रोसेसिंग असफल | - |
+
+<div id="polling-best-practices">
+  ## पोलिंग के सर्वोत्तम अभ्यास
+</div>
+
+जब status अपडेट के लिए पोलिंग कर रहे हों:
+
+```typescript
+async function waitForProcessing(documentId: string, maxWaitMs = 300000) {
+  const startTime = Date.now();
+  const pollInterval = 2000; // 2 सेकंड
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const doc = await client.memories.get(documentId);
+
+    if (doc.status === 'done') {
+      return doc;
+    }
+
+    if (doc.status === 'failed') {
+      throw new Error(`${documentId} के लिए प्रोसेसिंग असफल हुई`);
+    }
+
+    await new Promise(r => setTimeout(r, pollInterval));
+  }
+
+  throw new Error(`${documentId} की प्रतीक्षा में टाइमआउट`);
+}
+```
+
+
+<div id="batch-processing">
+  ## बैच प्रोसेसिंग
+</div>
+
+एकाधिक दस्तावेज़ के लिए, उन्हें कुशलतापूर्वक ट्रैक करें:
+
+```typescript
+async function trackBatch(documentIds: string[]) {
+  const statuses = new Map();
+
+  // प्रारंभिक जाँच
+  for (const id of documentIds) {
+    const doc = await client.memories.get(id);
+    statuses.set(id, doc.status);
+  }
+
+  // सभी पूर्ण होने तक पोल करें
+  while ([...statuses.values()].some(s => s !== 'done' && s !== 'failed')) {
+    await new Promise(r => setTimeout(r, 5000)); // बैच के लिए 5 सेकंड का अंतराल
+
+    for (const id of documentIds) {
+      if (statuses.get(id) !== 'done' && statuses.get(id) !== 'failed') {
+        const doc = await client.memories.get(id);
+        statuses.set(id, doc.status);
+      }
+    }
+
+    // प्रगति लॉग करें
+    const done = [...statuses.values()].filter(s => s === 'done').length;
+    console.log(`प्रगति: ${done}/${documentIds.length} पूर्ण`);
+  }
+
+  return statuses;
+}
+```
+
+
+<div id="error-handling">
+  ## त्रुटि प्रबंधन
+</div>
+
+प्रोसेसिंग विफलताओं को सहजता से संभालें:
+
+```typescript
+async function addWithRetry(content: string, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const { id } = await client.memories.add({ content });
+
+    try {
+      const result = await waitForProcessing(id);
+      return result;
+    } catch (error) {
+      console.error(`प्रयास ${attempt} विफल:`, error);
+
+      if (attempt === maxRetries) {
+        throw error;
+      }
+
+      // घातांकीय विलंब
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
+  }
+}
+```
+
+
+<div id="processing-times-by-content-type">
+  ## सामग्री प्रकार के अनुसार प्रोसेसिंग समय
+</div>
+
+दस्तावेज़: लगभग तुरंत बन जाते हैं (200-500ms)
+
+संग्रहीत स्मृति: Supermemory अर्थ-आधारित विश्लेषण और संदर्भीय समझ के आधार पर एक मेमोरी ग्राफ बनाता है।
+
+| सामग्री का प्रकार | मेमोरी प्रोसेसिंग समय | नोट्स |
+|--------------|------------------------|-------|
+| सादा पाठ | 5-10 सेकंड | सबसे तेज़ प्रोसेसिंग |
+| मार्कडाउन | 5-10 सेकंड | सादा पाठ जैसा |
+| PDF (< 10 पेज) | 15-30 सेकंड | आवश्यकता होने पर OCR |
+| PDF (> 100 पेज) | 1-3 मिनट | जटिलता पर निर्भर |
+| छवियाँ | 10-20 सेकंड | OCR प्रोसेसिंग |
+| YouTube वीडियो | 10 मिनट के वीडियो पर 1-2 मिनट | ट्रांसक्रिप्शन आवश्यक |
+| वेब पेज | 10-20 सेकंड | सामग्री निष्कर्षण |
+| Google Docs | 10-15 सेकंड | API निष्कर्षण |
+
+<Note>
+**Pro Tip**: बड़े दस्तावेज़ों या बैच अपलोड के लिए, उपयोगकर्ताओं को रीयल-टाइम फीडबैक देने हेतु प्रोसेसिंग status एंडपॉइंट का उपयोग करें।
+</Note>

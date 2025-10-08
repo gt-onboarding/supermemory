@@ -1,0 +1,34 @@
+---
+title: "Google Drive"
+description: "अपनी Google Drive सामग्री को supermemory के साथ सिंक करें"
+---
+
+supermemory, Google Drive के Documents को स्वचालित रूप से और तुरंत सिंक करता है।
+
+<div id="supported-file-types">
+  ## समर्थित फाइल प्रकार
+</div>
+
+- Google Docs
+- Google Slides
+- Google Sheets
+
+<div id="conversions">
+  ## Conversions
+</div>
+
+आइटम आयात करने के लिए, supermemory Documents को Markdown में परिवर्तित करता है और फिर उन्हें supermemory में ingest करता है।
+यह conversion lossy होता है, और कुछ formatting खो सकती है।
+
+<div id="sync-frequency">
+  ## सिंक फ़्रीक्वेंसी
+</div>
+
+supermemory Documents को सिंक करता है:
+
+- **जब कोई document संशोधित या बनाया जाता है (Webhook प्राप्त होने पर)**
+    - ध्यान दें कि सभी providers webhook के माध्यम से सिंक नहीं होते (अभी तत्काल सिंक)
+    - `Google-Drive` और `Notion` documents तुरंत सिंक हो जाते हैं
+- हर **चार घंटे** में
+- **Manual Sync** (API कॉल) पर
+    - आप Documents को मैन्युअल रूप से सिंक करने के लिए `/v3/connections/{provider}/sync` कॉल कर सकते हैं

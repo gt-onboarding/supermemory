@@ -1,0 +1,31 @@
+---
+title: 'कनेक्टर्स का अवलोकन'
+sidebarTitle: 'अवलोकन'
+description: 'Google Drive, Notion, OneDrive जैसे बाहरी लिंक्ड खातों को supermemory के साथ सिंक करें'
+---
+
+supermemory Google Drive, Notion, OneDrive जैसे बाहरी लिंक्ड खातों को सिंक कर सकता है, और जल्द ही और भी प्रदाताओं का समर्थन जोड़ा जाएगा।
+
+<div id="the-flow">
+  ### फ़्लो
+</div>
+
+1. `/v3/connections/{provider}` पर `POST` अनुरोध करें
+2. supermemory एक `authLink` लौटाएगा, जहाँ आप उपयोगकर्ता को रीडायरेक्ट कर सकते हैं
+3. उपयोगकर्ता को provider के लॉगिन पेज पर रीडायरेक्ट किया जाएगा
+4. उपयोगकर्ता आपकी ऐप के `redirectUrl` पर वापस रीडायरेक्ट हो जाएगा
+
+![Connectors Flow](/images/connectors-flow.png)
+
+<div id="sync-frequency">
+  ## सिंक आवृत्ति
+</div>
+
+supermemory Documents को सिंक करता है:
+
+- **जब कोई Document संशोधित या बनाया जाता है (Webhook प्राप्त होने पर)**
+    - ध्यान दें कि सभी provider वेबहुक के जरिए सिंक नहीं होते (इस समय इंस्टेंट सिंक)
+    - `Google-Drive` और `Notion` Documents तुरंत सिंक हो जाते हैं
+- हर **चार घंटे** में
+- **Manual Sync** (API कॉल) पर
+    - आप Documents को मैन्युअल रूप से सिंक करने के लिए `/v3/connections/{provider}/sync` कॉल कर सकते हैं

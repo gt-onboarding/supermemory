@@ -1,0 +1,48 @@
+---
+title: "रीरैंकिंग"
+description: "supermemory में रीरैंक किए गए खोज परिणाम"
+icon: "chart-bar-increasing"
+---
+
+रीरैंकिंग एक फीचर है जो क्वेरी के आधार पर खोज परिणामों को फिर से रैंक करने देता है।
+
+![Reranking](/images/rerank.png)
+
+<div id="usage">
+  ### उपयोग
+</div>
+
+Supermemory में आप search API में `rerank` पैरामीटर को `true` सेट करके उत्तर का पुनर्लेखन सक्षम कर सकते हैं।
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.supermemory.ai/v3/search?q=What+is+the+capital+of+France?&rerank=true \
+  --request GET \
+  --header 'Authorization: Bearer SUPERMEMORY_API_KEY'
+```
+
+```typescript
+await client.search.create({
+  q: "What is the capital of France?",
+  rerank: true,
+});
+```
+
+```python
+client.search.create(
+    q="What is the capital of France?",
+    rerank=True
+)
+```
+
+</CodeGroup>
+
+<div id="notes-and-limitations">
+  ### नोट्स और सीमाएँ
+</div>
+
+- हम वर्तमान में रीरैंकिंग के लिए `bge-reranker-base` मॉडल का उपयोग करते हैं।
+- रीरैंकिंग से संबंधित कोई अतिरिक्त लागत नहीं है।
+- रीरैंकिंग गुणवत्ता को काफी बेहतर करती है, लेकिन इससे **अतिरिक्त latency** आती है।
+- फ़िल्टरिंग, हाइब्रिड सर्च, रीसेंसी बायस आदि जैसे अन्य सभी फीचर रीरैंक किए गए परिणामों के साथ भी काम करते हैं।

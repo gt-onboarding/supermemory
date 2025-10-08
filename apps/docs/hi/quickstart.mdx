@@ -1,0 +1,880 @@
+---
+title: त्वरित शुरुआत
+description: Supermemory को अपना पहला API कॉल करें — memory जोड़ें और प्राप्त करें।
+---
+
+<Tip>
+  **Vercel AI SDK का उपयोग कर रहे हैं?** `@supermemory/tools/ai-sdk` के साथ सबसे सरल इंटीग्रेशन के लिए [AI SDK इंटीग्रेशन](/hi/ai-sdk/overview) देखें।
+</Tip>
+
+<div id="memory-api">
+  ## Memory API
+</div>
+
+**चरण 1.** API कुंजी प्राप्त करने के लिए [Supermemory के डेवलपर प्लेटफ़ॉर्म](http://console.supermemory.ai) पर साइन अप करें। नई कुंजी जनरेट करने के लिए **API Keys -&gt; Create API Key** पर क्लिक करें।
+
+![create api key](./images/create-api.png)
+
+<Tabs>
+  <Tab title="Python">
+    **चरण 2.** Supermemory client को इंस्टॉल करें
+
+    ```python
+    pip install supermemory
+    ```
+
+    **चरण 3.** अपनी API कुंजी के साथ एक environment variable बनाने के लिए अपने टर्मिनल में यह चलाएं:
+
+    ```bash
+    export SUPERMEMORY_API_KEY="YOUR_API_KEY"
+    ```
+
+    **चरण 4.** अपनी Python फ़ाइल में मॉड्यूल को import करें:
+
+    ```python
+    from supermemory import Supermemory
+    import os
+
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+    ```
+
+    **चरण 5.** अपनी पहली memory को इस प्रकार जोड़ें:
+
+    ```python
+    # क्वांटम कंप्यूटिंग अनुप्रयोगों के बारे में एक समृद्ध memory बनाएं
+    memory_content = """क्वांटम कंप्यूटिंग कम्प्यूटेशनल शक्ति में एक प्रतिमान परिवर्तन का प्रतिनिधित्व करती है, जो सुपरपोज़िशन और एंटैंगलमेंट जैसी क्वांटम यांत्रिक घटनाओं का लाभ उठाकर उन समस्याओं को हल करती है जो पारंपरिक कंप्यूटरों के लिए असाध्य हैं।
+
+
+    यह क्षेत्र 1980 के दशक के सैद्धांतिक कार्य से उभरा, जब भौतिकविद् Richard Feynman ने प्रस्तावित किया कि क्वांटम सिस्टम अन्य क्वांटम सिस्टमों को पारंपरिक कंप्यूटरों की तुलना में अधिक कुशलता से सिमुलेट कर सकते हैं। इस अंतर्दृष्टि ने बड़ी संख्याओं के फैक्टराइज़ेशन के लिए Shor के एल्गोरिदम और असंरचित खोज समस्याओं के लिए Grover के एल्गोरिदम जैसे क्वांटम एल्गोरिदम के विकास का नेतृत्व किया।
+
+
+    आज, क्वांटम कंप्यूटिंग अनुप्रयोग कई डोमेन में फैले हुए हैं: क्रिप्टोग्राफी में, क्वांटम कंप्यूटर वर्तमान एन्क्रिप्शन मानकों को खतरे में डालते हैं जबकि नए क्वांटम-प्रतिरोधी प्रोटोकॉल को सक्षम करते हैं; ड्रग डिस्कवरी में, वे अभूतपूर्व सटीकता के साथ आणविक इंटरैक्शन का सिमुलेशन कर सकते हैं; लॉजिस्टिक्स और फाइनेंशियल मॉडलिंग जैसी ऑप्टिमाइज़ेशन समस्याओं में, वे समस्याओं के कुछ वर्गों के लिए एक्सपोनेंशियल स्पीडअप प्रदान करते हैं।
+
+
+    IBM, Google, और Microsoft सहित प्रमुख टेक कंपनियों ने क्वांटम कंप्यूटिंग रिसर्च में अरबों का निवेश किया है, जबकि Rigetti Computing और IonQ जैसे स्टार्टअप विशिष्ट हार्डवेयर एप्रोच पर फोकस करते हैं। क्वांटम एडवांटेज की रेस - एक क्वांटम कंप्यूटर को किसी भी पारंपरिक कंप्यूटर की तुलना में तेज़ी से समस्या हल करने का प्रदर्शन - इस क्षेत्र में एक मुख्य माइलस्टोन बन गया है।
+
+
+    वादे के बावजूद, महत्वपूर्ण चुनौतियां बनी रहती हैं: क्वांटम डिकोहेरेंस, एरर करेक्शन, और कोहेरेंस बनाए रखते हुए क्यूबिट काउंट को स्केल करना। रिसर्चर सुपरकंडक्टिंग क्यूबिट्स, ट्रैप्ड आयन, टोपोलॉजिकल क्यूबिट्स, और फोटोनिक सिस्टम सहित विभिन्न एप्रोच की खोज कर रहे हैं, जिनमें से प्रत्येक में कोहेरेंस टाइम, गेट फिडेलिटी, और स्केलेबिलिटी के बीच अलग-अलग ट्रेड-ऑफ हैं।"""
+
+
+    # Supermemory में memory जोड़ें
+    response = client.memories.add(
+        content=memory_content,
+        container_tag="quantum-computing",
+        metadata={
+            "category": "technology-overview",
+            "topic": "quantum-computing",
+            "complexity": "intermediate",
+            "word_count": len(memory_content.split())
+        }
+    )
+
+
+    print(f"Memory सफलतापूर्वक जोड़ी गई!")
+    print(f"Memory ID: {response.id}")
+    print(f"Content length: {len(memory_content)} characters")
+    ```
+
+    अपना कोड रन करें। आउटपुट इस प्रकार है:
+
+    ```bash
+    Memory सफलतापूर्वक जोड़ी गई!
+    Memory ID: uLtGU14SBDzfsvefYWbwe7
+    Content length: 1701 characters
+    ```
+
+    **चरण 6.** इस memory को निम्न प्रकार से खोजें:
+
+    ```python
+    results = client.search.memories(q="क्वांटम कंप्यूटिंग के कुछ अनुप्रयोग क्या हैं?", limit=3)
+
+
+    print(results)
+    ```
+
+    आउटपुट इस प्रकार है:
+
+    ```bash
+    SearchMemoriesResponse(
+        results=[
+            Result(
+                id="Bn1uc1yQdw3Huf8oitruwF",
+                memory="क्वांटम कंप्यूटिंग के अनुप्रयोगों में क्रिप्टोग्राफी (मौजूदा एन्क्रिप्शन मानकों के लिए खतरा, क्वांटम-प्रतिरोधी प्रोटोकॉल को सक्षम बनाना), दवा खोज (आणविक इंटरैक्शन का सिमुलेशन), और ऑप्टिमाइज़ेशन समस्याएं (लॉजिस्टिक्स, वित्तीय मॉडलिंग, एक्सपोनेंशियल स्पीडअप प्रदान करना) शामिल हैं।",
+                metadata=None,
+                similarity=0.7920647723809932,
+                updated_at=datetime.datetime(
+                    2025, 8, 24, 5, 41, 55, 87000, tzinfo=datetime.timezone.utc
+                ),
+                context=ResultContext(children=[], parents=[]),
+                documents=None,
+                version=1.0,
+                updatedAt="2025-08-24T05:41:55.087Z",
+                rootMemoryId="Bn1uc1yQdw3Huf8oitruwF",
+            ),
+            Result(
+                id="4aCa4oM8praVBCWdNksjxf",
+                memory="क्वांटम कंप्यूटिंग कम्प्यूटेशनल पावर में एक पैराडाइम शिफ्ट है, जो सुपरपोजिशन और एंटैंगलमेंट जैसी क्वांटम मैकेनिकल घटनाओं का लाभ उठाकर उन समस्याओं को हल करता है जो क्लासिकल कंप्यूटर के लिए असंभव हैं।",
+                metadata=None,
+                similarity=0.7198909950191389,
+                updated_at=datetime.datetime(
+                    2025, 8, 24, 5, 41, 55, 87000, tzinfo=datetime.timezone.utc
+                ),
+                context=ResultContext(children=[], parents=[]),
+                documents=None,
+                version=1.0,
+                updatedAt="2025-08-24T05:41:55.087Z",
+                rootMemoryId="4aCa4oM8praVBCWdNksjxf",
+            ),
+            Result(
+                id="8vzhZhBCuqyrLNXtzBDx7y",
+                memory="IBM, Google, और Microsoft ने क्वांटम कंप्यूटिंग रिसर्च में अरबों डॉलर का निवेश किया है।",
+                metadata=None,
+                similarity=0.6960905375426799,
+                updated_at=datetime.datetime(
+                    2025, 8, 24, 5, 41, 55, 87000, tzinfo=datetime.timezone.utc
+                ),
+                context=ResultContext(children=[], parents=[]),
+                documents=None,
+                version=1.0,
+                updatedAt="2025-08-24T05:41:55.087Z",
+                rootMemoryId="8vzhZhBCuqyrLNXtzBDx7y",
+            ),
+        ],
+        timing=214.0,
+        total=3.0,
+    )
+    ```
+
+    बहुत बढ़िया! अब जब आपने अपना पहला request बना लिया है, तो Supermemory की सभी सुविधाओं को विस्तार से explore करें और देखें कि आप उन्हें अपने app में कैसे उपयोग कर सकते हैं।
+  </Tab>
+
+  <Tab title="TypeScript">
+    **चरण 2.** Supermemory dependency इंस्टॉल करें:
+
+    ```bash
+    npm install supermemory
+    ```
+
+    **चरण 3.** पर्यावरण चर सेट करें:
+
+    ```bash
+    export SUPERMEMORY_API_KEY="यहाँ_आपकी_वास्तविक_api_key_डालें"
+    ```
+
+    **चरण 4.** एक `quickstart.ts` फ़ाइल बनाएं और पैकेज को import करें:
+
+    ```ts
+    import 'dotenv/config';
+    import Supermemory from 'supermemory';
+
+
+    const client = new Supermemory({
+    apiKey: process.env.SUPERMEMORY_API_KEY});
+    ```
+
+    **चरण 5.** एक memory जोड़ें:
+
+    ```ts
+    const memoryContent = `क्वांटम कंप्यूटिंग कम्प्यूटेशनल शक्ति में एक प्रतिमान परिवर्तन का प्रतिनिधित्व करती है, जो सुपरपोज़िशन और एंटैंगलमेंट जैसी क्वांटम मैकेनिकल घटनाओं का लाभ उठाकर उन समस्याओं को हल करती है जो क्लासिकल कंप्यूटर के लिए असाध्य हैं।
+
+
+    यह क्षेत्र 1980 के दशक के सैद्धांतिक कार्य से उभरा, जब भौतिकविद् Richard Feynman ने प्रस्तावित किया कि क्वांटम सिस्टम अन्य क्वांटम सिस्टम को क्लासिकल कंप्यूटर की तुलना में अधिक कुशलता से सिमुलेट कर सकते हैं। इस अंतर्दृष्टि ने बड़ी संख्याओं के फैक्टरिंग के लिए Shor के एल्गोरिदम और अनस्ट्रक्चर्ड सर्च समस्याओं के लिए Grover के एल्गोरिदम जैसे क्वांटम एल्गोरिदम के विकास का नेतृत्व किया।
+
+
+    आज, क्वांटम कंप्यूटिंग अनुप्रयोग कई डोमेन में फैले हुए हैं: क्रिप्टोग्राफी में, क्वांटम कंप्यूटर वर्तमान एन्क्रिप्शन मानकों को खतरे में डालते हैं जबकि नए क्वांटम-प्रतिरोधी प्रोटोकॉल को सक्षम बनाते हैं; ड्रग डिस्कवरी में, वे अभूतपूर्व सटीकता के साथ आणविक इंटरैक्शन को सिमुलेट कर सकते हैं; लॉजिस्टिक्स और वित्तीय मॉडलिंग जैसी ऑप्टिमाइज़ेशन समस्याओं में, वे समस्याओं के कुछ वर्गों के लिए एक्सपोनेंशियल स्पीडअप प्रदान करते हैं।
+
+
+    IBM, Google, और Microsoft सहित प्रमुख टेक कंपनियों ने क्वांटम कंप्यूटिंग अनुसंधान में अरबों का निवेश किया है, जबकि Rigetti Computing और IonQ जैसे स्टार्टअप विशिष्ट हार्डवेयर दृष्टिकोणों पर ध्यान केंद्रित करते हैं। क्वांटम एडवांटेज की दौड़ - एक क्वांटम कंप्यूटर द्वारा किसी भी क्लासिकल कंप्यूटर की तुलना में तेज़ी से समस्या हल करने का प्रदर्शन - इस क्षेत्र में एक मुख्य मील का पत्थर बन गया है।
+
+
+    वादे के बावजूद, महत्वपूर्ण चुनौतियां बनी रहती हैं: क्वांटम डिकोहेरेंस, एरर करेक्शन, और कोहेरेंस बनाए रखते हुए क्यूबिट काउंट्स को स्केल करना। शोधकर्ता सुपरकंडक्टिंग क्यूबिट्स, ट्रैप्ड आयन्स, टोपोलॉजिकल क्यूबिट्स, और फोटोनिक सिस्टम सहित विभिन्न दृष्टिकोणों की खोज कर रहे हैं, जिनमें से प्रत्येक में कोहेरेंस टाइम, गेट फिडेलिटी, और स्केलेबिलिटी के बीच अलग-अलग ट्रेड-ऑफ हैं।`;
+
+
+    async function addMemory() {
+        try {
+            const response = await client.memories.add({
+                content: memoryContent,
+                containerTag: "quantum-computing",
+                metadata: {
+                category: "technology-overview",
+                topic: "quantum-computing",
+                complexity: "intermediate",
+                wordCount: memoryContent.split(' ').length
+                }
+            });
+            console.log("Memory सफलतापूर्वक जोड़ी गई!");
+            console.log(`Memory ID: ${response.id}`);
+            return response.id
+        } catch (error) {
+            console.error("Memory जोड़ने में त्रुटि:", error);
+            throw error;
+        }
+    }
+    ```
+
+    इस कोड ब्लॉक को रन करने पर निम्नलिखित आउटपुट मिलता है:
+
+    ```bash
+    Memory सफलतापूर्वक जोड़ी गई!
+    Memory ID: adMxzQgSxo37jq6kjpsFMg
+    ```
+
+    **चरण 6.** प्राकृतिक भाषा का उपयोग करके अपनी memory को खोजें:
+
+    ```ts
+    async function searchMemories() {
+        try {
+            const results = await client.search.memories({
+                q: "क्वांटम कंप्यूटिंग के कुछ अनुप्रयोग क्या हैं?",
+                limit: 3
+            });
+
+            console.log('खोज परिणाम:', results);
+
+            return results;
+        } catch (error) {
+            console.error('संग्रहित मेमोरीज़ खोजने में त्रुटि:', error);
+        }
+    }
+    ```
+
+    आउटपुट इस प्रकार है:
+
+    ```bash
+    Search results: {
+        results: [
+            {
+                id: 'Bn1uc1yQdw3Huf8oitruwF',
+                memory: 'क्वांटम कंप्यूटिंग अनुप्रयोगों में क्रिप्टोग्राफी (वर्तमान एन्क्रिप्शन मानकों को खतरे में डालना, क्वांटम-प्रतिरोधी प्रोटोकॉल को सक्षम करना), दवा खोज (आणविक इंटरैक्शन का अनुकरण), और अनुकूलन समस्याएं (लॉजिस्टिक्स, वित्तीय मॉडलिंग, घातांकीय गति प्रदान करना) शामिल हैं।',
+                metadata: null,
+                updatedAt: '2025-08-24T05:41:55.087Z',
+                version: 1,
+                rootMemoryId: 'Bn1uc1yQdw3Huf8oitruwF',
+                similarity: 0.7920647723809932,
+                context: [Object]
+            },
+            {
+                id: '4aCa4oM8praVBCWdNksjxf',
+                memory: 'क्वांटम कंप्यूटिंग कम्प्यूटेशनल शक्ति में एक प्रतिमान बदलाव है, जो सुपरपोजिशन और एंटैंगलमेंट जैसी क्वांटम यांत्रिक घटनाओं का लाभ उठाकर उन समस्याओं को हल करता है जो शास्त्रीय कंप्यूटर के लिए असाध्य हैं।',
+                metadata: null,
+                updatedAt: '2025-08-24T05:41:55.087Z',
+                version: 1,
+                rootMemoryId: '4aCa4oM8praVBCWdNksjxf',
+                similarity: 0.7198909950191389,
+                context: [Object]
+            },
+            {
+                id: '8vzhZhBCuqyrLNXtzBDx7y',
+                memory: 'IBM, Google, और Microsoft ने क्वांटम कंप्यूटिंग अनुसंधान में अरबों का निवेश किया है।',
+                metadata: null,
+                updatedAt: '2025-08-24T05:41:55.087Z',
+                version: 1,
+                rootMemoryId: '8vzhZhBCuqyrLNXtzBDx7y',
+                similarity: 0.6960905375426799,
+                context: [Object]
+            }
+        ],
+        timing: 216,
+        total: 3
+    }
+    ```
+
+    जैसा कि आप देख सकते हैं, Supermemory ने मुख्य memory को स्वचालित रूप से छोटे हिस्सों में बांटा और उन्हें return किया। आप इसे console के graph में स्पष्ट रूप से देख सकते हैं:
+
+    ![ग्राफ दृश्य](./images/graph-view.png)
+
+    अब जब आपने अपना पहला request बना लिया है, तो Supermemory की सभी सुविधाओं को विस्तार से explore करें और जानें कि आप उन्हें अपने app में कैसे उपयोग कर सकते हैं।
+  </Tab>
+
+  <Tab title="cURL">
+    **चरण 2.** अनुरोधों के लिए बेस URL निम्नलिखित है:
+
+    ```bash
+    https://api.supermemory.ai/
+    ```
+
+    **चरण 3.** एनवायरनमेंट वेरिएबल सेट करें:
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_api_key"
+    ```
+
+    **चरण 4.** निम्नलिखित तरीके से एक memory जोड़ें:
+
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "content": "क्वांटम कंप्यूटिंग कम्प्यूटेशनल शक्ति में एक आदर्श परिवर्तन का प्रतिनिधित्व करती है, जो सुपरपोजिशन और एंटैंगलमेंट जैसी क्वांटम यांत्रिक घटनाओं का उपयोग करके उन समस्याओं को हल करती है जो पारंपरिक कंप्यूटर के लिए असंभव हैं। यह क्षेत्र 1980 के दशक के सैद्धांतिक कार्य से विकसित हुआ, जब भौतिकविद् Richard Feynman ने सुझाया कि क्वांटम सिस्टम अन्य क्वांटम सिस्टम को पारंपरिक कंप्यूटर की तुलना में अधिक कुशलता से अनुकरण कर सकते हैं। इस समझ ने बड़ी संख्याओं के गुणनखंडन के लिए Shor के एल्गोरिदम और असंरचित खोज समस्याओं के लिए Grover के एल्गोरिदम जैसे क्वांटम एल्गोरिदम के विकास को प्रेरित किया। आज, क्वांटम कंप्यूटिंग के अनुप्रयोग कई क्षेत्रों में फैले हुए हैं: क्रिप्टोग्राफी में, क्वांटम कंप्यूटर मौजूदा एन्क्रिप्शन मानकों को चुनौती देते हैं जबकि नए क्वांटम-प्रतिरोधी प्रोटोकॉल को सक्षम बनाते हैं; दवा खोज में, वे अभूतपूर्व सटीकता के साथ आणविक अंतर्क्रियाओं का अनुकरण कर सकते हैं; लॉजिस्टिक्स और वित्तीय मॉडलिंग जैसी अनुकूलन समस्याओं में, वे समस्याओं के कुछ वर्गों के लिए घातांकीय गति प्रदान करते हैं। IBM, Google, और Microsoft सहित प्रमुख तकनीकी कंपनियों ने क्वांटम कंप्यूटिंग अनुसंधान में अरबों का निवेश किया है, जबकि Rigetti Computing और IonQ जैसे स्टार्टअप विशिष्ट हार्डवेयर दृष्टिकोणों पर केंद्रित हैं। क्वांटम श्रेष्ठता की दौड़ - एक क्वांटम कंप्यूटर द्वारा किसी भी पारंपरिक कंप्यूटर से तेज़ समस्या समाधान का प्रदर्शन - इस क्षेत्र में एक प्रमुख मील का पत्थर बन गया है। संभावनाओं के बावजूद, महत्वपूर्ण चुनौतियां बनी रहती हैं: क्वांटम डिकोहेरेंस, त्रुटि सुधार, और सुसंगति बनाए रखते हुए क्यूबिट संख्या को बढ़ाना। शोधकर्ता सुपरकंडक्टिंग क्यूबिट्स, फंसे हुए आयन, टोपोलॉजिकल क्यूबिट्स, और फोटोनिक सिस्टम सहित विभिन्न दृष्टिकोणों की खोज कर रहे हैं, जिनमें से प्रत्येक में सुसंगति समय, गेट निष्ठा, और मापनीयता के बीच अलग-अलग समझौते हैं।",
+        "containerTag": "quantum-computing",
+        "metadata": {
+          "category": "technology-overview",
+          "topic": "quantum-computing",
+          "complexity": "intermediate",
+          "wordCount": 156
+        }
+      }'
+    ```
+
+    प्रतिक्रिया इस प्रकार है:
+
+    ```json
+    {"id":"D2Ar7Vo7ub83w3PRPZcaP1","status":"प्रतीक्षित"}
+    ```
+
+    **चरण 5.** प्राकृतिक भाषा का उपयोग करके इस memory को खोजें:
+
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v4/search" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "q": "क्वांटम कंप्यूटिंग के कुछ अनुप्रयोग क्या हैं?",
+        "limit": 3
+      }'
+    ```
+
+    परिणाम इस प्रकार है:
+
+    ```json
+    {
+      "results": [
+        {
+          "id": "Bn1uc1yQdw3Huf8oitruwF",
+          "memory": "क्वांटम कंप्यूटिंग के अनुप्रयोगों में क्रिप्टोग्राफी (मौजूदा एन्क्रिप्शन मानकों के लिए खतरा, क्वांटम-प्रतिरोधी प्रोटोकॉल को सक्षम बनाना), दवा खोज (आणविक अंतर्क्रियाओं का सिमुलेशन), और ऑप्टिमाइज़ेशन समस्याएं (लॉजिस्टिक्स, वित्तीय मॉडलिंग, घातांकीय गति प्रदान करना) शामिल हैं।",
+          "metadata": null,
+          "updatedAt": "2025-08-24T05:41:55.087Z",
+          "version": 1,
+          "rootMemoryId": "Bn1uc1yQdw3Huf8oitruwF",
+          "similarity": 0.7920647723809932,
+          "context": {
+            "parents": [],
+            "children": []
+          }
+        },
+        {
+          "id": "4aCa4oM8praVBCWdNksjxf",
+          "memory": "क्वांटम कंप्यूटिंग कम्प्यूटेशनल पावर में एक पैराडाइम शिफ्ट है, जो सुपरपोजिशन और एंटैंगलमेंट जैसी क्वांटम मैकेनिकल घटनाओं का लाभ उठाकर उन समस्याओं को हल करता है जो क्लासिकल कंप्यूटर के लिए असंभव हैं।",
+          "metadata": null,
+          "updatedAt": "2025-08-24T05:41:55.087Z",
+          "version": 1,
+          "rootMemoryId": "4aCa4oM8praVBCWdNksjxf",
+          "similarity": 0.7198909950191389,
+          "context": {
+            "parents": [],
+            "children": []
+          }
+        },
+        {
+          "id": "8vzhZhBCuqyrLNXtzBDx7y",
+          "memory": "IBM, Google, और Microsoft ने क्वांटम कंप्यूटिंग रिसर्च में अरबों डॉलर का निवेश किया है।",
+          "metadata": null,
+          "updatedAt": "2025-08-24T05:41:55.087Z",
+          "version": 1,
+          "rootMemoryId": "8vzhZhBCuqyrLNXtzBDx7y",
+          "similarity": 0.6960905375426799,
+          "context": {
+            "parents": [],
+            "children": []
+          }
+        }
+      ],
+      "timing": 363,
+      "total": 3
+    }
+    ```
+
+    और बस! बहुत बढ़िया काम!
+  </Tab>
+</Tabs>
+
+<div id="memory-router">
+  ## Memory Router
+</div>
+
+जानें कि आप अपने मौजूदा LLM अनुरोधों में Memory Router कैसे जोड़ सकते हैं।
+
+Memory Router LLM कॉल्स के ऊपर एक proxy की तरह काम करता है। जब बातचीत बहुत लंबी हो जाती है, तो यह उन्हें स्वतः चंक्स में विभाजित करता है ताकि प्रदर्शन बेहतर रहे, history से सबसे प्रासंगिक जानकारी निकालता है, और token उपयोग व लागत में संतुलन बनाता है।
+
+सबसे अच्छी बात यह है कि इसके लिए आपके application logic में किसी बदलाव की आवश्यकता नहीं होती। शुरू करने का तरीका यहां है:
+
+**चरण 1.** [Supermemory के डेवलपर प्लेटफ़ॉर्म](http://console.supermemory.ai) पर साइन अप करें और API कुंजी प्राप्त करें। नई कुंजी बनाने के लिए **API Keys -&gt; Create API Key** पर क्लिक करें।
+
+**चरण 2.** अपने LLM provider की API कुंजी प्राप्त करें
+
+* [OpenAI](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key)
+* [Gemini](https://ai.google.dev/gemini-api/docs/api-key)
+* [Anthropic](https://docs.anthropic.com/en/api/admin-api/apikeys/get-api-key)
+* [Groq](https://console.groq.com/keys)
+
+**चरण 3.** अपने LLM provider के OpenAI-compatible API URL के आगे Supermemory का URL जोड़ें:
+
+<CodeGroup>
+  ```bash OpenAI
+  https://api.supermemory.ai/v3/https://api.openai.com/v1/
+  ```
+
+  ```bash Anthropic
+  https://api.supermemory.ai/v3/https://api.anthropic.com/v1/
+  ```
+
+  ```bash Gemini
+  https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/openai/
+  ```
+
+  ```bash Groq
+  https://api.supermemory.ai/v3/https://api.groq.com/openai/v1
+  ```
+
+  ```bash Others
+  https://api.supermemory.ai/v3/[openai-api-url-here]
+  ```
+</CodeGroup>
+
+<Tabs>
+  <Tab title="TypeScript">
+    **चरण 4.** डिपेंडेंसीज़ इंस्टॉल करें
+
+    ```bash
+    npm install openai
+    ```
+
+    **चरण 5.** अपने environment में दो environment variables सेट करें: एक Supermemory के लिए, और एक आपके model provider के लिए।
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_api_key_here"
+
+    # export OPENAI_API_KEY/ANTHROPIC_API_KEY/GEMINI_API_KEY/GROQ_API_KEY="api_key_here" (आपके मॉडल के अनुसार)
+    ```
+
+    **चरण 6.** अपडेटेड एंडपॉइंट पर रिक्वेस्ट भेजें:
+
+    <CodeGroup>
+      ```ts OpenAI
+      import OpenAI from 'openai';
+
+      const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.openai.com/v1',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123' // आपका उपयोगकर्ता पहचानकर्ता
+      }
+      });
+
+      async function chatWithOpenAI() {
+      try {
+          const response = await client.chat.completions.create({
+          model: 'gpt-5',
+          messages: [
+              { role: 'user', content: 'नमस्ते मेरा नाम नमन है। आप कैसे हैं?' }
+          ],
+          max_tokens: 1000,
+          temperature: 0.7
+          });
+
+          console.log('OpenAI Response:', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Error with OpenAI:', error);
+      }
+      }
+
+      ```
+
+      ```ts Anthropic
+      import OpenAI from 'openai';
+
+      const anthropicClient = new OpenAI({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.anthropic.com/v1',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123'
+      }
+      });
+
+      async function chatWithClaude() {
+      try {
+          const response = await anthropicClient.chat.completions.create({
+          model: 'claude-3-sonnet-20240229',
+          messages: [
+              { role: 'user', content: 'नमस्ते मेरा नाम नमन है। आप कैसे हैं?' }
+          ],
+          max_tokens: 1000
+          });
+
+          console.log('Claude Response:', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Error with Claude:', error);
+      }
+      }
+      ```
+
+      ```ts Gemini
+
+      import OpenAI from 'openai';
+
+      const geminiClient = new OpenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123'
+      }
+      });
+
+      async function chatWithGemini() {
+      try {
+          const response = await geminiClient.chat.completions.create({
+          model: 'gemini-pro',
+          messages: [
+              { role: 'user', content: 'नमस्ते मेरा नाम नमन है। आप कैसे हैं?' }
+          ],
+          max_tokens: 1000
+          });
+
+          console.log('Gemini Response:', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Error with Gemini:', error);
+      }
+      }
+
+      ```
+
+      ```ts Groq
+
+      import OpenAI from 'openai';
+
+      const groqClient = new OpenAI({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: 'https://api.supermemory.ai/v3/https://api.groq.com/openai/v1',
+      defaultHeaders: {
+          'x-supermemory-api-key': process.env.SUPERMEMORY_API_KEY!,
+          'x-sm-user-id': 'user_123'
+      }
+      });
+
+      async function chatWithGroq() {
+      try {
+          const response = await groqClient.chat.completions.create({
+          model: 'mixtral-8x7b-32768',
+          messages: [
+              { role: 'user', content: 'नमस्ते मेरा नाम नमन है। आप कैसे हैं?' }
+          ],
+          max_tokens: 1000
+          });
+
+          console.log('Groq Response:', response.choices[0].message.content);
+          return response;
+      } catch (error) {
+          console.error('Error with Groq:', error);
+      }
+      }
+
+
+      ```
+    </CodeGroup>
+
+    इन कोड स्निपेट्स में से प्रत्येक model provider द्वारा प्रदान किए गए OpenAI-compatible API URL के आधार पर Base URL को बदलता है। ध्यान देने योग्य कुछ मुख्य पैरामीटर हैं:
+
+    * `apiKey`: आपके मॉडल provider का API कुंजी
+    * `x-supermemory-api-key`: आपका Supermemory API कुंजी
+    * `x-sm-user-id`: उपयोगकर्ता ID के आधार पर वार्तालापों को उपयोगकर्ता-स्तर पर स्कोप करें। इससे क्रॉस-कन्वर्सेशन memory सक्षम होगी, यानी उपयोगकर्ता अन्य चैट्स का संदर्भ दे सकेंगे और उनसे जानकारी ले सकेंगे।
+
+    इसके अतिरिक्त, हालांकि इस quickstart में दिखाया नहीं गया है, आप एक `x-sm-conversation-id` header भी पास कर सकते हैं।
+
+    फिर, आपको बातचीत के इतिहास के रूप में संदेशों की पूरी array को LLM — बड़े भाषा मॉडल को भेजना नहीं पड़ेगा। Supermemory इसे handle कर लेगा।
+
+    यदि आप उपरोक्त कोड ब्लॉक्स चलाते हैं, तो आपको अपने LLM से इस प्रकार का आउटपुट मिलेगा:
+
+    ```
+    "नमस्कार, Naman! मैं सिर्फ एक कंप्यूटर प्रोग्राम हूँ, इसलिए मेरी कोई भावनाएं नहीं हैं, लेकिन मैं यहाँ हूँ और आपकी सहायता के लिए तैयार हूँ। आज मैं आपकी कैसे मदद कर सकता हूँ?"
+    ```
+
+    इसके बाद, यदि आप अनुरोध को बदलकर &#39;मेरा नाम क्या है?&#39; पूछें, तो आपको निम्नलिखित रिस्पॉन्स मिलेगा:
+
+    ```
+    आपका नाम नमन है।
+    ```
+
+    इस प्रकार, Memory Router काम कर रहा है!
+  </Tab>
+
+  <Tab title="Python">
+    **चरण 4.** Python डिपेंडेंसी इंस्टॉल करें:
+
+    ```
+    pip install openai
+    ```
+
+    **चरण 5.** अपने environment में दो environment variables सेट करें: एक Supermemory के लिए और एक आपके model provider के लिए।
+
+    ```bash
+    export SUPERMEMORY_API_KEY="your_api_key_here"
+
+    # export OPENAI_API_KEY/ANTHROPIC_API_KEY/GEMINI_API_KEY/GROQ_API_KEY="api_key_here" (आपके मॉडल के अनुसार)
+    ```
+
+    **चरण 6.** अपडेट किए गए बेस URL और पैरामीटर के साथ LLM को एक अनुरोध भेजें:
+
+    <CodeGroup>
+      ```python OpenAI
+      import os
+      from openai import OpenAI
+
+      client = OpenAI(
+          api_key=os.getenv("OPENAI_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_openai():
+          try:
+              response = client.chat.completions.create(
+                  model="gpt-5",
+                  messages=[
+                      {"role": "user", "content": "नमस्ते मेरा नाम Naman है। आप कैसे हैं?"}
+                  ],
+                  max_tokens=1000,
+                  temperature=0.7
+              )
+
+              print("OpenAI Response:", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Error with OpenAI: {error}")
+
+      ```
+
+      ```python Anthropic
+      from openai import OpenAI
+
+      anthropic_client = OpenAI(
+          api_key=os.getenv("ANTHROPIC_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://api.anthropic.com/v1",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_claude():
+          try:
+              response = anthropic_client.chat.completions.create(
+                  model="claude-3-sonnet-20240229",
+                  messages=[
+                      {"role": "user", "content": "नमस्ते मेरा नाम Naman है। आप कैसे हैं?"}
+                  ],
+                  max_tokens=1000
+              )
+
+              print("Claude Response:", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Claude के साथ त्रुटि: {error}")
+
+      ```
+
+      ```python Gemini
+      from openai import OpenAI
+
+      gemini_client = OpenAI(
+          api_key=os.getenv("GEMINI_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_gemini():
+          try:
+              response = gemini_client.chat.completions.create(
+                  model="gemini-pro",
+                  messages=[
+                      {"role": "user", "content": "नमस्ते मेरा नाम Naman है। आप कैसे हैं?"}
+                  ],
+                  max_tokens=1000
+              )
+
+              print("Gemini Response:", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Gemini के साथ त्रुटि: {error}")
+      ```
+
+      ```python Groq
+      from openai import OpenAI
+
+      groq_client = OpenAI(
+          api_key=os.getenv("GROQ_API_KEY"),
+          base_url="https://api.supermemory.ai/v3/https://api.groq.com/openai/v1",
+          default_headers={
+              "x-supermemory-api-key": os.getenv("SUPERMEMORY_API_KEY"),
+              "x-sm-user-id": "user_123"
+          }
+      )
+
+      def chat_with_groq():
+          try:
+              response = groq_client.chat.completions.create(
+                  model="mixtral-8x7b-32768",
+                  messages=[
+                      {"role": "user", "content": "नमस्ते मेरा नाम Naman है। आप कैसे हैं?"}
+                  ],
+                  max_tokens=1000
+              )
+
+              print("Groq Response:", response.choices[0].message.content)
+              return response
+          except Exception as error:
+              print(f"Groq के साथ त्रुटि: {error}")
+      ```
+    </CodeGroup>
+
+    इन कोड स्निपेट्स में से प्रत्येक model provider द्वारा प्रदान किए गए OpenAI-compatible API URL के आधार पर Base URL को बदलता है। ध्यान देने योग्य कुछ मुख्य पैरामीटर हैं:
+
+    * `api_key`: आपके मॉडल provider की API कुंजी
+    * `x-supermemory-api-key`: आपकी Supermemory API कुंजी
+    * `x-sm-user-id`: उपयोगकर्ता ID के आधार पर बातचीतों का स्कोप उपयोगकर्ता तक सीमित करें। इससे cross-conversation memory सक्षम होगी, यानी उपयोगकर्ता अन्य चैट्स का संदर्भ दे सकेंगे और उनसे जानकारी प्राप्त कर सकेंगे।
+
+    इसके अतिरिक्त, हालांकि इस quickstart में दिखाया नहीं गया है, आप एक `x-sm-conversation-id` header भी पास कर सकते हैं।
+
+    फिर, आपको बातचीत के इतिहास के रूप में संदेशों की पूरी array को LLM — बड़े भाषा मॉडल को भेजना नहीं पड़ेगा। Supermemory इसे handle कर लेगा।
+
+    यदि आप उपरोक्त कोड ब्लॉक्स चलाते हैं, तो आपको अपने LLM से इस प्रकार का आउटपुट मिलेगा:
+
+    ```
+    "नमस्कार, Naman! मैं सिर्फ एक कंप्यूटर प्रोग्राम हूँ, इसलिए मेरी कोई भावनाएं नहीं हैं, लेकिन मैं यहाँ हूँ और आपकी सहायता के लिए तैयार हूँ। आज मैं आपकी कैसे मदद कर सकता हूँ?"
+    ```
+
+    इसके बाद, यदि आप अनुरोध को बदलकर &#39;मेरा नाम क्या है?&#39; पूछें, तो आपको निम्नलिखित रिस्पॉन्स मिलेगा:
+
+    ```
+    आपका नाम नमन है।
+    ```
+
+    इस प्रकार, Memory Router काम कर रहा है!
+  </Tab>
+
+  <Tab title="cURL">
+    **चरण 4.** पर्यावरण वेरिएबल्स सेट करें:
+
+    ```bash
+    export SUPERMEMORY_API_KEY="आपकी_supermemory_api_key"
+    export OPENAI_API_KEY="आपकी_openai_api_key"
+    export ANTHROPIC_API_KEY="आपकी_anthropic_api_key"
+    export GEMINI_API_KEY="आपकी_gemini_api_key"
+    export GROQ_API_KEY="आपकी_groq_api_key"
+    ```
+
+    **स्टेप 5.** अपडेटेड बेस URL और पैरामीटर्स के साथ LLM को एक रिक्वेस्ट भेजें:
+
+    <CodeGroup>
+      ```bash OpenAI
+      curl https://api.supermemory.ai/v3/https://api.openai.com/v1/chat/completions \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $OPENAI_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "model": "gpt-5",
+          "messages": [
+          {"role": "user", "content": "Hello my name is Naman. How are you?"}
+          ],
+          "max_tokens": 1000,
+          "temperature": 0.7
+      }'
+      ```
+
+      ```bash Claude
+      curl https://api.supermemory.ai/v3/https://api.anthropic.com/v1/messages \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "model": "claude-3-sonnet-20240229",
+          "messages": [
+          {"role": "user", "content": "Hello my name is Naman. How are you?"}
+          ],
+          "max_tokens": 1000
+      }'
+      ```
+
+      ```bash Gemini
+      curl https://api.supermemory.ai/v3/https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $GEMINI_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "contents": [
+          {
+              "parts": [
+              {"text": "Hello my name is Naman. How are you?"}
+              ]
+          }
+          ],
+          "generationConfig": {
+          "maxOutputTokens": 1000
+          }
+      }'
+      ```
+
+      ```bash Groq
+      curl https://api.supermemory.ai/v3/https://api.groq.com/openai/v1/chat/completions \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $GROQ_API_KEY" \
+      -H "x-supermemory-api-key: $SUPERMEMORY_API_KEY" \
+      -H "x-sm-user-id: user_123" \
+      -d '{
+          "model": "mixtral-8x7b-32768",
+          "messages": [
+          {"role": "user", "content": "Hello my name is Naman. How are you?"}
+          ],
+          "max_tokens": 1000
+      }'
+      ```
+    </CodeGroup>
+
+    इनमें से प्रत्येक कोड स्निपेट, मॉडल providers द्वारा दी गई OpenAI‑compatible API URL के आधार पर बेस URL बदलता है। ध्यान देने योग्य कुछ प्रमुख पैरामीटर्स हैं:
+
+    * Authorization हेडर: आपके मॉडल provider की API कुंजी
+    * `x-supermemory-api-key`: आपकी Supermemory API कुंजी
+    * `x-sm-user-id`: यूज़र ID के आधार पर बातचीतों का स्कोप निर्धारित करें। यह cross-conversation memory सक्षम करेगा, यानी यूज़र अन्य चैट्स का संदर्भ दे सकेंगे और उनसे जानकारी ले सकेंगे।
+
+    अतिरिक्त रूप से, भले ही यह क्विकस्टार्ट में नहीं दिखाया गया है, आप `x-sm-conversation-id` हेडर भी पास कर सकते हैं।
+
+    तब आपको बातचीत इतिहास के रूप में पूरे messages array को LLM को भेजने की जरूरत नहीं होगी। Supermemory इसे संभाल लेगा।
+
+    यदि आप ऊपर दिए गए कोड ब्लॉक्स चलाते हैं, तो आपको अपने LLM से इस तरह का आउटपुट मिलेगा:
+
+    ```
+    "नमस्ते, Naman! मैं केवल एक कंप्यूटर प्रोग्राम हूँ, इसलिए मेरी कोई भावनाएं नहीं हैं, लेकिन मैं यहाँ हूँ और आपकी सहायता के लिए तैयार हूँ। आज मैं आपकी कैसे मदद कर सकता हूँ?"
+    ```
+
+    उसके बाद, यदि आप अनुरोध में बदलाव करके उसकी जगह पूछें, “मेरा नाम क्या है?”, तो आपको निम्नलिखित उत्तर मिलेगा:
+
+    ```
+    आपका नाम नमन है।
+    ```
+
+    तो, Memory Router काम कर रहा है!
+  </Tab>
+</Tabs>
+
+अतिरिक्त संदर्भ के लिए, मॉडल providers के दस्तावेज़ों के लिंक नीचे दिए गए हैं:
+
+* [OpenAI API Reference](https://platform.openai.com/docs/api-reference)
+* [Anthropic Claude API](https://docs.anthropic.com/claude/reference)
+* [Google Gemini API](https://ai.google.dev/docs)
+* [Groq API Documentation](https://console.groq.com/docs)

@@ -1,0 +1,314 @@
+---
+title: "Mem0.ai से Supermemory में माइग्रेट करना"
+description: "Mem0.ai से Supermemory में अपना डेटा और एप्लिकेशन माइग्रेट करने की संपूर्ण मार्गदर्शिका"
+sidebarTitle: "Mem0 से"
+---
+
+Mem0.ai से Supermemory में माइग्रेट करना सरल है। यह मार्गदर्शिका आपको Mem0 से अपनी संग्रहित मेमोरी एक्सपोर्ट करने और उन्हें Supermemory में इम्पोर्ट करने की प्रक्रिया से परिचित कराएगी।
+
+<div id="why-migrate-to-supermemory">
+  ## Supermemory पर माइग्रेट क्यों करें?
+</div>
+
+Supermemory, Mem0.ai की तुलना में उन्नत क्षमताएँ प्रदान करता है:
+
+* बिना कोड वाले LLM इंटीग्रेशन के लिए **Memory Router**
+* बेहतर संदर्भ संबंधों के लिए **नॉलेज ग्राफ** आर्किटेक्चर
+* **कई कंटेंट प्रकार** (URL, PDF, images, videos)
+* किफायती कीमतों के साथ **उदार फ्री टियर** (100k tokens)
+* **कई इंटीग्रेशन विकल्प** (API, Router, MCP, SDKs)
+
+<div id="quick-migration-all-in-one">
+  ## त्वरित माइग्रेशन (ऑल‑इन‑वन)
+</div>
+
+एक ही स्क्रिप्ट में पूर्ण माइग्रेशन:
+
+```python
+from mem0 import MemoryClient
+from supermemory import Supermemory
+import json, time
+
+# Mem0 से export करें
+mem0 = MemoryClient(api_key="your_mem0_api_key")
+export = mem0.create_memory_export(
+    schema={"type": "object", "properties": {"memories": {"type": "array", "items": {"type": "object"}}}},
+    filters={}
+)
+time.sleep(5)
+data = mem0.get_memory_export(memory_export_id=export["id"])
+
+# Supermemory में import करें
+supermemory = Supermemory(api_key="your_supermemory_api_key")
+for memory in data["memories"]:
+    if memory.get("content"):
+        supermemory.memories.add(
+            content=memory["content"],
+            container_tags=["imported_from_mem0"]
+        )
+        print(f"✅ {memory['content'][:50]}...")
+
+print("माइग्रेशन पूर्ण!")
+```
+
+<div id="step-by-step-migration">
+  ## चरण-दर-चरण माइग्रेशन
+</div>
+
+<Steps>
+  <Step title="Mem0.ai से एक्सपोर्ट करें">
+    Mem0 आपकी memories एक्सपोर्ट करने के दो तरीके प्रदान करता है:
+
+    ### विकल्प 1: डैशबोर्ड के माध्यम से एक्सपोर्ट (अनुशंसित)
+
+    1. अपने [Mem0 डैशबोर्ड](https://app.mem0.ai) में लॉग इन करें
+    2. एक्सपोर्ट सेक्शन पर जाएँ
+    3. अपनी memories को JSON के रूप में डाउनलोड करें
+
+    ### विकल्प 2: API के माध्यम से एक्सपोर्ट
+
+    Mem0 से अपनी सभी memories एक्सपोर्ट करने के लिए एक सरल स्क्रिप्ट:
+
+    ```python
+    from mem0 import MemoryClient
+    import json
+    import time
+
+    # Mem0 से कनेक्ट करें
+    client = MemoryClient(api_key="your_mem0_api_key")
+
+    # एक्सपोर्ट जॉब बनाएँ
+    schema = {
+        "type": "object",
+        "properties": {
+            "memories": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "content": {"type": "string"},
+                        "metadata": {"type": "object"},
+                        "created_at": {"type": "string"}
+                    }
+                }
+            }
+        }
+    }
+
+    response = client.create_memory_export(schema=schema, filters={})
+    export_id = response["id"]
+
+    # प्रतीक्षा करें और प्राप्त करें
+    print("memories एक्सपोर्ट की जा रही हैं...")
+    time.sleep(5)
+    export_data = client.get_memory_export(memory_export_id=export_id)
+
+    # फ़ाइल में सहेजें
+    with open("mem0_export.json", "w") as f:
+        json.dump(export_data, f, indent=2)
+
+    print(f"एक्सपोर्ट हुई {len(export_data['memories'])} memories")
+    ```
+  </Step>
+
+  <Step title="Supermemory सेट करें">
+    अपना Supermemory खाता बनाएँ और अपनी API कुंजी प्राप्त करें:
+
+    1. [console.supermemory.ai](https://console.supermemory.ai) पर साइन अप करें
+    2. एक नया प्रोजेक्ट बनाएँ
+    3. डैशबोर्ड से API कुंजी जनरेट करें
+
+    ```bash
+    # अपना environment variable सेट करें
+    export SUPERMEMORY_API_KEY="your_supermemory_api_key"
+    ```
+  </Step>
+
+  <Step title="Supermemory में इम्पोर्ट करें">
+    अपनी Mem0 memories को Supermemory में इम्पोर्ट करने के लिए एक सरल स्क्रिप्ट:
+
+    ```python
+    import json
+    from supermemory import Supermemory
+
+    # अपना Mem0 एक्सपोर्ट लोड करें
+    with open("mem0_export.json", "r") as f:
+        mem0_data = json.load(f)
+
+    # Supermemory से कनेक्ट करें
+    client = Supermemory(api_key="your_supermemory_api_key")
+
+    # memories इम्पोर्ट करें
+    for memory in mem0_data["memories"]:
+        content = memory.get("content", "")
+
+        # खाली memories छोड़ें
+        if not content:
+            continue
+
+        # Supermemory में इम्पोर्ट करें
+        try:
+            result = client.memories.add(
+                content=content,
+                container_tags=["imported_from_mem0"],
+                metadata={
+                    "source": "mem0",
+                    "created_at": memory.get("created_at"),
+                    **(memory.get("metadata") or {})
+                }
+            )
+            print(f"इम्पोर्ट किया: {content[:50]}...")
+        except Exception as e:
+            print(f"असफल: {e}")
+
+    print("माइग्रेशन पूरा!")
+    ```
+  </Step>
+</Steps>
+
+<div id="api-migration-reference">
+  ## API Migration Reference
+</div>
+
+यहाँ बताया गया है कि सामान्य Mem0.ai ऑपरेशंस का Supermemory से किस तरह मिलान होता है:
+
+<div id="adding-memories">
+  ### मेमोरी जोड़ना
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  from mem0 import MemoryClient
+
+  client = MemoryClient(api_key="...")
+  client.add(
+      messages="उपयोगकर्ता को डार्क मोड पसंद है",
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  from supermemory import Supermemory
+
+  client = Supermemory(api_key="...")
+  client.memories.add(
+      content="उपयोगकर्ता को डार्क मोड पसंद है",
+      container_tags=["user_alice"]
+  )
+  ```
+</CodeGroup>
+
+<div id="searching-memories">
+  ### मेमोरी खोजना
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  results = client.search(
+      query="user preferences",
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  results = client.memories.search(
+      query="user preferences",
+      container_tags=["user_alice"]
+  )
+  ```
+</CodeGroup>
+
+<div id="getting-all-memories">
+  ### सभी memory प्राप्त करना
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  memories = client.get_all(
+      user_id="alice"
+  )
+  ```
+
+  ```python Supermemory
+  memories = client.memories.list(
+      container_tags=["user_alice"],
+      limit=100
+  )
+  ```
+</CodeGroup>
+
+<div id="deleting-memories">
+  ### मेमोरी हटाना
+</div>
+
+<CodeGroup>
+  ```python Mem0.ai
+  client.delete(memory_id="mem_123")
+  ```
+
+  ```python Supermemory
+  client.memories.delete("mem_123")
+  ```
+</CodeGroup>
+
+<div id="using-memory-router-easiest-migration">
+  ## Memory Router का उपयोग (सबसे आसान माइग्रेशन)
+</div>
+
+सबसे सरल माइग्रेशन के लिए, Supermemory के Memory Router का उपयोग करें—इसके लिए कोड में न्यूनतम बदलाव करने पड़ते हैं:
+
+<CodeGroup>
+  ```python Before (Mem0 + OpenAI)
+  from openai import OpenAI
+  from mem0 import MemoryClient
+
+  # Two separate clients needed
+  openai = OpenAI(api_key="sk-...")
+  memory = MemoryClient(api_key="mem0_key")
+
+  # Manual memory management
+  context = memory.search("user preferences", user_id="alice")
+  messages = [
+      {"role": "system", "content": f"Context: {context}"},
+      {"role": "user", "content": "What are my preferences?"}
+  ]
+
+  response = openai.chat.completions.create(
+      model="gpt-5",
+      messages=messages
+  )
+  ```
+
+  ```python After (Supermemory Router)
+  from openai import OpenAI
+
+  # Single client with automatic memory management
+  client = OpenAI(
+      api_key="sk-...",
+      base_url="https://api.supermemory.ai/v3/https://api.openai.com/v1",
+      default_headers={
+          "x-supermemory-api-key": "your_supermemory_key",
+          "x-supermemory-user-id": "alice"
+      }
+  )
+
+  # Memories handled automatically!
+  response = client.chat.completions.create(
+      model="gpt-5",
+      messages=[{"role": "user", "content": "What are my preferences?"}]
+  )
+  ```
+</CodeGroup>
+
+<Note>
+  एंटरप्राइज माइग्रेशन के लिए, सहायता हेतु [हमसे संपर्क करें](mailto:dhravya@supermemory.com)।
+</Note>
+
+<div id="next-steps">
+  ## अगले चरण
+</div>
+
+1. [जानें](/hi/how-it-works) कि Supermemory कैसे काम करता है
+2. [क्विकस्टार्ट](/hi/quickstart) पढ़ें और अपनी पहली संग्रहित मेमोरी जोड़ें व प्राप्त करें
+3. स्वचालित सिंक के साथ Google Drive, Notion और OneDrive से [कनेक्ट करें](/hi/connectors/overview)

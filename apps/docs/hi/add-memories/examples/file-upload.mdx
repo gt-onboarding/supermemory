@@ -1,0 +1,214 @@
+---
+title: "फ़ाइल अपलोड"
+description: "PDF, छवियाँ और अन्य फ़ाइलें Supermemory पर अपलोड करें"
+---
+
+फ़ाइलों को सीधे Supermemory पर अपलोड करें, ताकि सामग्री स्वतः निकाली जाए और प्रोसेस हो सके।
+
+<div id="upload-a-pdf">
+  ## एक PDF अपलोड करें
+</div>
+
+OCR सपोर्ट के साथ PDF से टेक्स्ट निकालें।
+
+<CodeGroup>
+
+```typescript TypeScript
+const file = fs.createReadStream('document.pdf');
+
+const response = await client.memories.uploadFile({
+  file: file,
+  containerTags: 'documents'
+});
+
+console.log(response.id);
+// Output: pdf_123
+```
+
+```python Python
+with open('document.pdf', 'rb') as file:
+    response = client.memories.upload_file(
+        file=file,
+        container_tags='documents'
+    )
+
+print(response['id'])
+# Output: pdf_123
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "containerTags=documents"
+
+# Response: {"id": "pdf_123", "status": "processing"}
+```
+
+</CodeGroup>
+
+<div id="upload-images-with-ocr">
+  ## OCR के साथ इमेज अपलोड करें
+</div>
+
+इमेज से टेक्स्ट निकालें।
+
+<CodeGroup>
+
+```typescript TypeScript
+const image = fs.createReadStream('screenshot.png');
+
+await client.memories.uploadFile({
+  file: image,
+  containerTags: 'images'
+});
+```
+
+```python Python
+with open('screenshot.png', 'rb') as file:
+    client.memories.upload_file(
+        file=file,
+        container_tags='images'
+    )
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@screenshot.png" \
+  -F "containerTags=images"
+```
+
+</CodeGroup>
+
+<div id="browser-file-upload">
+  ## ब्राउज़र फ़ाइल अपलोड
+</div>
+
+ब्राउज़र में फ़ाइल अपलोड हैंडल करें।
+
+<CodeGroup>
+
+```javascript JavaScript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('containerTags', 'uploads');
+
+const response = await fetch('https://api.supermemory.ai/v3/documents/file', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`
+  },
+  body: formData
+});
+
+const result = await response.json();
+console.log(result.id);
+```
+
+```typescript React
+function handleUpload(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('containerTags', 'uploads');
+
+  return fetch('https://api.supermemory.ai/v3/documents/file', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}` },
+    body: formData
+  });
+}
+```
+
+```bash cURL
+# ब्राउज़र अपलोड FormData का उपयोग करते हैं, फ़ाइल अपलोड जैसा ही
+curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -F "file=@document.pdf" \
+  -F "containerTags=uploads"
+```
+
+</CodeGroup>
+
+<div id="upload-multiple-files">
+  ## एक साथ कई फ़ाइलें अपलोड करें
+</div>
+
+रेट लिमिटिंग के साथ बैच अपलोड।
+
+<CodeGroup>
+
+```typescript TypeScript
+for (const file of files) {
+  const stream = fs.createReadStream(file);
+
+  await client.memories.uploadFile({
+    file: stream,
+    containerTags: 'batch'
+  });
+
+  // रेट लिमिट
+  await new Promise(r => setTimeout(r, 1000));
+}
+```
+
+```python Python
+import time
+
+for file_path in files:
+    with open(file_path, 'rb') as file:
+        client.memories.upload_file(
+            file=file,
+            container_tags='batch'
+        )
+
+    time.sleep(1)  # रेट लिमिट
+```
+
+```bash cURL
+# प्रत्येक फ़ाइल को विलंब के साथ अलग-अलग अपलोड करें
+for file in *.pdf; do
+  curl -X POST "https://api.supermemory.ai/v3/documents/file" \
+    -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+    -F "file=@$file" \
+    -F "containerTags=batch"
+
+  sleep 1  # रेट लिमिट
+done
+```
+
+</CodeGroup>
+
+<div id="supported-file-types">
+  ## समर्थित फ़ाइल प्रकार
+</div>
+
+<div id="documents">
+  ### Documents
+</div>
+
+| फ़ॉर्मेट | एक्सटेंशन | प्रोसेसिंग |
+|--------|------------|------------|
+| PDF | .pdf | टेक्स्ट निष्कर्षण, स्कैन किए गए पन्नों के लिए OCR (Optical Character Recognition) |
+| Microsoft Word | .doc, .docx | पूर्ण टेक्स्ट और स्वरूपण (फॉर्मैटिंग) निष्कर्षण |
+| सादा टेक्स्ट | .txt, .md | सीधे टेक्स्ट की प्रोसेसिंग |
+| CSV | .csv | संरचित डेटा निष्कर्षण |
+
+<div id="images">
+  ### छवियाँ
+</div>
+
+| फ़ॉर्मेट | एक्सटेंशन | प्रोसेसिंग |
+|--------|------------|------------|
+| JPEG | .jpg, .jpeg | OCR टेक्स्ट निष्कर्षण |
+| PNG | .png | OCR टेक्स्ट निष्कर्षण |
+| GIF | .gif | स्थिर छवियों के लिए OCR |
+| WebP | .webp | OCR टेक्स्ट निष्कर्षण |
+
+<div id="size-limits">
+  ### आकार limit
+</div>
+
+- **अधिकतम फ़ाइल आकार**: 50MB
+- **अनुशंसित आकार**: 10MB से कम, सर्वोत्तम प्रोसेसिंग के लिए
+- **बड़ी फ़ाइलें**: प्रोसेसिंग में अधिक समय लग सकता है

@@ -1,0 +1,140 @@
+---
+title: "उपयोगकर्ताओं की पहचान"
+description: "Supermemory में उपयोगकर्ताओं की पहचान करना"
+---
+
+आप Supermemory को `x-sm-user-id` भेजकर बिल्ट-इन क्रॉस‑कन्वर्सेशनल memory सक्षम कर सकते हैं।
+
+<div id="how-supermemory-identifies-users-and-conversations">
+  ## Supermemory उपयोगकर्ताओं और वार्तालापों की पहचान कैसे करता है
+</div>
+
+Supermemory निम्न स्थानों पर (प्राथमिकता के क्रम में) उपयोगकर्ता id खोजेगा:
+
+<div id="x-sm-user-id-header">
+  ### `x-sm-user-id` header
+</div>
+
+आप किसी भी client और model के साथ x-sm-user-id का एक डिफ़ॉल्ट header जोड़ सकते हैं।
+
+<div id="user-in-body">
+  ### बॉडी में `user`
+</div>
+
+जिन मॉडलों में बॉडी में `user` पैरामीटर का समर्थन होता है, जैसे OpenAI, उनमें आप इसे बॉडी से भी जोड़ सकते हैं।
+
+<div id="userid-in-search-params">
+  ### `userId` खोज पैरामीटर्स में
+</div>
+
+यदि मॉडल इसे सपोर्ट नहीं करते हैं, तो आप URL के सर्च पैरामीटर्स में `?userId=xyz` भी जोड़ सकते हैं।
+
+<div id="conversation-id">
+  ## Conversation ID
+</div>
+
+यदि conversation का पहचानकर्ता प्रदान किया गया है, तो आपको संदेशों की पूरी array Supermemory को भेजने की आवश्यकता नहीं है।
+
+```typescript
+// यदि आप conversation ID प्रदान करते हैं, तो आपको हर बार सभी messages भेजने की आवश्यकता नहीं है। Supermemory स्वचालित रूप से इसे backfill कर देता है।
+const client = new OpenAI({
+    baseURL:
+"https://api.supermemory.ai/v3/https://api.openai.com/v1",
+    defaultHeaders: {
+        "x-supermemory-api-key":
+            "SUPERMEMORY_API_KEY",
+        "x-sm-user-id": `dhravya`,
+        "x-sm-conversation-id": "conversation-id"
+    },
+})
+
+const messages = [
+{"role" : "user", "text": "कुछ लंबी बात"},
+// .... 50 अन्य messages
+{"role" : "user", "text": "नया message"},
+]
+
+const client.generateText(messages)
+
+// अगली बार, आपको अधिक भेजने की आवश्यकता नहीं है।
+const messages2 = [{"role" : "user", "text": "हमने इस conversation में क्या बात की थी, और जो हमने पिछले साल की थी?"}]
+
+const client.generateText(messages2)
+```
+
+
+<div id="implementation-examples">
+  ## इम्प्लीमेंटेशन के उदाहरण
+</div>
+
+<div id="google-gemini">
+  ### गूगल जेमिनी
+</div>
+
+```typescript
+const ai = new GoogleGenAI({ apiKey: "YOUR_API_KEY" });
+
+async function main() {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: "AI कैसे काम करता है, कुछ शब्दों में समझाएं",
+    config: {
+      httpOptions: {
+        headers: {
+          'x-sm-user-id': "user_123"
+        }
+      }
+    },
+  });
+  console.debug(response.text);
+}
+```
+
+
+<div id="anthropic">
+  ### Anthropic
+</div>
+
+```typescript
+const anthropic = new Anthropic({
+  apiKey: 'YOUR_API_KEY', // डिफ़ॉल्ट रूप से process.env["ANTHROPIC_API_KEY"]
+});
+
+async function main() {
+  const msg = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: "नमस्ते, Claude" }],
+  }, {
+    // Headers का उपयोग करना
+    headers: {
+      'x-sm-user-id': "user_123"
+    }
+  });
+
+  console.debug(msg);
+}
+```
+
+
+<div id="openai">
+  ### OpenAI
+</div>
+
+```typescript
+const openai = new OpenAI({
+  apiKey: "YOUR_API_KEY"
+});
+
+async function main() {
+  const completion = await openai.chat.completions.create({
+    messages: [
+      { role: "user", content: "नमस्ते, असिस्टेंट" }
+    ],
+    model: "gpt-5",
+    user: "user_123"
+  });
+
+  console.debug(completion.choices[0].message);
+}
+```

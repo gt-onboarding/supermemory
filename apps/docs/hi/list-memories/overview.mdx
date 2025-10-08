@@ -1,0 +1,163 @@
+---
+title: "संचित मेमोरी की सूची"
+description: "फ़िल्टरिंग और सॉर्टिंग विकल्पों के साथ पेजिनेटेड संचित मेमोरी प्राप्त करें"
+sidebarTitle: "सारांश"
+---
+
+अपने Supermemory खाते से फ़िल्टरिंग और सॉर्टिंग विकल्पों के साथ पेजिनेटेड संचित मेमोरी प्राप्त करें।
+
+<div id="quick-start">
+  ## त्वरित शुरुआत
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const memories = await client.memories.list({ limit: 10 });
+    console.log(memories);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+    memories = client.memories.list(limit=10)
+    print(f"Found {len(memories.memories)} memories")
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"limit": 10}'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="response-schema">
+  ## Response Schema
+</div>
+
+एंडपॉइंट एक संरचित रिस्पॉन्स लौटाता है, जिसमें आपकी संचित मेमोरी और पेजिनेशन से संबंधित जानकारी शामिल होती है:
+
+```json
+{
+  "memories": [
+    {
+      "id": "abc123",
+      "connectionId": null,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:35:00.000Z",
+      "customId": "ml-basics-001",
+      "title": "मशीन लर्निंग का परिचय",
+      "summary": "यह दस्तावेज़ मशीन लर्निंग को आर्टिफिशियल इंटेलिजेंस के एक उपसमुच्चय के रूप में प्रस्तुत करता है...",
+      "status": "done",
+      "type": "text",
+      "metadata": {
+        "category": "शिक्षा",
+        "priority": "उच्च",
+        "source": "अनुसंधान-नोट्स"
+      },
+      "containerTags": ["user_123", "ai-research"]
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 3,
+    "totalItems": 25,
+    "limit": 10
+  }
+}
+```
+
+<div id="memory-object-fields">
+  ### Memory ऑब्जेक्ट फ़ील्ड्स
+</div>
+
+<Accordion title="मुख्य फ़ील्ड्स" defaultOpen>
+  | फ़ील्ड | प्रकार | विवरण |
+  |-------|------|-------------|
+  | `id` | string | memory के लिए अद्वितीय पहचानकर्ता |
+  | `status` | ProcessingStatus | वर्तमान प्रोसेसिंग स्थिति (`queued`, `extracting`, `chunking`, `embedding`, `indexing`, `done`, `failed`) |
+  | `type` | MemoryType | सामग्री का प्रकार (`text`, `pdf`, `webpage`, `video`, `image`, आदि) |
+  | `title` | string | null | स्वचालित रूप से जनरेट किया गया या कस्टम शीर्षक |
+  | `summary` | string | null | सामग्री का AI‑जनित सारांश |
+  | `createdAt` | string | ISO 8601 निर्माण टाइमस्टैम्प |
+  | `updatedAt` | string | ISO 8601 अंतिम अपडेट टाइमस्टैम्प |
+</Accordion>
+
+<Accordion title="वैकल्पिक फ़ील्ड्स">
+  | फ़ील्ड | प्रकार | विवरण |
+  |-------|------|-------------|
+  | `customId` | string | null | memory के लिए आपका कस्टम पहचानकर्ता |
+  | `connectionId` | string | null | उस कनेक्टर का id जिसने यह memory बनाई |
+  | `metadata` | object | null | आपके द्वारा दिया गया कस्टम key-value मेटाडेटा |
+  | `containerTags` | string[] | संचित मेमोरी को व्यवस्थित और फ़िल्टर करने के लिए टैग |
+</Accordion>
+
+<div id="key-parameters">
+  ## प्रमुख पैरामीटर
+</div>
+
+सभी पैरामीटर वैकल्पिक हैं और अनुरोध बॉडी में भेजे जाते हैं क्योंकि यह एंडपॉइंट `POST` का उपयोग करता है:
+
+<ParamField path="limit" type="number/string" default="50">
+  **प्रति पेज आइटम की संख्या।** नियंत्रित करता है कि एक ही अनुरोध में कितनी संचित मेमोरी लौटाई जाएं। सर्वोत्तम प्रदर्शन के लिए अधिकतम अनुशंसा: 200।
+</ParamField>
+
+<ParamField path="page" type="number/string" default="1">
+  **फेच करने के लिए पेज संख्या (1-इंडेक्स्ड)।** बड़े परिणाम सेट में पेजिनेशन के लिए `limit` के साथ उपयोग करें।
+</ParamField>
+
+<ParamField path="containerTags" type="string[]">
+  **टैग के आधार पर फ़िल्टर।** संचित मेमोरी को दिए गए सभी टैग से मेल खाना चाहिए। उपयोगकर्ता id, प्रोजेक्ट, या कस्टम संगठन टैग के अनुसार फ़िल्टर करने के लिए उपयोग करें।
+</ParamField>
+
+<ParamField path="sort" type="string" default="createdAt">
+  **सॉर्ट फील्ड।** विकल्प: `"createdAt"` (जब memory जोड़ी गई) या `"updatedAt"` (जब memory को आखिरी बार संशोधित किया गया)।
+</ParamField>
+
+<ParamField path="order" type="string" default="desc">
+  **सॉर्ट दिशा।** नवीनतम पहले के लिए `"desc"` उपयोग करें, और सबसे पुरानी पहले के लिए `"asc"`।
+</ParamField>
+
+<ParamField path="filters" type="string">
+  **एडवांस्ड फ़िल्टरिंग।** उन्नत SQL लॉजिक के साथ मेटाडेटा के आधार पर फ़िल्टर करें।
+</ParamField>
+
+<div id="examples">
+  ## उदाहरण
+</div>
+
+<CardGroup cols={2}>
+  <Card title="Basic Listing" icon="list" href="/hi/list-memories/examples/basic">
+    डिफ़ॉल्ट सेटिंग्स के साथ सरल memory प्राप्ति
+  </Card>
+
+  <Card title="Filtering" icon="filter" href="/hi/list-memories/examples/filtering">
+    टैग, status और अन्य मानदंडों के आधार पर फ़िल्टर करें
+  </Card>
+
+  <Card title="Pagination" icon="arrow-right" href="/hi/list-memories/examples/pagination">
+    पेजिनेशन के साथ बड़े डेटासेट संभालें
+  </Card>
+
+  <Card title="Status Monitoring" icon="chart-line" href="/hi/list-memories/examples/monitoring">
+    संचित मेमोरी में processing status को ट्रैक करें
+  </Card>
+</CardGroup>
+
+<Note>
+  `/v3/documents/list` endpoint **POST** method का उपयोग करता है, GET नहीं। इससे अनुरोध बॉडी में जटिल फ़िल्टरिंग पैरामीटर भेजना संभव होता है।
+</Note>

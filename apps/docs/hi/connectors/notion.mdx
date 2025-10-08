@@ -1,0 +1,464 @@
+---
+title: "Notion Connector"
+description: "रीयल‑टाइम वेबहुक्स और वर्कस्पेस इंटीग्रेशन के साथ Notion पेज, डेटाबेस और ब्लॉक्स को सिंक करें"
+icon: "notion"
+---
+
+Notion वर्कस्पेस को कनेक्ट करें ताकि पेज, डेटाबेस और कंटेंट ब्लॉक्स अपने‑आप आपके Supermemory नॉलेज बेस में सिंक हो जाएँ। रीयल‑टाइम अपडेट्स, रिच फॉर्मैटिंग और डेटाबेस प्रॉपर्टीज़ को सपोर्ट करता है।
+
+<div id="quick-setup">
+  ## शीघ्र सेटअप
+</div>
+
+<div id="1-create-notion-connection">
+  ### 1. Notion कनेक्शन बनाएँ
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import Supermemory from 'supermemory';
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    });
+
+    const connection = await client.connections.create('notion', {
+      redirectUrl: 'https://yourapp.com/auth/notion/callback',
+      containerTags: ['user-123', 'notion-workspace'],
+      documentLimit: 2000,
+      metadata: {
+        source: 'notion',
+        workspaceType: 'team',
+        department: 'product'
+      }
+    });
+
+    // उपयोगकर्ता को Notion OAuth पर पुनर्निर्देशित करें
+    window.location.href = connection.authLink;
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from supermemory import Supermemory
+    import os
+
+    client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+    connection = client.connections.create(
+        'notion',
+        redirect_url='https://yourapp.com/auth/notion/callback',
+        container_tags=['user-123', 'notion-workspace'],
+        document_limit=2000,
+        metadata={
+            'source': 'notion',
+            'workspaceType': 'team',
+            'department': 'product'
+        }
+    )
+
+    # उपयोगकर्ता को Notion OAuth पर पुनर्निर्देशित करें
+    print(f'Redirect to: {connection.auth_link}')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -D '{
+        "redirectUrl": "https://yourapp.com/auth/notion/callback",
+        "containerTags": ["user-123", "notion-workspace"],
+        "documentLimit": 2000,
+        "metadata": {
+          "source": "notion",
+          "workspaceType": "team",
+          "department": "product"
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="2-handle-oauth-flow">
+  ### 2. OAuth फ्लो हैंडल करें
+</div>
+
+उपयोगकर्ता द्वारा वर्कस्पेस एक्सेस देने के बाद, Notion आपके callback url पर रीडायरेक्ट करता है। कनेक्शन स्वतः स्थापित हो जाता है।
+
+<div id="3-monitor-sync-progress">
+  ### 3. सिंक प्रगति मॉनीटर करें
+</div>
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // कनेक्शन विवरण जाँचें
+    const connection = await client.connections.getByTags('notion', {
+      containerTags: ['user-123', 'notion-workspace']
+    });
+
+    console.log('कनेक्टेड वर्कस्पेस:', connection.email);
+    console.log('कनेक्शन बनाया गया:', connection.createdAt);
+
+    // सिंक किए गए पेज और डेटाबेस सूचीबद्ध करें
+    const documents = await client.connections.listDocuments('notion', {
+      containerTags: ['user-123', 'notion-workspace']
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # कनेक्शन विवरण जाँचें
+    connection = client.connections.get_by_tags(
+        'notion',
+        container_tags=['user-123', 'notion-workspace']
+    )
+
+    print(f'कनेक्टेड वर्कस्पेस: {connection.email}')
+    print(f'कनेक्शन बनाया गया: {connection.created_at}')
+
+    # सिंक किए गए पेज और डेटाबेस सूचीबद्ध करें
+    documents = client.connections.list_documents(
+        'notion',
+        container_tags=['user-123', 'notion-workspace']
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # provider और टैग्स के आधार पर कनेक्शन विवरण प्राप्त करें
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion/connection" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123", "notion-workspace"]}'
+
+    # प्रतिक्रिया में कनेक्शन विवरण शामिल हैं:
+    # {
+    #   "id": "conn_abc123",
+    #   "provider": "notion",
+    #   "email": "workspace@example.com",
+    #   "createdAt": "2024-01-15T10:00:00Z",
+    #   "documentLimit": 2000,
+    #   "metadata": {...}
+    # }
+
+    # सिंक किए गए documents सूचीबद्ध करें
+    curl -X POST "https://api.supermemory.ai/v3/connections/notion/documents" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123", "notion-workspace"]}'
+
+    # प्रतिक्रिया: sync status वाले document ऑब्जेक्ट्स की array
+    # [
+    #   {"title": "Product Roadmap", "type": "notion_database", "status": "done"},
+    #   {"title": "Meeting Notes", "type": "notion_page", "status": "done"}
+    # ]
+    ```
+  </Tab>
+</Tabs>
+
+<div id="supported-content-types">
+  ## समर्थित सामग्री प्रकार
+</div>
+
+<div id="notion-pages">
+  ### Notion पेजेज़
+</div>
+
+- **रिच टेक्स्ट ब्लॉक्स** जिनका फ़ॉर्मेटिंग सुरक्षित रहता है
+- **नेस्टेड पेजेज़** और पदानुक्रमित संरचना
+- **एम्बेडेड कंटेंट** (छवियाँ, वीडियो, फ़ाइलें)
+- **कोड ब्लॉक्स** सिंटैक्स हाइलाइटिंग के साथ
+- **कॉलआउट्स और उद्धरण** को मार्कडाउन में परिवर्तित किया जाता है
+
+<div id="notion-databases">
+  ### Notion डेटाबेस
+</div>
+
+- **डेटाबेस प्रविष्टियाँ** अलग-अलग documents के रूप में सिंक होती हैं
+- **प्रॉपर्टीज़** Metadata में शामिल होती हैं
+- **रिलेशंस** डेटाबेस प्रविष्टियों के बीच
+- **फॉर्मूला और रोलअप्स** के गणना किए गए मान
+- **मल्टी-सेलेक्ट और सेलेक्ट** प्रॉपर्टीज़
+
+<div id="block-types">
+  ### ब्लॉक प्रकार
+</div>
+
+| ब्लॉक प्रकार | प्रोसेसिंग | मार्कडाउन आउटपुट |
+|------------|------------|-----------------|
+| **Text** | फ़ॉर्मेटिंग बरकरार | `**bold**`, `*italic*`, `~~strikethrough~~` |
+| **Heading** | पदानुक्रम सुरक्षित | `# H1`, `## H2`, `### H3` |
+| **Code** | भाषा स्वतः पहचानी जाती है | ````python\ncode here\n```` |
+| **Quote** | ब्लॉककोट प्रारूप | `> quoted text` |
+| **Callout** | कस्टम फ़ॉर्मेटिंग | `> 💡 **Note:** callout text` |
+| **List** | संरचना बरकरार | `- item 1\n  - nested item` |
+| **Table** | मार्कडाउन तालिकाएँ | `| Col 1 | Col 2 |\n|-------|-------|` |
+| **Image** | Metadata सहित संदर्भित | `![alt text](url)` |
+| **Embed** | संदर्भ सहित लिंक | `[Embedded Content](url)` |
+
+<div id="delete-connection">
+  ## कनेक्शन हटाएँ
+</div>
+
+जब आवश्यकता न हो, तो Notion कनेक्शन हटाएँ:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // कनेक्शन ID से हटाएँ
+    const result = await client.connections.delete('connection_id_123');
+    console.log('कनेक्शन हटाया गया:', result.id);
+
+    // provider और containerTags से हटाएँ
+    const providerResult = await client.connections.deleteByProvider('notion', {
+      containerTags: ['user-123']
+    });
+    console.log('उपयोगकर्ता के लिए Notion कनेक्शन हटाया गया');
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # कनेक्शन ID से हटाएँ
+    result = client.connections.delete('connection_id_123')
+    print(f'कनेक्शन हटाया गया: {result.id}')
+
+    # provider और container_tags से हटाएँ
+    provider_result = client.connections.delete_by_provider(
+        'notion',
+        container_tags=['user-123']
+    )
+    print('उपयोगकर्ता के लिए Notion कनेक्शन हटाया गया')
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # कनेक्शन ID से हटाएँ
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+    # provider और containerTags से हटाएँ
+    curl -X DELETE "https://api.supermemory.ai/v3/connections/notion" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123"]}'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+कनेक्शन हटाने पर:
+- Notion से होने वाले सभी भविष्य के sync रुक जाएंगे
+- OAuth अनुमति हट जाएगी
+- Supermemory में मौजूद synced documents बने रहेंगे (वे हटाए नहीं जाएंगे)
+</Note>
+
+<div id="advanced-configuration">
+  ## उन्नत कॉन्फ़िगरेशन
+</div>
+
+<div id="custom-notion-integration">
+  ### कस्टम Notion इंटिग्रेशन
+</div>
+
+प्रोडक्शन डिप्लॉयमेंट्स के लिए, अपना खुद का Notion इंटिग्रेशन बनाएं:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // सबसे पहले, अपनी Notion ऐप क्रेडेंशियल्स के साथ organization सेटिंग्स अपडेट करें
+    await client.settings.update({
+      notionCustomKeyEnabled: true,
+      notionClientId: 'your-notion-client-id',
+      notionClientSecret: 'your-notion-client-secret'
+    });
+
+    // फिर अपनी कस्टम इंटिग्रेशन का उपयोग करके connections बनाएं
+    const connection = await client.connections.create('notion', {
+      redirectUrl: 'https://yourapp.com/callback',
+      containerTags: ['org-456', 'user-789'],
+      metadata: { customIntegration: true }
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # सबसे पहले, अपनी Notion ऐप क्रेडेंशियल्स के साथ organization सेटिंग्स अपडेट करें
+    client.settings.update(
+        notion_custom_key_enabled=True,
+        notion_client_id='your-notion-client-id',
+        notion_client_secret='your-notion-client-secret'
+    )
+
+    # फिर अपनी कस्टम इंटिग्रेशन का उपयोग करके connections बनाएं
+    connection = client.connections.create(
+        'notion',
+        redirect_url='https://yourapp.com/callback',
+        container_tags=['org-456', 'user-789'],
+        metadata={'customIntegration': True}
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # organization सेटिंग्स अपडेट करें
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "notionCustomKeyEnabled": true,
+        "notionClientId": "your-notion-client-id",
+        "notionClientSecret": "your-notion-client-secret"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<div id="content-filtering">
+  ### सामग्री फ़िल्टरिंग
+</div>
+
+यह नियंत्रित करें कि कौन‑सा Notion कंटेंट सिंक किया जाए:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    // Notion कंटेंट के लिए इंटेलिजेंट फ़िल्टरिंग कॉन्फ़िगर करें
+    await client.settings.update({
+      shouldLLMFilter: true,
+      includeItems: {
+        pageTypes: ['page', 'database'],
+        titlePatterns: ['*Spec*', '*Documentation*', '*Meeting Notes*'],
+        databases: ['Project Tracker', 'Knowledge Base', 'Team Wiki']
+      },
+      excludeItems: {
+        titlePatterns: ['*Draft*', '*Personal*', '*Archive*'],
+        databases: ['Personal Tasks', 'Scratchpad']
+      },
+      filterPrompt: "प्रोफेशनल डॉक्यूमेंटेशन, प्रोजेक्ट स्पेक्स, मीटिंग नोट्स और टीम नॉलेज को सिंक करें। पर्सनल नोट्स, ड्राफ्ट्स और आर्काइव्ड कंटेंट को स्किप करें।"
+    });
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    # Notion कंटेंट के लिए इंटेलिजेंट फ़िल्टरिंग कॉन्फ़िगर करें
+    client.settings.update(
+        should_llm_filter=True,
+        include_items={
+            'pageTypes': ['page', 'database'],
+            'titlePatterns': ['*Spec*', '*Documentation*', '*Meeting Notes*'],
+            'databases': ['Project Tracker', 'Knowledge Base', 'Team Wiki']
+        },
+        exclude_items={
+            'titlePatterns': ['*Draft*', '*Personal*', '*Archive*'],
+            'databases': ['Personal Tasks', 'Scratchpad']
+        },
+        filter_prompt="प्रोफेशनल डॉक्यूमेंटेशन, प्रोजेक्ट स्पेक्स, मीटिंग नोट्स और टीम नॉलेज को सिंक करें। पर्सनल नोट्स, ड्राफ्ट्स और आर्काइव्ड कंटेंट को स्किप करें।"
+    )
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    # Notion कंटेंट के लिए इंटेलिजेंट फ़िल्टरिंग कॉन्फ़िगर करें
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "includeItems": {
+          "pageTypes": ["page", "database"],
+          "titlePatterns": ["*Spec*", "*Documentation*", "*Meeting Notes*"],
+          "databases": ["Project Tracker", "Knowledge Base", "Team Wiki"]
+        },
+        "excludeItems": {
+          "titlePatterns": ["*Draft*", "*Personal*", "*Archive*"],
+          "databases": ["Personal Tasks", "Scratchpad"]
+        },
+        "filterPrompt": "प्रोफेशनल डॉक्यूमेंटेशन, प्रोजेक्ट स्पेक्स, मीटिंग नोट्स और टीम नॉलेज को सिंक करें। पर्सनल नोट्स, ड्राफ्ट्स और आर्काइव्ड कंटेंट को स्किप करें।"
+      }'
+
+    # Response:
+    # {
+    #   "success": true,
+    #   "message": "Settings updated successfully"
+    # }
+    ```
+  </Tab>
+</Tabs>
+
+<div id="workspace-permissions">
+  ## वर्कस्पेस अनुमतियाँ
+</div>
+
+Notion कनेक्टर वर्कस्पेस अनुमतियों का पालन करता है:
+
+| Permission Level | Sync Behavior |
+|-----------------|---------------|
+| **Admin** | पूरे वर्कस्पेस तक पहुंच |
+| **Member** | केवल पढ़ने की अनुमति वाले पेज |
+| **Guest** | केवल साझा किए गए पेज |
+| **No Access** | इंडेक्स से हटाया गया |
+
+<div id="database-integration">
+  ## डेटाबेस एकीकरण
+</div>
+
+<div id="database-properties">
+  ### डेटाबेस प्रॉपर्टीज़
+</div>
+
+Notion डेटाबेस प्रॉपर्टीज़ को Metadata के साथ मैप किया जाता है:
+
+```typescript
+// उदाहरण: Properties के साथ Project database
+const documents = await client.connections.listDocuments('notion', {
+  containerTags: ['user-123']
+});
+
+// Database entries खोजें
+const projectEntries = documents.filter(doc =>
+  doc.metadata?.database === 'Projects'
+);
+
+// Database properties searchable metadata बन जाती हैं
+const projectWithStatus = await client.search.documents({
+  q: "machine learning project",
+  containerTags: ['user-123'],
+  filters: JSON.stringify({
+    AND: [
+      { key: "status", value: "In Progress", negate: false },
+      { key: "priority", value: "High", negate: false }
+    ]
+  })
+});
+```
+
+
+<div id="optimization-strategies">
+  ### अनुकूलन रणनीतियाँ
+</div>
+
+1. अपने कार्यक्षेत्र के आकार के आधार पर **उचित दस्तावेज़ limit सेट करें**
+2. कुशल संगठन के लिए **लक्षित कंटेनर टैग** का उपयोग करें
+3. बड़े डेटासेट के लिए **डेटाबेस सिंक प्रदर्शन की निगरानी करें**
+4. केवल प्रासंगिक पेजों को सिंक करने के लिए **कंटेंट फ़िल्टरिंग लागू करें**
+5. अपने एप्लिकेशन में **वेबहुक विलंब को सुचारू रूप से संभालें**
+
+<Callout type="info">
+**Notion-विशिष्ट लाभ:**
+- त्वरित अपडेट के लिए वेबहुक के माध्यम से रियल‑टाइम सिंक
+- रिच फ़ॉर्मेटिंग और ब्लॉक संरचना संरक्षित रहती है
+- डेटाबेस प्रॉपर्टीज़ खोज योग्य Metadata बन जाती हैं
+- पदानुक्रमित पेज संरचना बनी रहती है
+- सहयोगात्मक कार्यक्षेत्र का समर्थन
+</Callout>
+
+<Warning>
+**महत्वपूर्ण सीमाएँ:**
+- जटिल ब्लॉक फ़ॉर्मेटिंग मार्कडाउन में रूपांतरण के दौरान सरल हो सकती है
+- बड़े डेटाबेस का प्रारंभिक सिंक करने में काफ़ी समय लग सकता है
+- कार्यक्षेत्र अनुमतियाँ यह निर्धारित करती हैं कि कौन‑सा कंटेंट सुलभ है
+- Notion API rate limits बड़े कार्यक्षेत्रों के लिए सिंक गति को प्रभावित कर सकते हैं
+- एम्बेडेड फ़ाइलें और चित्र संदर्भित किए जाते हैं, सीधे संग्रहीत नहीं होते
+</Warning>

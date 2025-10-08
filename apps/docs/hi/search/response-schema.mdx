@@ -1,0 +1,269 @@
+---
+title: "रिस्पॉन्स स्कीमा"
+description: "स्कोरिंग विवरण सहित सभी सर्च एंडपॉइंट्स की पूर्ण रिस्पॉन्स संरचना"
+---
+
+<div id="document-search-response-post-v3search">
+  ## Document Search Response (POST `/v3/search`)
+</div>
+
+`client.search.documents()` और `client.search.execute()` से मिलने वाली प्रतिक्रिया:
+
+```json
+{
+  "results": [
+    {
+      "documentId": "doc_abc123",
+      "title": "मशीन लर्निंग की मूल बातें",
+      "type": "pdf",
+      "score": 0.89,
+      "chunks": [
+        {
+          "content": "मशीन लर्निंग कृत्रिम बुद्धिमत्ता का एक हिस्सा है...",
+          "score": 0.95,
+          "isRelevant": true
+        }
+      ],
+      "metadata": {
+        "category": "शिक्षा",
+        "author": "डॉ. स्मिथ",
+        "difficulty": "प्रारंभिक"
+      },
+      "createdAt": "2024-01-15T10:30:00Z",
+      "updatedAt": "2024-01-20T14:45:00Z"
+    }
+  ],
+  "timing": 187,
+  "total": 1
+}
+```
+
+
+<div id="document-result-fields">
+  ### Document Result Fields
+</div>
+
+<ResponseField name="documentId" type="string">
+  मिलते-जुलते चंक्स वाले दस्तावेज़ का यूनिक पहचानकर्ता।
+</ResponseField>
+
+<ResponseField name="title" type="string | null">
+  उपलब्ध होने पर दस्तावेज़ का शीर्षक। बिना शीर्षक वाले Documents के लिए null हो सकता है।
+</ResponseField>
+
+<ResponseField name="type" type="string | null">
+  दस्तावेज़ का प्रकार (जैसे, "pdf", "text", "webpage", "notion_doc")। निर्दिष्ट न होने पर null हो सकता है।
+</ResponseField>
+
+<ResponseField name="score" type="number" range="0-1">
+  **समग्र दस्तावेज़ प्रासंगिकता स्कोर**। सेमांटिक मिलान, कीवर्ड मिलान, और Metadata प्रासंगिकता को संयोजित करता है।
+
+  - **0.9-1.0**: अत्यंत प्रासंगिक
+  - **0.7-0.9**: अत्यधिक प्रासंगिक
+  - **0.5-0.7**: मध्यम रूप से प्रासंगिक
+  - **0.3-0.5**: कुछ हद तक प्रासंगिक
+  - **0.0-0.3**: सीमित रूप से प्रासंगिक
+</ResponseField>
+
+<ResponseField name="chunks" type="Array<Chunk>">
+  दस्तावेज़ से मिलते-जुलते टेक्स्ट चंक्स की array। प्रत्येक chunk आपके क्वेरी से मेल खाने वाले दस्तावेज़ के हिस्से को दर्शाता है।
+
+  <ResponseField name="chunks[].content" type="string">
+    मिलते-जुलते chunk का वास्तविक टेक्स्ट कंटेंट। `onlyMatchingChunks=true` न होने पर आस-पास के चंक्स से संदर्भ शामिल हो सकता है।
+  </ResponseField>
+
+  <ResponseField name="chunks[].score" type="number" range="0-1">
+    **चंक-विशिष्ट मिलान स्कोर**। यह विशिष्ट chunk आपकी क्वेरी से कितना अच्छी तरह मेल खाता है।
+  </ResponseField>
+
+  <ResponseField name="chunks[].isRelevant" type="boolean">
+    क्या यह chunk `chunkThreshold` पास कर गया है। `true` का मतलब chunk threshold से ऊपर है, `false` का मतलब यह सिर्फ संदर्भ के लिए शामिल है।
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="metadata" type="object | null">
+  key-value जोड़ों के रूप में दस्तावेज़ का Metadata। संरचना इस पर निर्भर करती है कि Documents के साथ क्या संग्रहीत किया गया था।
+  ```json
+  {
+    "category": "tutorial",
+    "language": "python",
+    "difficulty": "intermediate",
+    "tags": "web-development,backend"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  दस्तावेज़ के बनाए जाने का ISO 8601 टाइमस्टैम्प।
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  दस्तावेज़ के अंतिम बार अपडेट होने का ISO 8601 टाइमस्टैम्प।
+</ResponseField>
+
+<ResponseField name="content" type="string | null" optional>
+  **पूर्ण दस्तावेज़ सामग्री**। केवल तब शामिल जब `includeFullDocs=true` हो। आकार बहुत बड़ा हो सकता है।
+
+  <Warning>
+    पूर्ण दस्तावेज़ सामग्री प्रतिक्रियाओं को अत्यधिक बड़ा कर सकती है। उपयुक्त limit के साथ और केवल आवश्यक होने पर उपयोग करें।
+  </Warning>
+</ResponseField>
+
+<ResponseField name="summary" type="string | null" optional>
+  **AI-जनित दस्तावेज़ सारांश**। केवल तब शामिल जब `includeSummary=true` हो। दस्तावेज़ का संक्षिप्त अवलोकन प्रदान करता है।
+</ResponseField>
+
+<div id="memory-search-response">
+  ## Memory Search Response
+</div>
+
+`client.search.memories()` से प्राप्त रिस्पॉन्स:
+
+```json
+{
+  "results": [
+    {
+      "id": "mem_xyz789",
+      "memory": "क्वांटम कंप्यूटिंग अनुप्रयोगों के बारे में संपूर्ण memory सामग्री...",
+      "मिलान स्कोर": 0.87,
+      "metadata": {
+        "category": "अनुसंधान",
+        "topic": "क्वांटम-कंप्यूटिंग"
+      },
+      "updatedAt": "2024-01-18T09:15:00Z",
+      "version": 3,
+      "context": {
+        "parents": [
+          {
+            "memory": "क्वांटम सिद्धांत की मूल बातों के बारे में पूर्व चर्चा...",
+            "relation": "विस्तार",
+            "version": 2,
+            "updatedAt": "2024-01-17T16:30:00Z"
+          }
+        ],
+        "children": [
+          {
+            "memory": "क्वांटम एल्गोरिदम के बारे में अनुवर्ती प्रश्न...",
+            "relation": "व्युत्पन्न",
+            "version": 4,
+            "updatedAt": "2024-01-19T11:20:00Z"
+          }
+        ]
+      },
+      "documents": [
+        {
+          "id": "doc_quantum_paper",
+          "[object Object]": "Quantum Computing Applications",
+          "type": "pdf",
+          "createdAt": "2024-01-10T08:00:00Z"
+        }
+      ]
+    }
+  ],
+  "timing": 156,
+  "total": 1
+}
+```
+
+
+<div id="memory-result-fields">
+  ### Memory परिणाम फ़ील्ड्स
+</div>
+
+<ResponseField name="id" type="string">
+  memory प्रविष्टि के लिए अद्वितीय पहचानकर्ता।
+</ResponseField>
+
+<ResponseField name="memory" type="string">
+  **पूर्ण memory सामग्री**। Documents खोज, जो चंक्स लौटाती है, के विपरीत memory खोज पूरा memory टेक्स्ट लौटाती है।
+</ResponseField>
+
+<ResponseField name="similarity" type="number" range="0-1">
+  आपकी क्वेरी और इस memory के बीच का **मिलान स्कोर**। उच्च स्कोर बेहतर मिलान दर्शाते हैं।
+
+  - **0.9-1.0**: अत्यधिक समान
+  - **0.8-0.9**: बहुत समान
+  - **0.7-0.8**: समान
+  - **0.6-0.7**: कुछ हद तक समान
+  - **0.5-0.6**: नगण्य रूप से समान
+</ResponseField>
+
+<ResponseField name="metadata" type="object | null">
+  key-value जोड़ों के रूप में memory का Metadata। संरचना इस पर निर्भर करती है कि memory के साथ क्या संग्रहीत किया गया था।
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 टाइमस्टैम्प जब memory को अंतिम बार अपडेट किया गया।
+</ResponseField>
+
+<ResponseField name="version" type="number | null" optional>
+  इस memory प्रविष्टि का संस्करण नंबर। memory के विकास और संबंधों को ट्रैक करने के लिए उपयोग होता है।
+</ResponseField>
+
+<ResponseField name="context" type="object" optional>
+  **संदर्भात्मक memory संबंध**। केवल तब शामिल किया जाता है जब `include.relatedMemories=true` हो।
+
+  <ResponseField name="context.parents" type="Array<ContextMemory>" optional>
+    parent संग्रहीत स्मृतियों की array जिनसे यह memory विस्तार करती है या जिनसे यह व्युत्पन्न है।
+  </ResponseField>
+
+  <ResponseField name="context.children" type="Array<ContextMemory>" optional>
+    child संग्रहीत स्मृतियों की array जो इस memory का विस्तार करती हैं या इससे व्युत्पन्न हैं।
+  </ResponseField>
+
+  ### Context Memory संरचना
+
+  <ResponseField name="memory" type="string">
+    संबंधित memory की सामग्री।
+  </ResponseField>
+
+  <ResponseField name="relation" type="string">
+    संबंध प्रकार: "updates", "extends", या "derives"।
+
+    - **updates**: यह memory संबंधित memory को अपडेट/प्रतिस्थापित करती है
+    - **extends**: यह memory संबंधित memory पर आधारित होती है
+    - **derives**: यह memory संबंधित memory से व्युत्पन्न होती है
+  </ResponseField>
+
+  <ResponseField name="version" type="number | null">
+    सापेक्ष संस्करण दूरी:
+    - माता-पिता के लिए **नकारात्मक मान** (-1 = प्रत्यक्ष parent, -2 = grandparent)
+    - बच्चों के लिए **सकारात्मक मान** (+1 = प्रत्यक्ष child, +2 = grandchild)
+  </ResponseField>
+
+  <ResponseField name="updatedAt" type="string">
+    संबंधित memory को अंतिम बार कब अपडेट किया गया।
+  </ResponseField>
+
+  <ResponseField name="metadata" type="object | null" optional>
+    संबंधित memory का Metadata।
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="documents" type="Array<Document>" optional>
+  **संबद्ध Documents**। केवल तब शामिल किया जाता है जब `include.documents=true` हो।
+
+  <ResponseField name="documents[].id" type="string">
+    Document पहचानकर्ता।
+  </ResponseField>
+
+  <ResponseField name="documents[].title" type="string">
+    Document शीर्षक।
+  </ResponseField>
+
+  <ResponseField name="documents[].type" type="string">
+    Document प्रकार।
+  </ResponseField>
+
+  <ResponseField name="documents[].metadata" type="object">
+    Document का Metadata।
+  </ResponseField>
+
+  <ResponseField name="documents[].createdAt" type="string">
+    Document निर्माण टाइमस्टैम्प।
+  </ResponseField>
+
+  <ResponseField name="documents[].updatedAt" type="string">
+    Document अपडेट टाइमस्टैम्प।
+  </ResponseField>
+</ResponseField>

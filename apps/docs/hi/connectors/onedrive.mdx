@@ -1,0 +1,422 @@
+---
+title: "OneDrive Connector"
+description: "OneDrive से Microsoft Office दस्तावेज़ों को निर्धारित सिंक और व्यावसायिक खातों के समर्थन के साथ सिंक करें"
+icon: "microsoft"
+---
+
+OneDrive को कनेक्ट करें ताकि Word दस्तावेज़, Excel स्प्रेडशीट और PowerPoint प्रस्तुतियाँ स्वतः आपके Supermemory नॉलेज बेस में सिंक हो जाएँ। यह निर्धारित सिंक के साथ व्यक्तिगत और व्यावसायिक, दोनों प्रकार के खातों का समर्थन करता है।
+
+<div id="quick-setup">
+  ## जल्दी सेटअप
+</div>
+
+<div id="1-create-onedrive-connection">
+  ### 1. OneDrive लिंक्ड खाता बनाएँ
+</div>
+
+<CodeGroup>
+
+```typescript Typescript
+import Supermemory from 'supermemory';
+
+const client = new Supermemory({
+  apiKey: process.env.SUPERMEMORY_API_KEY!
+});
+
+const connection = await client.connections.create('onedrive', {
+  redirectUrl: 'https://yourapp.com/auth/onedrive/callback',
+  containerTags: ['user-123', 'onedrive-sync'],
+  documentLimit: 1500,
+  metadata: {
+    source: 'onedrive',
+    accountType: 'business',
+    department: 'marketing'
+  }
+});
+
+// उपयोगकर्ता को Microsoft OAuth पर रीडायरेक्ट करें
+window.location.href = connection.authLink;
+// आउटपुट: OAuth provider पर रीडायरेक्ट करता है
+// आउटपुट: https://login.microsoftonline.com/oauth2/authorize?... पर रीडायरेक्ट करता है
+```
+
+```python Python
+from supermemory import Supermemory
+import os
+
+client = Supermemory(api_key=os.environ.get("SUPERMEMORY_API_KEY"))
+
+connection = client.connections.create(
+    'onedrive',
+    redirect_url='https://yourapp.com/auth/onedrive/callback',
+    container_tags=['user-123', 'onedrive-sync'],
+    document_limit=1500,
+    metadata={
+        'source': 'onedrive',
+        'accountType': 'business',
+        'department': 'marketing'
+    }
+)
+
+# उपयोगकर्ता को Microsoft OAuth पर रीडायरेक्ट करें
+print(f'Redirect to: {connection.auth_link}')
+# आउटपुट: Redirect to: https://oauth.provider.com/...
+# आउटपुट: Redirect to: https://login.microsoftonline.com/oauth2/authorize?...
+```
+
+```bash cURL
+curl -X POST "https://api.supermemory.ai/v3/connections/onedrive" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "redirectUrl": "https://yourapp.com/auth/onedrive/callback",
+    "containerTags": ["user-123", "onedrive-sync"],
+    "documentLimit": 1500,
+    "metadata": {
+      "source": "onedrive",
+      "accountType": "business",
+      "department": "marketing"
+    }
+  }'
+
+# Response: {
+#   "authLink": "https://login.microsoftonline.com/oauth2/authorize?...",
+#   "expiresIn": "1 hour",
+#   "id": "conn_od123"
+# }
+```
+
+</CodeGroup>
+
+<div id="2-handle-microsoft-oauth">
+  ### 2. Microsoft OAuth (अधिकार प्रदान प्रोटोकॉल) को हैंडल करें
+</div>
+
+उपयोगकर्ता द्वारा अनुमतियाँ देने के बाद, Microsoft आपके callback URL पर रीडायरेक्ट करता है। लिंक्ड खाता अपने-आप स्थापित हो जाता है और प्रारंभिक सिंक शुरू हो जाता है।
+
+<div id="3-monitor-sync-status">
+  ### 3. सिंक स्टेटस मॉनिटर करें
+</div>
+
+<CodeGroup>
+  ```typescript Typescript
+    // लिंक्ड खाते का विवरण जांचें
+    const connection = await client.connections.getByTags('onedrive', {
+      containerTags: ['user-123', 'onedrive-sync']
+    });
+
+
+    // सिंक किए गए Office दस्तावेज़ों की सूची प्राप्त करें
+    const documents = await client.connections.listDocuments('onedrive', {
+      containerTags: ['user-123', 'onedrive-sync']
+    });
+    ```
+  ```python Python
+    # लिंक्ड खाते का विवरण जांचें
+    connection = client.connections.get_by_tags(
+        'onedrive',
+        container_tags=['user-123', 'onedrive-sync']
+    )
+
+    # सिंक किए गए Office दस्तावेज़ों की सूची प्राप्त करें
+    documents = client.connections.list_documents(
+        'onedrive',
+        container_tags=['user-123', 'onedrive-sync']
+    )
+    ```
+  ```bash cURL
+    # provider और टैग्स के आधार पर लिंक्ड खाते प्राप्त करें
+    curl -X POST "https://api.supermemory.ai/v3/connections/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "onedrive-sync"],
+        "provider": "onedrive"
+      }'
+
+    # सिंक किए गए Office दस्तावेज़ों की सूची प्राप्त करें
+    curl -X POST "https://api.supermemory.ai/v3/documents/list" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "containerTags": ["user-123", "onedrive-sync"],
+        "source": "onedrive"
+      }'
+    ```
+</CodeGroup>
+
+<div id="supported-document-types">
+  ## समर्थित दस्तावेज़ प्रकार
+</div>
+
+<div id="microsoft-word-documents">
+  ### Microsoft Word दस्तावेज़
+</div>
+
+- **Rich text formatting** को Markdown में बदला जाता है
+- **Headers और styles** को Markdown hierarchy के रूप में सुरक्षित रखा जाता है
+- **Images और charts** निकाले जाते हैं और संदर्भित किए जाते हैं
+- **Tables** को Markdown तालिकाओं में बदला जाता है
+
+<div id="excel-spreadsheets">
+  ### Excel स्प्रेडशीट्स
+</div>
+
+- **वर्कशीट डेटा** को संरचित मार्कडाउन में बदला गया
+- **कई शीट्स** को अलग-अलग संसाधित किया गया
+- **चार्ट और ग्राफ़** को चित्र के रूप में निकाला गया
+- **सूत्र** को गणना किए गए मानों में बदला गया
+- **सेल फ़ॉर्मेटिंग** को मार्कडाउन में सरल किया गया
+
+<div id="powerpoint-presentations">
+  ### PowerPoint प्रस्तुतियां
+</div>
+
+- **स्लाइड सामग्री** को संरचित मार्कडाउन में परिवर्तित किया गया
+- **स्पीकर नोट्स** उपलब्ध होने पर शामिल किए गए
+- **छवियां और मीडिया** निकाले गए और संदर्भित किए गए
+- **एम्बेडेड ऑब्जेक्ट्स** संभव होने पर संसाधित किए गए
+
+<div id="sync-mechanism">
+  ## सिंक मैकेनिज़्म
+</div>
+
+Webhooks दस्तावेज़ों में हुए बदलावों का रीयल‑टाइम सिंक सुनिश्चित करते हैं। आप चाहें तो मैन्युअल रूप से भी सिंक ट्रिगर कर सकते हैं।
+
+<div id="manual-sync-trigger">
+  ### मैनुअल सिंक ट्रिगर
+</div>
+
+<CodeGroup>
+  ```typescript Typescript
+    // सभी OneDrive लिंक्ड खातों के लिए तुरंत सिंक ट्रिगर करें
+    await client.connections.import('onedrive');
+
+    // किसी विशेष उपयोगकर्ता के लिए सिंक ट्रिगर करें
+    await client.connections.import('onedrive', {
+      containerTags: ['user-123']
+    });
+
+    console.log('मैनुअल सिंक प्रारंभ किया गया — दस्तावेज़ 5–10 मिनट में अपडेट हो जाएंगे');
+    ```
+  ```python Python
+    # सभी OneDrive लिंक्ड खातों के लिए तुरंत सिंक ट्रिगर करें
+    client.connections.import_('onedrive')
+
+    # किसी विशेष उपयोगकर्ता के लिए सिंक ट्रिगर करें
+    client.connections.import_(
+        'onedrive',
+        container_tags=['user-123']
+    )
+
+    print('मैनुअल सिंक प्रारंभ किया गया — दस्तावेज़ 5–10 मिनट में अपडेट हो जाएंगे')
+    ```
+  ```bash cURL
+    # मैनुअल सिंक ट्रिगर करें
+    curl -X POST "https://api.supermemory.ai/v3/connections/onedrive/import" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"containerTags": ["user-123"]}'
+    ```
+</CodeGroup>
+
+<div id="delete-connection">
+  ## लिंक्ड खाता हटाएँ
+</div>
+
+जब आवश्यकता न हो तो OneDrive लिंक्ड खाता हटाएँ:
+
+<CodeGroup>
+
+```typescript Typescript
+// लिंक्ड खाता ID से हटाएँ
+const result = await client.connections.delete('connection_id_123');
+console.log('लिंक्ड खाता हटाया:', result.id);
+
+// provider और containerTags से हटाएँ
+const providerResult = await client.connections.deleteByProvider('onedrive', {
+  containerTags: ['user-123']
+});
+console.log('उपयोगकर्ता के लिए OneDrive लिंक्ड खाता हटाया');
+```
+
+```python Python
+# लिंक्ड खाता ID से हटाएँ
+result = client.connections.delete('connection_id_123')
+print(f'लिंक्ड खाता हटाया: {result.id}')
+
+# provider और container_tags से हटाएँ
+provider_result = client.connections.delete_by_provider(
+    'onedrive',
+    container_tags=['user-123']
+)
+print('उपयोगकर्ता के लिए OneDrive लिंक्ड खाता हटाया')
+```
+
+```bash cURL
+# लिंक्ड खाता ID से हटाएँ
+curl -X DELETE "https://api.supermemory.ai/v3/connections/connection_id_123" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+
+# provider और containerTags से हटाएँ
+curl -X DELETE "https://api.supermemory.ai/v3/connections/onedrive" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"containerTags": ["user-123"]}'
+```
+
+</CodeGroup>
+
+<Note>
+लिंक्ड खाता हटाने पर:
+- OneDrive से आगे की सभी sync रुक जाएँगी
+- OAuth (अधिकार प्रदान प्रोटोकॉल) प्राधिकरण हट जाएगा
+- Supermemory में मौजूद synced दस्तावेज़ बने रहेंगे (वे नहीं हटाए जाएँगे)
+</Note>
+
+<div id="advanced-configuration">
+  ## उन्नत विन्यास
+</div>
+
+<div id="custom-microsoft-app">
+  ### कस्टम Microsoft ऐप
+</div>
+
+प्रोडक्शन डिप्लॉयमेंट के लिए, अपना Microsoft एप्लिकेशन कॉन्फ़िगर करें:
+
+<CodeGroup>
+  ```typescript Typescript
+    // सबसे पहले, अपने Microsoft ऐप क्रेडेंशियल्स के साथ संगठन सेटिंग्स अपडेट करें
+    await client.settings.update({
+      onedriveCustomKeyEnabled: true,
+      onedriveClientId: 'your-microsoft-app-id',
+      onedriveClientSecret: 'your-microsoft-app-secret'
+    });
+
+    // फिर अपने कस्टम ऐप का उपयोग करके लिंक्ड खाते बनाएं
+    const connection = await client.connections.create('onedrive', {
+      redirectUrl: 'https://yourapp.com/callback',
+      containerTags: ['org-456', 'user-789'],
+      metadata: { customApp: true }
+    });
+    ```
+  ```python Python
+    # सबसे पहले, अपने Microsoft ऐप क्रेडेंशियल्स के साथ संगठन सेटिंग्स अपडेट करें
+    client.settings.update(
+        onedrive_custom_key_enabled=True,
+        onedrive_client_id='your-microsoft-app-id',
+        onedrive_client_secret='your-microsoft-app-secret'
+    )
+
+    # फिर अपने कस्टम ऐप का उपयोग करके लिंक्ड खाते बनाएं
+    connection = client.connections.create(
+        'onedrive',
+        redirect_url='https://yourapp.com/callback',
+        container_tags=['org-456', 'user-789'],
+        metadata={'customApp': True}
+    )
+    ```
+  ```bash cURL
+    # संगठन सेटिंग्स अपडेट करें
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "onedriveCustomKeyEnabled": true,
+        "onedriveClientId": "your-microsoft-app-id",
+        "onedriveClientSecret": "your-microsoft-app-secret"
+      }'
+    ```
+</CodeGroup>
+
+<div id="document-filtering">
+  ### दस्तावेज़ फ़िल्टरिंग
+</div>
+
+कौन-से OneDrive दस्तावेज़ सिंक हों, इसे नियंत्रित करें:
+
+<CodeGroup>
+  ```typescript Typescript
+    // Configure filtering for Office documents
+    await client.settings.update({
+      shouldLLMFilter: true,
+      includeItems: {
+        fileTypes: ['docx', 'xlsx', 'pptx'],
+        folderNames: ['Projects', 'Documentation', 'Reports'],
+        titlePatterns: ['*Proposal*', '*Specification*', '*Analysis*']
+      },
+      excludeItems: {
+        folderNames: ['Archive', 'Templates', 'Personal'],
+        titlePatterns: ['*Draft*', '*Old*', '*Backup*', '*~$*']
+      },
+      filterPrompt: "व्यावसायिक बिज़नेस दस्तावेज़, प्रोजेक्ट फ़ाइलें, रिपोर्ट और प्रेज़ेंटेशन सिंक करें। निजी फ़ाइलें, ड्राफ्ट, अस्थायी फ़ाइलें और आर्काइव की गई सामग्री को छोड़ दें।"
+    });
+    ```
+  ```python Python
+    # Configure filtering for Office documents
+    client.settings.update(
+        should_llm_filter=True,
+        include_items={
+            'fileTypes': ['docx', 'xlsx', 'pptx'],
+            'folderNames': ['Projects', 'Documentation', 'Reports'],
+            'titlePatterns': ['*Proposal*', '*Specification*', '*Analysis*']
+        },
+        exclude_items={
+            'folderNames': ['Archive', 'Templates', 'Personal'],
+            'titlePatterns': ['*Draft*', '*Old*', '*Backup*', '*~$*']
+        },
+        filter_prompt="व्यावसायिक बिज़नेस दस्तावेज़, प्रोजेक्ट फ़ाइलें, रिपोर्ट और प्रेज़ेंटेशन सिंक करें। निजी फ़ाइलें, ड्राफ्ट, अस्थायी फ़ाइलें और आर्काइव की गई सामग्री को छोड़ दें।"
+    )
+    ```
+  ```bash cURL
+    # Configure filtering for Office documents
+    curl -X PATCH "https://api.supermemory.ai/v3/settings" \
+      -H "Authorization: Bearer $SUPERMEMORY_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "shouldLLMFilter": true,
+        "includeItems": {
+          "fileTypes": ["docx", "xlsx", "pptx"],
+          "folderNames": ["Projects", "Documentation", "Reports"],
+          "titlePatterns": ["*Proposal*", "*Specification*", "*Analysis*"]
+        },
+        "excludeItems": {
+          "folderNames": ["Archive", "Templates", "Personal"],
+          "titlePatterns": ["*Draft*", "*Old*", "*Backup*", "*~$*"]
+        },
+        "filterPrompt": "व्यावसायिक बिज़नेस दस्तावेज़, प्रोजेक्ट फ़ाइलें, रिपोर्ट और प्रेज़ेंटेशन सिंक करें। निजी फ़ाइलें, ड्राफ्ट, अस्थायी फ़ाइलें और आर्काइव की गई सामग्री को छोड़ दें।"
+      }'
+
+    # Response: {
+    #   "shouldLLMFilter": true,
+    #   "includeItems": {...},
+    #   "excludeItems": {...},
+    #   "filterPrompt": "..."
+    # }
+    ```
+</CodeGroup>
+
+<div id="optimization-tips">
+  ### अनुकूलन टिप्स
+</div>
+
+1. स्टोरेज और उपयोग के आधार पर यथार्थवादी दस्तावेज़ लिमिट सेट करें
+2. सिर्फ व्यावसायिक रूप से महत्वपूर्ण दस्तावेज़ सिंक करने के लिए टार्गेटेड फ़िल्टरिंग उपयोग करें
+3. शेड्यूल्ड प्रकृति के कारण नियमित रूप से सिंक की सेहत मॉनिटर करें
+4. जब त्वरित अपडेट चाहिए हों तो मैनुअल सिंक ट्रिगर करें
+5. अपेक्षाएँ तय करते समय खाते के प्रकार को ध्यान में रखें
+
+<Callout type="info">
+**OneDrive-विशिष्ट फायदे:**
+- व्यक्तिगत और व्यावसायिक, दोनों तरह के Microsoft खातों को सपोर्ट करता है
+- सभी प्रमुख Office दस्तावेज़ फ़ॉर्मैट प्रोसेस करता है
+- दस्तावेज़ की संरचना और फ़ॉर्मैटिंग बनाए रखता है
+- बड़े एंटरप्राइज़ दस्तावेज़ संग्रह संभालता है
+</Callout>
+
+<Warning>
+**महत्वपूर्ण सीमाएँ:**
+- बड़े Office दस्तावेज़ प्रोसेस करने में काफ़ी समय लग सकता है
+- जटिल Excel फ़ॉर्मूले पूरी तरह markdown में कन्वर्ट नहीं हो सकते
+- Microsoft API rate limits बड़े खातों के लिए सिंक को धीमा कर सकते हैं
+</Warning>

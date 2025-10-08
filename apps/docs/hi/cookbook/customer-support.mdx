@@ -1,0 +1,1064 @@
+---
+title: "कस्टमर सपोर्ट बॉट"
+description: "ऐसा बुद्धिमान सपोर्ट सिस्टम बनाएं जो ग्राहक इतिहास याद रखे और व्यक्तिगत सहायता दे"
+---
+
+ऐसा कस्टमर सपोर्ट सिस्टम बनाएं जो हर इंटरैक्शन याद रखे, अलग-अलग बातचीतों में मुद्दों को ट्रैक करे, और ग्राहक के इतिहास व पसंद के आधार पर व्यक्तिगत सपोर्ट प्रदान करे।
+
+<div id="what-youll-build">
+  ## आप क्या बनाएंगे
+</div>
+
+एक कस्टमर सपोर्ट बॉट, जो:
+
+- **सभी वार्तालापों और चैनलों में ग्राहक का इतिहास याद रखता है**
+- **चल रही समस्याओं को ट्रैक करता है** और स्वतः फॉलो‑अप करता है
+- **ग्राहक के टियर और प्राथमिकताओं के आधार पर व्यक्तिगत जवाब देता है**
+- **जटिल मुद्दों को पूरे संदर्भ सहित मानव एजेंटों तक एस्केलेट करता है**
+- **समाधानों से सीखता है** ताकि भविष्य के जवाब बेहतर हों
+
+<div id="prerequisites">
+  ## पूर्वापेक्षाएँ
+</div>
+
+- Node.js 18+ या Python 3.8+
+- Supermemory API कुंजी
+- OpenAI API कुंजी
+- ग्राहक डेटाबेस या CRM इंटीग्रेशन
+- ग्राहक समर्थन वर्कफ़्लोज़ की बुनियादी समझ
+
+<div id="implementation">
+  ## कार्यान्वयन
+</div>
+
+<div id="step-1-customer-context-management">
+  ### चरण 1: ग्राहक कॉन्टेक्स्ट प्रबंधन
+</div>
+
+<Tabs>
+  <Tab title="Next.js">
+    ```typescript lib/customer-context.ts
+    import { Supermemory } from 'supermemory'
+
+    const client = new Supermemory({
+      apiKey: process.env.SUPERMEMORY_API_KEY!
+    })
+
+    interface Customer {
+      id: string
+      email: string
+      name: string
+      tier: 'free' | 'pro' | 'enterprise'
+      joinDate: string
+      preferences?: Record<string, any>
+    }
+
+    interface SupportTicket {
+      id: string
+      customerId: string
+      subject: string
+      status: 'open' | 'pending' | 'resolved' | 'closed'
+      priority: 'low' | 'medium' | 'high' | 'urgent'
+      category: string
+      createdAt: string
+      updatedAt: string
+      assignedAgent?: string
+    }
+
+    export class CustomerContextManager {
+      private getContainerTag(customerId: string): string {
+        return `customer_${customerId}`
+      }
+
+      async addInteraction(customerId: string, interaction: {
+        type: 'chat' | 'email' | 'phone' | 'ticket'
+        content: string
+        channel: string
+        outcome?: 'resolved' | 'escalated' | 'pending'
+        agentId?: string
+        metadata?: Record<string, any>
+      }) {
+        try {
+          const result = await client.memories.add({
+            content: `${interaction.type.toUpperCase()}: ${interaction.content}`,
+            containerTag: this.getContainerTag(customerId),
+            metadata: {
+              type: 'customer_interaction',
+              interactionType: interaction.type,
+              channel: interaction.channel,
+              outcome: interaction.outcome,
+              agentId: interaction.agentId,
+              timestamp: new Date().toISOString(),
+              ...interaction.metadata
+            }
+          })
+
+          return result
+        } catch (error) {
+          console.error('ग्राहक इंटरैक्शन जोड़ने में असफल:', error)
+          throw error
+        }
+      }
+
+      async getCustomerHistory(customerId: string, limit: number = 10) {
+        try {
+          const memories = await client.memories.list({
+            containerTags: [this.getContainerTag(customerId)],
+            limit,
+            sort: 'updatedAt',
+            order: 'desc'
+          })
+
+          return memories.memories.map(memory => ({
+            id: memory.id,
+            content: memory.content,
+            type: memory.metadata?.interactionType || 'unknown',
+            channel: memory.metadata?.channel,
+            outcome: memory.metadata?.outcome,
+            timestamp: memory.metadata?.timestamp || memory.createdAt,
+            agentId: memory.metadata?.agentId
+          }))
+        } catch (error) {
+          console.error('ग्राहक इतिहास प्राप्त करने में असफल:', error)
+          throw error
+        }
+      }
+
+      async searchCustomerContext(customerId: string, query: string) {
+        try {
+          const results = await client.search.memories({
+            q: query,
+            containerTag: this.getContainerTag(customerId),
+            threshold: 0.6,
+            limit: 5,
+            rerank: true
+          })
+
+          return results.results.map(result => ({
+            content: result.memory,
+            similarity: result.similarity,
+            metadata: result.metadata
+          }))
+        } catch (error) {
+          console.error('ग्राहक संदर्भ खोजने में असफल:', error)
+          throw error
+        }
+      }
+
+      async trackIssue(customerId: string, issue: {
+        subject: string
+        description: string
+        category: string
+        priority: 'low' | 'medium' | 'high' | 'urgent'
+        status: 'open' | 'pending' | 'resolved'
+      }) {
+        try {
+          const issueContent = `ISSUE: ${issue.subject}\n\nDescription: ${issue.description}\nCategory: ${issue.category}\nPriority: ${issue.priority}\nStatus: ${issue.status}`
+
+          const result = await client.memories.add({
+            content: issueContent,
+            containerTag: this.getContainerTag(customerId),
+            metadata: {
+              type: 'support_issue',
+              subject: issue.subject,
+              category: issue.category,
+              priority: issue.priority,
+              status: issue.status,
+              createdAt: new Date().toISOString()
+            }
+          })
+
+          return result
+        } catch (error) {
+          console.error('समस्या ट्रैक करने में असफल:', error)
+          throw error
+        }
+      }
+
+      async updateIssueStatus(issueId: string, status: 'open' | 'pending' | 'resolved' | 'closed', resolution?: string) {
+        try {
+          // नोट: वास्तविक implementation में, आप memory को अपडेट करेंगे
+          // अभी के लिए, हम एक status अपडेट जोड़ेंगे
+          const memory = await client.memories.get(issueId)
+          const customerId = memory.containerTag.replace('customer_', '')
+
+          const updateContent = `ISSUE UPDATE: ${memory.metadata?.subject}\nStatus changed to: ${status}${resolution ? `\nResolution: ${resolution}` : ''}`
+
+          return await this.addInteraction(customerId, {
+            type: 'ticket',
+            content: updateContent,
+            channel: 'internal',
+            outcome: status === 'resolved' ? 'resolved' : 'pending',
+            metadata: {
+              originalIssueId: issueId,
+              statusUpdate: true
+            }
+          })
+        } catch (error) {
+          console.error('समस्या status अपडेट करने में असफल:', error)
+          throw error
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python customer_context.py
+    from supermemory import Supermemory
+    import os
+    from typing import Dict, List, Any, Optional
+    from datetime import datetime
+    from enum import Enum
+
+    class InteractionType(Enum):
+        CHAT = "chat"
+        EMAIL = "email"
+        PHONE = "phone"
+        TICKET = "ticket"
+
+    class Priority(Enum):
+        LOW = "low"
+        MEDIUM = "medium"
+        HIGH = "high"
+        URGENT = "urgent"
+
+    class Status(Enum):
+        OPEN = "open"
+        PENDING = "pending"
+        RESOLVED = "resolved"
+        CLOSED = "closed"
+
+    class CustomerContextManager:
+        def __init__(self):
+            self.client = Supermemory(api_key=os.getenv("SUPERMEMORY_API_KEY"))
+
+        def _get_container_tag(self, customer_id: str) -> str:
+            return f"customer_{customer_id}"
+
+        def add_interaction(self, customer_id: str, interaction: Dict[str, Any]) -> Dict:
+            """ग्राहक इंटरैक्शन को memory में जोड़ें"""
+            try:
+                content = f"{interaction['type'].upper()}: {interaction['content']}"
+
+                result = self.client.memories.add(
+                    content=content,
+                    container_tag=self._get_container_tag(customer_id),
+                    metadata={
+                        'type': 'customer_interaction',
+                        'interactionType': interaction['type'],
+                        'channel': interaction['channel'],
+                        'outcome': interaction.get('outcome'),
+                        'agentId': interaction.get('agentId'),
+                        'timestamp': datetime.now().isoformat(),
+                        **interaction.get('metadata', {})
+                    }
+                )
+                return result
+            except Exception as e:
+                print(f"ग्राहक इंटरैक्शन जोड़ने में विफल: {e}")
+                raise
+
+        def get_customer_history(self, customer_id: str, limit: int = 10) -> List[Dict]:
+            """ग्राहक इंटरैक्शन इतिहास प्राप्त करें"""
+            try:
+                memories = self.client.memories.list(
+                    container_tags=[self._get_container_tag(customer_id)],
+                    limit=limit,
+                    sort='updatedAt',
+                    order='desc'
+                )
+
+                return [
+                    {
+                        'id': memory.id,
+                        'content': memory.content,
+                        'type': memory.metadata.get('interactionType', 'unknown') if memory.metadata else 'unknown',
+                        'channel': memory.metadata.get('channel') if memory.metadata else None,
+                        'outcome': memory.metadata.get('outcome') if memory.metadata else None,
+                        'timestamp': memory.metadata.get('timestamp', memory.created_at) if memory.metadata else memory.created_at,
+                        'agentId': memory.metadata.get('agentId') if memory.metadata else None
+                    }
+                    for memory in memories.memories
+                ]
+            except Exception as e:
+                print(f"ग्राहक इतिहास प्राप्त करने में विफल: {e}")
+                raise
+
+        def search_customer_context(self, customer_id: str, query: str) -> List[Dict]:
+            """ग्राहक के इंटरैक्शन इतिहास में खोजें"""
+            try:
+                results = self.client.search.memories(
+                    q=query,
+                    container_tag=self._get_container_tag(customer_id),
+                    threshold=0.6,
+                    limit=5,
+                    rerank=True
+                )
+
+                return [
+                    {
+                        'content': result.memory,
+                        'similarity': result.similarity,
+                        'metadata': result.metadata
+                    }
+                    for result in results.results
+                ]
+            except Exception as e:
+                print(f"ग्राहक संदर्भ खोजने में विफल: {e}")
+                raise
+
+        def track_issue(self, customer_id: str, issue: Dict[str, str]) -> Dict:
+            """ग्राहक सहायता समस्या को ट्रैक करें"""
+            try:
+                issue_content = f"""ISSUE: {issue['subject']}
+
+    Description: {issue['description']}
+    Category: {issue['category']}
+    Priority: {issue['priority']}
+    Status: {issue['status']}"""
+
+                result = self.client.memories.add(
+                    content=issue_content,
+                    container_tag=self._get_container_tag(customer_id),
+                    metadata={
+                        'type': 'support_issue',
+                        'subject': issue['subject'],
+                        'category': issue['category'],
+                        'priority': issue['priority'],
+                        'status': issue['status'],
+                        'createdAt': datetime.now().isoformat()
+                    }
+                )
+                return result
+            except Exception as e:
+                print(f"समस्या ट्रैक करने में विफल: {e}")
+                raise
+
+        def update_issue_status(self, issue_id: str, status: str, resolution: Optional[str] = None) -> Dict:
+            """सहायता समस्या की status अपडेट करें"""
+            try:
+                # मूल समस्या प्राप्त करें
+                memory = self.client.memories.get(issue_id)
+                customer_id = memory.container_tag.replace('customer_', '')
+
+                update_content = f"ISSUE UPDATE: {memory.metadata.get('subject', 'Unknown')}\nStatus changed to: {status}"
+                if resolution:
+                    update_content += f"\nResolution: {resolution}"
+
+                return self.add_interaction(customer_id, {
+                    'type': 'ticket',
+                    'content': update_content,
+                    'channel': 'internal',
+                    'outcome': 'resolved' if status == 'resolved' else 'pending',
+                    'metadata': {
+                        'originalIssueId': issue_id,
+                        'statusUpdate': True
+                    }
+                })
+            except Exception as e:
+                print(f"समस्या status अपडेट करने में विफल: {e}")
+                raise
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-2-support-api-with-context">
+  ### चरण 2: संदर्भ सहित API को समर्थन दें
+</div>
+
+<Tabs>
+  <Tab title="Next.js API रूट">
+    ```typescript app/api/support/chat/route.ts
+    import { streamText } from 'ai'
+    import { createOpenAI } from '@ai-sdk/openai'
+    import { CustomerContextManager } from '@/lib/customer-context'
+
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY!
+    })
+
+    const contextManager = new CustomerContextManager()
+
+    interface Customer {
+      id: string
+      name: string
+      email: string
+      tier: 'free' | 'pro' | 'enterprise'
+      joinDate: string
+    }
+
+    export async function POST(request: Request) {
+      const {
+        message,
+        customerId,
+        customer,
+        conversationHistory = [],
+        agentId
+      } = await request.json()
+
+      try {
+        // ग्राहक इतिहास और संदर्भ प्राप्त करें
+        const [history, contextResults] = await Promise.all([
+          contextManager.getCustomerHistory(customerId, 5),
+          contextManager.searchCustomerContext(customerId, message)
+        ])
+
+        // ग्राहक संदर्भ तैयार करें
+        const customerContext = `
+    ग्राहक प्रोफ़ाइल:
+    - नाम: ${customer.name}
+    - ईमेल: ${customer.email}
+    - टियर: ${customer.tier.toUpperCase()}
+    - सदस्यता तिथि: ${customer.joinDate}
+
+    हाल की बातचीत (अंतिम 5):
+    ${history.map(h => `- ${h.timestamp}: ${h.type.toUpperCase()} - ${h.content.substring(0, 100)}...`).join('\n')}
+
+    संबंधित संदर्भ:
+    ${contextResults.map(c => `- ${c.content.substring(0, 150)}... (${(c.similarity * 100).toFixed(1)}% प्रासंगिक)`).join('\n')}
+        `.trim()
+
+        // निर्धारित करें कि क्या एस्केलेशन की आवश्यकता है
+        const escalationKeywords = ['angry', 'frustrated', 'cancel', 'refund', 'legal', 'complaint', 'manager', 'supervisor']
+        const needsEscalation = escalationKeywords.some(keyword =>
+          message.toLowerCase().includes(keyword)
+        ) || customer.tier === 'enterprise'
+
+        const systemPrompt = `आप एक सहायक ग्राहक सहायता एजेंट हैं जिसके पास संपूर्ण ग्राहक इतिहास और संदर्भ तक पहुंच है।
+
+    ग्राहक संदर्भ:
+    ${customerContext}
+
+    सहायता दिशानिर्देश:
+    1. **व्यक्तिगतकरण**: ग्राहक को नाम से संबोधित करें और प्रासंगिक होने पर उनके टियर/इतिहास का संदर्भ दें
+    2. **संदर्भ जागरूकता**: अपनी प्रतिक्रिया को सूचित करने के लिए पिछली बातचीत का उपयोग करें
+    3. **टियर-विशिष्ट सेवा**:
+    - Free: मानक सहायता, स्व-सेवा संसाधनों के लिए मार्गदर्शन
+    - Pro: प्राथमिकता सहायता, विस्तृत स्पष्टीकरण, सक्रिय सुझाव
+    - Enterprise: व्हाइट-ग्लव सेवा, तत्काल एस्केलेशन पथ, समर्पित ध्यान
+
+    4. **समस्या ट्रैकिंग**: यदि यह एक नई समस्या है, तो इसे वर्गीकृत करें (बिलिंग, तकनीकी, खाता, उत्पाद)
+    5. **एस्केलेशन**: ${needsEscalation ? 'इस बातचीत को मानव एजेंट एस्केलेशन की आवश्यकता हो सकती है - सहायक प्रतिक्रिया प्रदान करें लेकिन एस्केलेशन सारांश तैयार करें' : 'जब तक ग्राहक विशेष रूप से मानव एजेंट का अनुरोध न करे, सीधे संभालें'}
+
+    प्रतिक्रिया शैली:
+    - पेशेवर लेकिन मित्रवत
+    - प्रासंगिक होने पर ग्राहक इतिहास से विशिष्ट विवरणों का संदर्भ दें
+    - कार्यान्वित करने योग्य अगले कदम प्रदान करें
+    - उनके टियर स्तर के लिए प्रासंगिक लिंक या संसाधन शामिल करें
+
+    यदि आप समस्या को पूरी तरह से हल नहीं कर सकते, तो मानव एजेंटों को एस्केलेशन के लिए एक स्पष्ट सारांश तैयार करें।`
+
+        const messages = [
+          { role: 'system' as const, content: systemPrompt },
+          ...conversationHistory,
+          { role: 'user' as const, content: message }
+        ]
+
+        const result = await streamText({
+          model: openai('gpt-5'),
+          messages,
+          temperature: 0.3,
+          maxTokens: 800,
+          onFinish: async (completion) => {
+            // इस बातचीत को संग्रहीत करें
+            await contextManager.addInteraction(customerId, {
+              type: 'chat',
+              content: `ग्राहक: ${message}\nएजेंट: ${completion.text}`,
+              channel: 'web_chat',
+              outcome: needsEscalation ? 'escalated' : 'resolved',
+              agentId,
+              metadata: {
+                customerTier: customer.tier,
+                needsEscalation,
+                responseLength: completion.text.length
+              }
+            })
+
+            // यदि यह एक नई समस्या जैसी लगती है, तो इसे ट्रैक करें
+            if (message.length > 50 && !contextResults.some(c => c.similarity > 0.8)) {
+              const issueCategory = categorizeIssue(message)
+              const priority = determinePriority(customer.tier, message)
+
+              await contextManager.trackIssue(customerId, {
+                subject: message.substring(0, 100),
+                description: message,
+                category: issueCategory,
+                priority,
+                status: needsEscalation ? 'pending' : 'open'
+              })
+            }
+          }
+        })
+
+        return result.toAIStreamResponse({
+          data: {
+            needsEscalation,
+            customerTier: customer.tier,
+            contextCount: contextResults.length
+          }
+        })
+
+      } catch (error) {
+        console.error('सहायता चैट त्रुटि:', error)
+        return Response.json(
+          { error: 'सहायता अनुरोध को प्रोसेस करने में विफल', details: error.message },
+          { status: 500 }
+        )
+      }
+    }
+
+    function categorizeIssue(message: string): string {
+      const categories = {
+        billing: ['bill', 'charge', 'payment', 'refund', 'price', 'cost'],
+        technical: ['error', 'bug', 'broken', 'not working', 'crash', 'slow'],
+        account: ['login', 'password', 'access', 'settings', 'profile'],
+        product: ['feature', 'how to', 'tutorial', 'help', 'guide']
+      }
+
+      const messageLower = message.toLowerCase()
+
+      for (const [category, keywords] of Object.entries(categories)) {
+        if (keywords.some(keyword => messageLower.includes(keyword))) {
+          return category
+        }
+      }
+
+      return 'general'
+    }
+
+    function determinePriority(tier: string, message: string): 'low' | 'medium' | 'high' | 'urgent' {
+      const urgentKeywords = ['urgent', 'critical', 'emergency', 'down', 'broken']
+      const highKeywords = ['important', 'asap', 'soon', 'problem']
+
+      const messageLower = message.toLowerCase()
+
+      if (urgentKeywords.some(keyword => messageLower.includes(keyword))) {
+        return 'urgent'
+      }
+
+      if (tier === 'enterprise') {
+        return highKeywords.some(keyword => messageLower.includes(keyword)) ? 'urgent' : 'high'
+      }
+
+      if (tier === 'pro') {
+        return highKeywords.some(keyword => messageLower.includes(keyword)) ? 'high' : 'medium'
+      }
+
+      return 'low'
+    }
+    ```
+  </Tab>
+
+  <Tab title="Python FastAPI">
+    ```python support_api.py
+    from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    from pydantic import BaseModel
+    from typing import List, Dict, Any, Optional
+    import openai
+    from customer_context import CustomerContextManager
+    import json
+    import os
+    import re
+
+    app = FastAPI()
+
+    openai_client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    context_manager = CustomerContextManager()
+
+    class Customer(BaseModel):
+        id: str
+        name: str
+        email: str
+        tier: str
+        joinDate: str
+
+    class SupportRequest(BaseModel):
+        message: str
+        customerId: str
+        customer: Customer
+        conversationHistory: List[Dict[str, str]] = []
+        agentId: Optional[str] = None
+
+    def categorize_issue(message: str) -> str:
+        """संदेश सामग्री के आधार पर सहायता समस्या को वर्गीकृत करें"""
+        categories = {
+            'billing': ['bill', 'charge', 'payment', 'refund', 'price', 'cost'],
+            'technical': ['error', 'bug', 'broken', 'not working', 'crash', 'slow'],
+            'account': ['login', 'password', 'access', 'settings', 'profile'],
+            'product': ['feature', 'how to', 'tutorial', 'help', 'guide']
+        }
+
+        message_lower = message.lower()
+
+        for category, keywords in categories.items():
+            if any(keyword in message_lower for keyword in keywords):
+                return category
+
+        return 'general'
+
+        """टियर और संदेश सामग्री के आधार पर समस्या की प्राथमिकता निर्धारित करें"""
+        """Determine issue priority based on tier and message content"""
+        urgent_keywords = ['urgent', 'critical', 'emergency', 'down', 'broken']
+        high_keywords = ['important', 'asap', 'soon', 'problem']
+
+        message_lower = message.lower()
+
+        if any(keyword in message_lower for keyword in urgent_keywords):
+            return 'urgent'
+
+        if tier == 'enterprise':
+            return 'urgent' if any(keyword in message_lower for keyword in high_keywords) else 'high'
+
+        if tier == 'pro':
+            return 'high' if any(keyword in message_lower for keyword in high_keywords) else 'medium'
+
+        return 'low'
+
+    @app.post("/support/chat")
+    async def support_chat(request: SupportRequest):
+        try:
+            # ग्राहक इतिहास और संदर्भ प्राप्त करें
+            history = context_manager.get_customer_history(request.customerId, 5)
+            context_results = context_manager.search_customer_context(request.customerId, request.message)
+
+            # ग्राहक संदर्भ बनाएं
+            customer_context = f"""
+    CUSTOMER PROFILE:
+    - Name: {request.customer.name}
+    - Email: {request.customer.email}
+    - Tier: {request.customer.tier.upper()}
+    - Member since: {request.customer.joinDate}
+
+    RECENT INTERACTIONS (Last 5):
+    {chr(10).join([f"- {h['timestamp']}: {h['type'].upper()} - {h['content'][:100]}..." for h in history])}
+
+    RELEVANT CONTEXT:
+    {chr(10).join([f"- {c['content'][:150]}... ({c['मिलान स्कोर']*100:.1f}% relevant)" for c in context_results])}
+            """.strip()
+
+            # निर्धारित करें कि क्या एस्केलेशन की आवश्यकता है
+            escalation_keywords = ['angry', 'frustrated', 'cancel', 'refund', 'legal', 'complaint', 'manager', 'supervisor']
+            needs_escalation = any(keyword in request.message.lower() for keyword in escalation_keywords) or request.customer.tier == 'enterprise'
+
+            system_prompt = f"""आप एक सहायक ग्राहक सहायता एजेंट हैं जिसके पास पूर्ण ग्राहक इतिहास और संदर्भ तक पहुंच है।
+
+    CUSTOMER CONTEXT:
+    {customer_context}
+
+    SUPPORT GUIDELINES:
+    1. **व्यक्तिगतकरण**: ग्राहक को नाम से संबोधित करें और प्रासंगिक होने पर उनके टियर/इतिहास का संदर्भ दें
+    2. **संदर्भ जागरूकता**: अपनी प्रतिक्रिया को सूचित करने के लिए पिछली बातचीत का उपयोग करें
+    3. **टियर-विशिष्ट सेवा**:
+    - Free: मानक सहायता, स्व-सेवा संसाधनों के लिए मार्गदर्शन
+    - Pro: प्राथमिकता सहायता, विस्तृत स्पष्टीकरण, सक्रिय सुझाव
+    - Enterprise: व्हाइट-ग्लव सेवा, तत्काल एस्केलेशन पथ, समर्पित ध्यान
+
+    4. **समस्या ट्रैकिंग**: यदि यह एक नई समस्या है, तो इसे वर्गीकृत करें (billing, technical, account, product)
+    5. **एस्केलेशन**: {'इस बातचीत को मानव एजेंट एस्केलेशन की आवश्यकता हो सकती है - सहायक प्रतिक्रिया प्रदान करें लेकिन एस्केलेशन सारांश तैयार करें' if needs_escalation else 'तब तक सीधे संभालें जब तक ग्राहक विशेष रूप से मानव एजेंट का अनुरोध न करे'}
+
+    प्रतिक्रिया शैली:
+    - पेशेवर लेकिन मित्रवत
+    - प्रासंगिक होने पर ग्राहक इतिहास से विशिष्ट विवरणों का संदर्भ दें
+    - कार्यान्वित करने योग्य अगले कदम प्रदान करें
+    - उनके टियर स्तर के लिए प्रासंगिक लिंक या संसाधन शामिल करें
+
+    यदि आप समस्या को पूरी तरह से हल नहीं कर सकते, तो मानव एजेंटों को एस्केलेशन के लिए एक स्पष्ट सारांश तैयार करें।"""
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                *request.conversationHistory,
+                {"role": "user", "content": request.message}
+            ]
+
+            response = await openai_client.chat.completions.create(
+                model="gpt-5",
+                messages=messages,
+                temperature=0.3,
+                max_tokens=800,
+                stream=True
+            )
+
+            async def generate():
+                full_response = ""
+                async for chunk in response:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        full_response += content
+                        yield f"data: {json.dumps({'content': content})}\n\n"
+
+                # पूर्णता के बाद बातचीत संग्रहीत करें
+                context_manager.add_interaction(request.customerId, {
+                    'type': 'chat',
+                    'content': f"Customer: {request.message}\nAgent: {full_response}",
+                    'channel': 'web_chat',
+                    'outcome': 'escalated' if needs_escalation else 'resolved',
+                    'agentId': request.agentId,
+                    'metadata': {
+                        'customerTier': request.customer.tier,
+                        'needsEscalation': needs_escalation,
+                        'responseLength': len(full_response)
+                    }
+                })
+
+                # नई समस्याओं को ट्रैक करें
+                if len(request.message) > 50 and not any(c['similarity'] > 0.8 for c in context_results):
+                    issue_category = categorize_issue(request.message)
+                    priority = determine_priority(request.customer.tier, request.message)
+
+                    context_manager.track_issue(request.customerId, {
+                        'subject': request.message[:100],
+                        'description': request.message,
+                        'category': issue_category,
+                        'priority': priority,
+                        'status': 'pending' if needs_escalation else 'open'
+                    })
+
+                yield f"data: {json.dumps({'done': True, 'needsEscalation': needs_escalation})}\n\n"
+
+            return StreamingResponse(generate(), media_type="text/plain")
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Support chat error: {str(e)}")
+
+    if __name__ == "__main__":
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    ```
+  </Tab>
+</Tabs>
+
+<div id="step-3-support-dashboard-interface">
+  ### चरण 3: समर्थन डैशबोर्ड इंटरफ़ेस
+</div>
+
+```tsx app/support/page.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useChat } from 'ai/react'
+import { CustomerContextManager } from '@/lib/customer-context'
+
+interface Customer {
+  id: string
+  name: string
+  email: string
+  tier: 'free' | 'pro' | 'enterprise'
+  joinDate: string
+}
+
+interface SupportTicket {
+  id: string
+  subject: string
+  status: 'open' | 'pending' | 'resolved' | 'closed'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  category: string
+  createdAt: string
+}
+
+export default function SupportDashboard() {
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [customerHistory, setCustomerHistory] = useState<any[]>([])
+  const [tickets, setTickets] = useState<SupportTicket[]>([])
+  const [showEscalation, setShowEscalation] = useState(false)
+  const [agentId] = useState('agent_001') // In real app, get from auth
+
+  const contextManager = new CustomerContextManager()
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: '/api/support/chat',
+    body: {
+      customerId: selectedCustomer?.id,
+      customer: selectedCustomer,
+      agentId
+    },
+    onFinish: (message, { data }) => {
+      if (data?.needsEscalation) {
+        setShowEscalation(true)
+      }
+      // Refresh customer history
+      if (selectedCustomer) {
+        loadCustomerHistory(selectedCustomer.id)
+      }
+    }
+  })
+
+  // मॉक ग्राहक - वास्तविक ऐप में, अपने ग्राहक डेटाबेस से फेच करें
+  const mockCustomers: Customer[] = [
+    {
+      id: 'cust_001',
+      name: 'Sarah Johnson',
+      email: 'sarah@example.com',
+      tier: 'pro',
+      joinDate: '2023-06-15'
+    },
+    {
+      id: 'cust_002',
+      name: 'TechCorp Inc',
+      email: 'support@techcorp.com',
+      tier: 'enterprise',
+      joinDate: '2022-03-20'
+    },
+    {
+      id: 'cust_003',
+      name: 'Mike Chen',
+      email: 'mike@startup.com',
+      tier: 'free',
+      joinDate: '2024-01-10'
+    }
+  ]
+
+  const loadCustomerHistory = async (customerId: string) => {
+    try {
+      const history = await contextManager.getCustomerHistory(customerId, 10)
+      setCustomerHistory(history)
+    } catch (error) {
+      console.error('ग्राहक इतिहास लोड करने में असफल:', error)
+    }
+  }
+
+  const handleCustomerSelect = async (customer: Customer) => {
+    setSelectedCustomer(customer)
+    await loadCustomerHistory(customer.id)
+    setShowEscalation(false)
+  }
+
+  const getTierColor = (tier: string) => {
+    switch (tier) {
+      case 'enterprise': return 'bg-purple-100 text-purple-800'
+      case 'pro': return 'bg-blue-100 text-blue-800'
+      case 'free': return 'bg-gray-100 text-gray-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-800'
+      case 'high': return 'bg-orange-100 text-orange-800'
+      case 'medium': return 'bg-yellow-100 text-yellow-800'
+      case 'low': return 'bg-green-100 text-green-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  return (
+    <div className="h-screen flex">
+      {/* ग्राहक सूची साइडबार */}
+      <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold">ग्राहक</h2>
+        </div>
+        <div className="divide-y divide-gray-200">
+          {mockCustomers.map((customer) => (
+            <div
+              key={customer.id}
+              onClick={() => handleCustomerSelect(customer)}
+              className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                selectedCustomer?.id === customer.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-medium text-gray-900">{customer.name}</div>
+                <span className={`px-2 py-1 text-xs rounded-full ${getTierColor(customer.tier)}`}>
+                  {customer.tier}
+                </span>
+              </div>
+              <div className="text-sm text-gray-600">{customer.email}</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {customer.joinDate} से सदस्य
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* मुख्य कंटेंट */}
+      <div className="flex-1 flex flex-col">
+        {selectedCustomer ? (
+          <>
+            {/* ग्राहक हेडर */}
+            <div className="bg-white border-b border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold">{selectedCustomer.name}</h1>
+                  <p className="text-gray-600">{selectedCustomer.email}</p>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <span className={`px-3 py-1 text-sm rounded-full ${getTierColor(selectedCustomer.tier)}`}>
+                    {selectedCustomer.tier.toUpperCase()} ग्राहक
+                  </span>
+                  {showEscalation && (
+                    <div className="bg-red-100 text-red-800 px-3 py-1 text-sm rounded-full">
+                      एस्केलेशन आवश्यक
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 flex">
+              {/* चैट एरिया */}
+              <div className="flex-1 flex flex-col">
+                {/* मैसेज */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {messages.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="text-lg font-medium">सपोर्ट चैट में स्वागत है</div>
+                      <p className="mt-2">
+                        {selectedCustomer.name} के साथ बातचीत शुरू करें
+                      </p>
+                      <div className="mt-4 text-sm">
+                        <p><strong>ग्राहक टियर:</strong> {selectedCustomer.tier}</p>
+                        <p><strong>ज्वाइन डेट:</strong> {selectedCustomer.joinDate}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div
+                        className={`max-w-2xl p-4 rounded-lg ${
+                          message.role === 'user'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-900'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="text-sm font-medium">
+                            {message.role === 'user' ? selectedCustomer.name : 'सपोर्ट एजेंट'}
+                          </span>
+                          <span className="text-xs opacity-75">
+                            {new Date().toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className="whitespace-pre-wrap">{message.content}</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="max-w-2xl p-4 bg-gray-100 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          <span className="text-sm">एजेंट टाइप कर रहा है...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* चैट इनपुट */}
+                <div className="border-t border-gray-200 p-4">
+                  <form onSubmit={handleSubmit} className="flex space-x-2">
+                    <input
+                      value={input}
+                      onChange={handleInputChange}
+                      placeholder={`${selectedCustomer.name} को रिप्लाई करें...`}
+                      className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isLoading || !input.trim()}
+                      className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      भेजें
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* ग्राहक इतिहास साइडबार */}
+              <div className="w-80 bg-gray-50 border-l border-gray-200 overflow-y-auto">
+                <div className="p-4 border-b bg-white">
+                  <h3 className="font-medium">ग्राहक इतिहास</h3>
+                </div>
+                <div className="p-4 space-y-3">
+                  {customerHistory.map((interaction, index) => (
+                    <div key={index} className="bg-white p-3 rounded-lg border text-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium capitalize">{interaction.type}</span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(interaction.timestamp).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 line-clamp-3">
+                        {interaction.content.length > 100
+                          ? `${interaction.content.substring(0, 100)}...`
+                          : interaction.content
+                        }
+                      </p>
+                      {interaction.outcome && (
+                        <div className="mt-2">
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            interaction.outcome === 'resolved'
+                              ? 'bg-green-100 text-green-800'
+                              : interaction.outcome === 'escalated'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {interaction.outcome}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {customerHistory.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>कोई पूर्व इंटरैक्शन नहीं</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <div className="text-lg font-medium">ग्राहक सहायता</div>
+              <p className="mt-2">सहायता वार्तालाप शुरू करने के लिए एक ग्राहक चुनें</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+```
+
+<div id="testing-your-support-system">
+  ## अपने सपोर्ट सिस्टम का परीक्षण
+</div>
+
+<div id="step-4-test-support-scenarios">
+  ### चरण 4: सपोर्ट परिदृश्यों का परीक्षण
+</div>
+
+1. **कस्टमर टियर का परीक्षण**:
+   - Free tier: बुनियादी जवाब, स्व-सेवा मार्गदर्शन
+   - Pro tier: विस्तृत सहायता, सक्रिय सुझाव
+   - Enterprise: व्हाइट-ग्लव सेवा, एस्केलेशन की तत्परता
+
+2. **memory और संदर्भ का परीक्षण**:
+   - किसी पिछले मुद्दे के बारे में पूछें
+   - ग्राहक की प्राथमिकताओं का संदर्भ दें
+   - अनसुलझे टिकटों पर फॉलो-अप करें
+
+3. **एस्केलेशन ट्रिगर्स का परीक्षण**:
+   - "angry", "manager", "refund" जैसे कीवर्ड का उपयोग करें
+   - एंटरप्राइज़ ग्राहकों के लिए स्वचालित एस्केलेशन का परीक्षण करें
+
+यह व्यापक कस्टमर सपोर्ट रेसिपी बुद्धिमान, संदर्भ-सचेत सपोर्ट सिस्टम बनाने की नींव रखती है, जो व्यक्तिगत सेवा के माध्यम से ग्राहक संतुष्टि में सुधार करती है।
+
+---
+
+*अपनी विशिष्ट सपोर्ट वर्कफ़्लो और ग्राहक आवश्यकताओं के अनुसार इस रेसिपी को अनुकूलित करें।*

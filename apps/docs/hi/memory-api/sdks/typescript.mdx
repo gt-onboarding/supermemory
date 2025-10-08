@@ -1,0 +1,438 @@
+---
+title: 'Typescript SDK'
+sidebarTitle: "Typescript"
+description: 'Typescript के साथ supermemory का उपयोग करना सीखें'
+---
+
+<div id="installation">
+  ## इंस्टॉलेशन
+</div>
+
+```sh
+npm install supermemory
+```
+
+
+<div id="usage">
+  ## उपयोग
+</div>
+
+```js
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // यह डिफ़ॉल्ट है और इसे छोड़ा जा सकता है
+});
+
+async function main() {
+  const response = await client.search.execute({ q: 'python से संबंधित documents' });
+
+  console.debug(response.results);
+}
+
+main();
+```
+
+
+<div id="request-response-types">
+  ### रिक्वेस्ट और रिस्पॉन्स प्रकार
+</div>
+
+इस लाइब्रेरी में सभी रिक्वेस्ट पैरामीटर्स और रिस्पॉन्स फ़ील्ड्स के लिए TypeScript टाइप डेफिनिशन शामिल हैं। आप उन्हें इस तरह इम्पोर्ट करके उपयोग कर सकते हैं:
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  apiKey: process.env['SUPERMEMORY_API_KEY'], // यह डिफ़ॉल्ट है और इसे छोड़ा जा सकता है
+});
+
+async function main() {
+  const params: supermemory.MemoryAddParams = {
+    content: 'यह मशीन लर्निंग अवधारणाओं के बारे में एक विस्तृत लेख है...',
+  };
+  const response: supermemory.MemoryAddResponse = await client.memories.add(params);
+}
+
+main();
+```
+
+प्रत्येक मेथड, रिक्वेस्ट पैराम और रिस्पॉन्स फ़ील्ड का डॉक्यूमेंटेशन डॉक्स्ट्रिंग्स में उपलब्ध है और अधिकांश आधुनिक एडिटर्स में होवर करने पर दिखाई देगा।
+
+
+<div id="file-uploads">
+  ## फ़ाइल अपलोड
+</div>
+
+फ़ाइल अपलोड से संबंधित रिक्वेस्ट पैरामीटर कई अलग-अलग रूपों में पास किए जा सकते हैं:
+
+* `File` (या उसी संरचना वाला ऑब्जेक्ट)
+* एक `fetch` `Response` (या उसी संरचना वाला ऑब्जेक्ट)
+* एक `fs.ReadStream`
+* हमारे `toFile` हेल्पर का लौटाया गया मान
+
+```ts
+import fs from 'fs';
+import supermemory, { toFile } from 'supermemory';
+
+const client = new supermemory();
+
+// यदि आपके पास Node `fs` की पहुंच है तो हम `fs.createReadStream()` का उपयोग करने की सिफारिश करते हैं:
+await client.memories.uploadFile({ file: fs.createReadStream('/path/to/file') });
+
+// या यदि आपके पास web `File` API है तो आप एक `File` instance पास कर सकते हैं:
+await client.memories.uploadFile({ file: new File(['my bytes'], 'file') });
+
+// आप एक `fetch` `Response` भी पास कर सकते हैं:
+await client.memories.uploadFile({ file: await fetch('https://somesite/file') });
+
+// अंत में, यदि उपरोक्त में से कोई भी विकल्प सुविधाजनक नहीं है, तो आप हमारे `toFile` helper का उपयोग कर सकते हैं:
+await client.memories.uploadFile({ file: await toFile(Buffer.from('my bytes'), 'file') });
+await client.memories.uploadFile({ file: await toFile(new Uint8Array([0, 1, 2]), 'file') });
+```
+
+
+<div id="handling-errors">
+  ## त्रुटियों का प्रबंधन
+</div>
+
+जब लाइब्रेरी API से कनेक्ट नहीं हो पाती,
+या यदि API non-success status कोड (जैसे, 4xx या 5xx प्रतिक्रिया) लौटाती है,
+तो `APIError` का एक उपवर्ग (subclass) उछाला जाएगा:
+
+```ts
+async function main() {
+  const response = await client.memories
+    .add({ content: 'यह मशीन लर्निंग की अवधारणाओं पर एक विस्तृत लेख है...' })
+    .catch(async (err) => {
+      if (err instanceof supermemory.APIError) {
+        console.debug(err.status); // 400
+        console.debug(err.name); // BadRequestError
+        console.debug(err.headers); // {server: 'nginx', ...}
+      } else {
+        throw err;
+      }
+    });
+}
+
+main();
+```
+
+त्रुटि कोड निम्नानुसार हैं:
+
+| Status Code | Error Type                 |
+| ----------- | -------------------------- |
+| 400         | `BadRequestError`          |
+| 401         | `AuthenticationError`      |
+| 403         | `PermissionDeniedError`    |
+| 404         | `NotFoundError`            |
+| 422         | `UnprocessableEntityError` |
+| 429         | `RateLimitError`           |
+| &gt;=500       | `InternalServerError`      |
+| N/A         | `APIConnectionError`       |
+
+
+<div id="retries">
+  ### पुनः प्रयास
+</div>
+
+कुछ त्रुटियाँ डिफ़ॉल्ट रूप से 2 बार अपने-आप पुनः प्रयास की जाएँगी, एक छोटे एक्सपोनेंशियल बैकऑफ़ के साथ।
+कनेक्शन त्रुटियाँ (उदाहरण के लिए, नेटवर्क कनेक्टिविटी समस्या के कारण), 408 Request Timeout, 409 Conflict,
+429 Rate Limit, और &gt;=500 Internal errors का डिफ़ॉल्ट रूप से पुनः प्रयास किया जाएगा।
+
+आप `maxRetries` विकल्प का उपयोग करके इसे कॉन्फ़िगर या अक्षम कर सकते हैं:
+
+```js
+// सभी अनुरोधों के लिए डिफ़ॉल्ट कॉन्फ़िगर करें:
+const client = new supermemory({
+  maxRetries: 0, // डिफ़ॉल्ट 2 है
+});
+
+// या, प्रति-अनुरोध कॉन्फ़िगर करें:
+await client.memories.add({ content: 'यह मशीन लर्निंग अवधारणाओं के बारे में एक विस्तृत लेख है...' }, {
+  maxRetries: 5,
+});
+```
+
+
+<div id="timeouts">
+  ### टाइमआउट
+</div>
+
+रिक्वेस्ट डिफ़ॉल्ट रूप से 1 मिनट बाद टाइम आउट हो जाती है। आप इसे `timeout` विकल्प से कॉन्फ़िगर कर सकते हैं:
+
+```ts
+// सभी अनुरोधों के लिए डिफ़ॉल्ट कॉन्फ़िगर करें:
+const client = new supermemory({
+  timeout: 20 * 1000, // 20 सेकंड (डिफ़ॉल्ट 1 मिनट है)
+});
+
+// प्रति-अनुरोध ओवरराइड करें:
+await client.memories.add({ content: 'यह मशीन लर्निंग अवधारणाओं के बारे में एक विस्तृत लेख है...' }, {
+  timeout: 5 * 1000,
+});
+```
+
+टाइमआउट होने पर `APIConnectionTimeoutError` उछाली जाती है।
+
+ध्यान दें कि जिन अनुरोधों का समय समाप्त हो जाता है, उन्हें [डिफ़ॉल्ट रूप से दो बार फिर से आज़माया जाता है](#retries)।
+
+
+<div id="advanced-usage">
+  ## उन्नत उपयोग
+</div>
+
+<div id="accessing-raw-response-data-eg-headers">
+  ### कच्चे Response डेटा तक पहुँच (जैसे, हेडर्स)
+</div>
+
+`fetch()` द्वारा लौटाया गया “raw” `Response` को उन सभी मेथड्स द्वारा रिटर्न किए जाने वाले `APIPromise` टाइप पर मौजूद `.asResponse()` मेथड के माध्यम से एक्सेस किया जा सकता है।
+यह मेथड सफल रिस्पॉन्स के हेडर्स मिलते ही रिटर्न कर देता है और रिस्पॉन्स बॉडी को कंज्यूम नहीं करता, इसलिए आप कस्टम पार्सिंग या स्ट्रीमिंग लॉजिक लिख सकते हैं।
+
+आप `.withResponse()` मेथड का उपयोग करके पार्स किए गए डेटा के साथ raw `Response` भी प्राप्त कर सकते हैं।
+`.asResponse()` के विपरीत, यह मेथड बॉडी को कंज्यूम करता है और उसके पार्स हो जाने पर रिटर्न करता है।
+
+```ts
+const client = new supermemory();
+
+const response = await client.memories
+  .add({ content: 'यह मशीन लर्निंग की अवधारणाओं पर एक विस्तृत लेख है...' })
+  .asResponse();
+console.debug(response.headers.get('X-My-Header'));
+console.debug(response.statusText); // अंतर्निहित Response ऑब्जेक्ट को एक्सेस करें
+
+const { data: response, response: raw } = await client.memories
+  .add({ content: 'यह मशीन लर्निंग की अवधारणाओं पर एक विस्तृत लेख है...' })
+  .withResponse();
+console.debug(raw.headers.get('X-My-Header'));
+console.debug(response.id);
+```
+
+
+<div id="logging">
+  ### लॉगिंग
+</div>
+
+<Warning>
+सभी लॉग संदेश केवल डीबगिंग के लिए हैं। रिलीज़ के बीच लॉग संदेशों का प्रारूप और सामग्री बदल सकते हैं।
+</Warning>
+
+<div id="log-levels">
+  #### लॉग स्तर
+</div>
+
+लॉग स्तर को दो तरीकों से कॉन्फ़िगर किया जा सकता है:
+
+1. `SUPERMEMORY_LOG` environment variable के माध्यम से
+2. `logLevel` client option का उपयोग करके (यदि सेट किया गया है, तो यह environment variable को ओवरराइड करेगा)
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  logLevel: 'debug', // सभी लॉग संदेशों को दिखाएं
+});
+```
+
+उपलब्ध लॉग स्तर, सबसे अधिक से सबसे कम विस्तार वाले:
+
+* `'debug'` - डिबग संदेश, सूचना, चेतावनियाँ और त्रुटियाँ दिखाएँ
+* `'info'` - सूचना संदेश, चेतावनियाँ और त्रुटियाँ दिखाएँ
+* `'warn'` - चेतावनियाँ और त्रुटियाँ दिखाएँ (डिफ़ॉल्ट)
+* `'error'` - केवल त्रुटियाँ दिखाएँ
+* `'off'` - पूरी लॉगिंग अक्षम करें
+
+`'debug'` स्तर पर सभी HTTP अनुरोध और प्रतिक्रियाएँ लॉग की जाती हैं, जिनमें हेडर और बॉडी शामिल होते हैं।
+कुछ प्रमाणीकरण-संबंधी हेडर रिडैक्ट किए जाते हैं, लेकिन अनुरोध और प्रतिक्रिया बॉडी में संवेदनशील डेटा
+फिर भी दिखाई दे सकता है।
+
+
+<div id="custom-logger">
+  #### कस्टम लॉगर
+</div>
+
+डिफ़ॉल्ट रूप से, यह लाइब्रेरी `globalThis.console` पर लॉग करती है। आप एक कस्टम लॉगर भी दे सकते हैं।
+अधिकांश लॉगिंग लाइब्रेरियाँ समर्थित हैं, जिनमें [pino](https://www.npmjs.com/package/pino), [winston](https://www.npmjs.com/package/winston), [bunyan](https://www.npmjs.com/package/bunyan), [consola](https://www.npmjs.com/package/consola), [signale](https://www.npmjs.com/package/signale), और [@std/log](https://jsr.io/@std/log) शामिल हैं। यदि आपका लॉगर काम नहीं करता है, तो कृपया एक issue खोलें।
+
+कस्टम लॉगर प्रदान करते समय, `logLevel` विकल्प अब भी नियंत्रित करता है कि कौन से संदेश बाहर जाएँ—कॉन्फ़िगर किए गए स्तर से नीचे के संदेश आपके लॉगर को नहीं भेजे जाएँगे।
+
+```ts
+import supermemory from 'supermemory';
+import pino from 'pino';
+
+const logger = pino();
+
+const client = new supermemory({
+  logger: logger.child({ name: 'supermemory' }),
+  logLevel: 'debug', // सभी संदेशों को pino को भेजें, जिससे यह फ़िल्टर कर सके
+});
+```
+
+
+<div id="making-customundocumented-requests">
+  ### कस्टम/अप्रलेखित अनुरोध करना
+</div>
+
+यह लाइब्रेरी प्रलेखित API तक सुविधाजनक पहुँच के लिए टाइप-सुरक्षित है। यदि आपको अप्रलेखित
+एंडपॉइंट्स, पैरामीटर, या प्रतिक्रिया गुणों तक पहुँचना हो, तब भी आप इस लाइब्रेरी का उपयोग कर सकते हैं।
+
+<div id="undocumented-endpoints">
+  #### बिना प्रलेखित endpoints
+</div>
+
+बिना प्रलेखित endpoints पर अनुरोध करने के लिए, आप `client.get`, `client.post` और अन्य HTTP verbs का उपयोग कर सकते हैं।
+क्लाइंट की सेटिंग्स/विकल्प, जैसे retries, इन अनुरोधों पर लागू होंगे।
+
+```ts
+await client.post('/some/path', {
+  body: { some_prop: 'foo' },
+  query: { some_query_arg: 'bar' },
+});
+```
+
+
+<div id="undocumented-request-params">
+  #### बिना दस्तावेज़ित रिक्वेस्ट पैरामीटर्स
+</div>
+
+अप्रलेखित पैरामीटर्स के साथ रिक्वेस्ट करने के लिए, आप उस पैरामीटर पर `// @ts-expect-error` लगा सकते हैं। यह लाइब्रेरी रनटाइम पर यह सत्यापित नहीं करती कि रिक्वेस्ट टाइप से मेल खाती है, इसलिए आपके द्वारा भेजे गए किसी भी अतिरिक्त मान ज्यों‑के‑त्यों भेज दिए जाएंगे।
+
+```ts
+client.foo.create({
+  foo: 'my_param',
+  bar: 12,
+  // @ts-expect-error baz अभी तक सार्वजनिक नहीं है
+  baz: 'अप्रलेखित विकल्प',
+});
+```
+
+`GET` वर्ब वाली रिक्वेस्ट के लिए, कोई भी अतिरिक्त पैरामीटर क्वेरी में होंगे; बाकी सभी रिक्वेस्ट्स अतिरिक्त पैरामीटर बॉडी में भेजेंगी।
+
+यदि आप किसी अतिरिक्त आर्ग्युमेंट को स्पष्ट रूप से भेजना चाहते हैं, तो आप `query`, `body` और `headers` रिक्वेस्ट विकल्पों के साथ ऐसा कर सकते हैं।
+
+
+<div id="undocumented-response-properties">
+  #### अप्रलेखित प्रतिक्रिया प्रॉपर्टीज
+</div>
+
+अप्रलेखित प्रतिक्रिया प्रॉपर्टीज़ तक पहुँचने के लिए, आप प्रतिक्रिया ऑब्जेक्ट पर `// @ts-expect-error` का उपयोग करके उसे एक्सेस कर सकते हैं, या प्रतिक्रिया ऑब्जेक्ट को आवश्यक टाइप में कास्ट कर सकते हैं। अनुरोध पैरामीटर्स की तरह, हम API से आने वाली प्रतिक्रिया में मौजूद अतिरिक्त प्रॉपर्टीज़ का न तो वैलिडेशन करते हैं और न ही उन्हें हटाते हैं।
+
+<div id="customizing-the-fetch-client">
+  ### fetch क्लाइंट को कस्टमाइज़ करना
+</div>
+
+डिफ़ॉल्ट रूप से, यह लाइब्रेरी मानती है कि एक ग्लोबल `fetch` फ़ंक्शन परिभाषित है।
+
+यदि आप कोई अलग `fetch` फ़ंक्शन इस्तेमाल करना चाहते हैं, तो आप या तो ग्लोबल को पॉलीफिल कर सकते हैं:
+
+```ts
+import fetch from 'my-fetch';
+
+globalThis.fetch = fetch;
+```
+
+या इसे क्लाइंट को भेजें:
+
+```ts
+import supermemory from 'supermemory';
+import fetch from 'my-fetch';
+
+const client = new supermemory({ fetch });
+```
+
+
+<div id="fetch-options">
+  ### Fetch options
+</div>
+
+यदि आप `fetch` फ़ंक्शन को ओवरराइड किए बिना कस्टम `fetch` विकल्प सेट करना चाहते हैं, तो आप क्लाइंट को इंस्टैंशिएट करते समय या अनुरोध करते समय `fetchOptions` ऑब्जेक्ट दे सकते हैं। (अनुरोध-विशिष्ट विकल्प, क्लाइंट विकल्पों को ओवरराइड कर देते हैं।)
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  fetchOptions: {
+    // `RequestInit` विकल्प
+  },
+});
+```
+
+
+<div id="configuring-proxies">
+  #### प्रॉक्सी कॉन्फ़िगर करना
+</div>
+
+प्रॉक्सी के व्यवहार को बदलने के लिए, आप कस्टम `fetchOptions` दे सकते हैं, जो अनुरोधों में रनटाइम-विशिष्ट प्रॉक्सी विकल्प जोड़ते हैं:
+
+```ts
+import supermemory from 'supermemory';
+import * as undici from 'undici';
+
+const proxyAgent = new undici.ProxyAgent('http://localhost:8888');
+const client = new supermemory({
+  fetchOptions: {
+    dispatcher: proxyAgent,
+  },
+});
+```
+
+```ts
+import supermemory from 'supermemory';
+
+const client = new supermemory({
+  fetchOptions: {
+    proxy: 'http://localhost:8888',
+  },
+});
+```
+
+```ts
+import supermemory from 'npm:supermemory';
+
+const httpClient = Deno.createHttpClient({ proxy: { url: 'http://localhost:8888' } });
+const client = new supermemory({
+  fetchOptions: {
+    client: httpClient,
+  },
+});
+```
+
+
+<div id="frequently-asked-questions">
+  ## अक्सर पूछे जाने वाले सवाल
+</div>
+
+<div id="semantic-versioning">
+  ## सेमांटिक वर्ज़निंग
+</div>
+
+यह पैकेज सामान्यतः [SemVer](https://semver.org/spec/v2.0.0.html) नियमों का पालन करता है, हालांकि कुछ पिछली संगतता तोड़ने वाले बदलाव माइनर वर्ज़न के रूप में जारी किए जा सकते हैं:
+
+1. ऐसे बदलाव जो केवल स्टैटिक टाइप्स को प्रभावित करते हैं और रनटाइम व्यवहार नहीं तोड़ते।
+2. लाइब्रेरी के आंतरिक हिस्सों में बदलाव, जो तकनीकी रूप से पब्लिक हैं, पर बाहरी उपयोग के लिए न अभिप्रेत हैं और न ही दस्तावेज़ीकृत। _(यदि आप ऐसे इंटरनल्स पर निर्भर हैं, तो कृपया हमें बताने के लिए एक GitHub issue खोलें.)_
+3. ऐसे बदलाव जिनसे व्यवहार में हमें नहीं लगता कि अधिकांश उपयोगकर्ताओं पर प्रभाव पड़ेगा।
+
+हम पिछड़ी संगतता को गंभीरता से लेते हैं और यह सुनिश्चित करने के लिए कड़ी मेहनत करते हैं कि आप सुचारू अपग्रेड अनुभव पर भरोसा कर सकें।
+
+हमें आपकी प्रतिक्रियाओं का इंतज़ार रहता है; कृपया प्रश्नों, बग्स, या सुझावों के साथ एक [issue](https://www.github.com/supermemoryai/sdk-ts/issues) खोलें।
+
+<div id="requirements">
+  ## आवश्यकताएँ
+</div>
+
+TypeScript >= 4.9 समर्थित है।
+
+निम्नलिखित रनटाइम समर्थित हैं:
+
+- वेब ब्राउज़र (नवीनतम Chrome, Firefox, Safari, Edge आदि)
+- Node.js 20 LTS या उसके बाद के ([non-EOL](https://endoflife.date/nodejs)) संस्करण
+- Deno v1.28.0 या उससे उच्च
+- Bun 1.0 या बाद के
+- Cloudflare Workers
+- Vercel Edge Runtime
+- Jest 28 या उससे अधिक, `"node"` environment के साथ (`"jsdom"` फिलहाल समर्थित नहीं है)
+- Nitro v2.6 या उससे अधिक
+
+ध्यान दें कि React Native फिलहाल समर्थित नहीं है।
+
+यदि आप अन्य रनटाइम वातावरण में रुचि रखते हैं, तो कृपया GitHub पर कोई issue खोलें या उसे upvote करें।

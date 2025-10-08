@@ -1,0 +1,333 @@
+---
+title: "Analytics & Monitoring"
+description: "अपनी Supermemory इंटीग्रेशन की निगरानी के लिए उपयोग, त्रुटियों और लॉग्स को ट्रैक करें"
+icon: "chart-line"
+---
+
+API कॉल, त्रुटियों और प्रदर्शन मेट्रिक्स पर विस्तृत एनालिटिक्स के साथ अपनी Supermemory उपयोग की निगरानी करें।
+
+<div id="overview">
+  ## अवलोकन
+</div>
+
+Analytics API आपके Supermemory उपयोग पर समग्र अंतर्दृष्टि प्रदान करता है:
+
+- **उपयोग सांख्यिकी**: प्रकार के अनुसार API कॉल, प्रति घंटा रुझान, और प्रत्येक API कुंजी के अनुसार विभाजन को ट्रैक करें
+- **त्रुटि मॉनिटरिंग**: प्रमुख त्रुटि प्रकारों और पैटर्न की पहचान करें
+- **विस्तृत लॉग**: डिबगिंग के लिए पूर्ण अनुरोध/प्रतिक्रिया लॉग तक पहुँचें
+- **प्रदर्शन मीट्रिक्स**: औसत प्रतिक्रिया समय और प्रोसेसिंग अवधि की निगरानी करें
+
+<Note>
+Analytics डेटा आपकी पूरी संगठन के लिए उपलब्ध है और इसे समय अवधि के आधार पर फ़िल्टर किया जा सकता है।
+</Note>
+
+<div id="usage-statistics">
+  ## उपयोग सांख्यिकी
+</div>
+
+घंटेवार विवरण और प्रति‑कुंजी मेट्रिक्स सहित व्यापक उपयोग सांख्यिकी प्राप्त करें।
+
+<div id="endpoint">
+  ### एंडपॉइंट
+</div>
+
+`GET /v3/analytics/usage`
+
+<div id="parameters">
+  ### पैरामीटर
+</div>
+
+| पैरामीटर | प्रकार | विवरण |
+|-----------|------|-------------|
+| `from` | string (ISO 8601) | अवधि की आरंभ तिथि/समय |
+| `to` | string (ISO 8601) | अवधि की समाप्ति तिथि/समय |
+| `period` | string | `from` का विकल्प: `1h`, `24h`, `7d`, `30d` |
+| `page` | integer | पेजिनेशन के लिए पेज संख्या (डिफ़ॉल्ट: 1) |
+| `limit` | integer | प्रति पेज आइटमों की संख्या (डिफ़ॉल्ट: 20, अधिकतम: 100) |
+
+<div id="example-request">
+  ### उदाहरण अनुरोध
+</div>
+
+<CodeGroup>
+
+```typescript TypeScript
+// पिछले 24 घंटों का उपयोग देखें
+const usage = await fetch('https://api.supermemory.ai/v3/analytics/usage?period=24h', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const data = await usage.json();
+```
+
+```python Python
+import requests
+from datetime import datetime, timedelta
+
+# पिछले 7 दिनों का उपयोग देखें
+response = requests.get(
+    'https://api.supermemory.ai/v3/analytics/usage',
+    params={'period': '7d'},
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+data = response.json()
+```
+
+```bash cURL
+# किसी विशिष्ट दिनांक सीमा का उपयोग देखें
+curl -X GET "https://api.supermemory.ai/v3/analytics/usage?from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-schema">
+  ### प्रतिक्रिया स्कीमा
+</div>
+
+```json
+{
+  "usage": [
+    {
+      "type": "add",
+      "count": 1523,
+      "avgDuration": 245.5,
+      "lastUsed": "2024-01-15T14:30:00Z"
+    },
+    {
+      "type": "search",
+      "count": 3421,
+      "avgDuration": 89.2,
+      "lastUsed": "2024-01-15T14:35:00Z"
+    }
+  ],
+  "hourly": [
+    {
+      "hour": "2024-01-15T14:00:00Z",
+      "count": 156,
+      "avgDuration": 125.3
+    }
+  ],
+  "byKey": [
+    {
+      "keyId": "key_abc123",
+      "keyName": "Production API",
+      "count": 2341,
+      "avgDuration": 98.7,
+      "lastUsed": "2024-01-15T14:35:00Z"
+    }
+  ],
+  "totalMemories": 45678,
+  "pagination": {
+    "currentPage": 1,
+    "limit": 20,
+    "totalItems": 150,
+    "totalPages": 8
+  }
+}
+```
+
+
+<div id="error-monitoring">
+  ## त्रुटि मॉनिटरिंग
+</div>
+
+त्रुटियों को ट्रैक और विश्लेषित करें ताकि समस्याओं की पहचान हो और विश्वसनीयता में सुधार हो।
+
+<div id="endpoint">
+  ### एन्डपॉइंट
+</div>
+
+`GET /v3/analytics/errors`
+
+<div id="parameters">
+  ### पैरामीटर
+</div>
+
+उपयोग एंडपॉइंट के समान — `from`, `to`, `period`, `page`, और `limit` को सपोर्ट करता है।
+
+<div id="example-request">
+  ### उदाहरण अनुरोध
+</div>
+
+<CodeGroup>
+
+```typescript TypeScript
+// पिछले 24 घंटों के errors प्राप्त करें
+const errors = await fetch('https://api.supermemory.ai/v3/analytics/errors?period=24h', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const data = await errors.json();
+```
+
+```python Python
+# errors की मॉनिटरिंग करें और स्पाइक्स पर अलर्ट भेजें
+response = requests.get(
+    'https://api.supermemory.ai/v3/analytics/errors?period=1h',
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+data = response.json()
+```
+
+```bash cURL
+# पिछले 7 दिनों के errors प्राप्त करें
+curl -X GET "https://api.supermemory.ai/v3/analytics/errors?period=7d" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-schema">
+  ### प्रतिक्रिया स्कीमा
+</div>
+
+```json
+{
+  "totalErrors": 234,
+  "errorRate": 0.023,
+  "topErrors": [
+    {
+      "type": "ValidationError",
+      "count": 89,
+      "statusCodes": [400],
+      "lastOccurred": "2024-01-15T14:30:00Z"
+    },
+    {
+      "type": "RateLimitError",
+      "count": 45,
+      "statusCodes": [429],
+      "lastOccurred": "2024-01-15T13:15:00Z"
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2024-01-15T14:00:00Z",
+      "count": 12,
+      "types": ["ValidationError", "NotFoundError"]
+    }
+  ],
+  "byStatusCode": {
+    "400": 89,
+    "404": 34,
+    "429": 45,
+    "500": 66
+  }
+}
+```
+
+
+<div id="detailed-logs">
+  ## विस्तृत लॉग
+</div>
+
+डीबगिंग और ऑडिटिंग के लिए संपूर्ण अनुरोध/प्रतिक्रिया लॉग तक पहुँचें।
+
+<div id="endpoint">
+  ### एन्डपॉइंट
+</div>
+
+`GET /v3/analytics/logs`
+
+<div id="parameters">
+  ### पैरामीटर्स
+</div>
+
+Usage endpoint जैसा, साथ में वैकल्पिक filters:
+
+- `type`: अनुरोध के प्रकार के आधार पर फ़िल्टर करें (add, search, update, delete)
+- `statusCode`: HTTP स्टेटस कोड के आधार पर फ़िल्टर करें
+- `keyId`: किसी विशिष्ट API कुंजी के आधार पर फ़िल्टर करें
+
+<div id="example-request">
+  ### उदाहरण अनुरोध
+</div>
+
+<CodeGroup>
+
+```typescript TypeScript
+// हाल के विफल अनुरोध प्राप्त करें
+const logs = await fetch('https://api.supermemory.ai/v3/analytics/logs?period=1h&statusCode=500', {
+  headers: {
+    'Authorization': `Bearer ${SUPERMEMORY_API_KEY}`
+  }
+});
+
+const data = await logs.json();
+```
+
+```python Python
+# किसी विशिष्ट API कुंजी के उपयोग को डिबग करें
+response = requests.get(
+    'https://api.supermemory.ai/v3/analytics/logs',
+    params={
+        'keyId': 'key_abc123',
+        'period': '24h'
+    },
+    headers={'Authorization': f'Bearer {SUPERMEMORY_API_KEY}'}
+)
+
+logs = response.json()['logs']
+
+```
+
+```bash cURL
+# डिबगिंग के लिए सभी लॉग प्राप्त करें
+curl -X GET "https://api.supermemory.ai/v3/analytics/logs?period=1h&limit=50" \
+  -H "Authorization: Bearer $SUPERMEMORY_API_KEY"
+```
+
+</CodeGroup>
+
+<div id="response-schema">
+  ### रिस्पॉन्स स्कीमा
+</div>
+
+```json
+{
+  "logs": [
+    {
+      "id": "req_xyz789",
+      "createdAt": "2024-01-15T14:30:00Z",
+      "type": "search",
+      "statusCode": 200,
+      "duration": 89,
+      "input": {
+        "q": "उपयोगकर्ता क्वेरी",
+        "limit": 10
+      },
+      "output": {
+        "results": 10,
+        "processingTime": 85
+      }
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "limit": 20,
+    "totalItems": 500,
+    "totalPages": 25
+  }
+}
+```
+
+
+<div id="rate-limits">
+  ## रेट लिमिट
+</div>
+
+Analytics endpoints पर निम्न रेट लिमिट लागू होती हैं:
+
+- प्रति संगठन प्रति मिनट 100 रिक्वेस्ट
+- अधिकतम समय सीमा: 90 दिन
+- अधिकतम पेज साइज: 100 आइटम
+
+<Warning>
+Analytics डेटा 90 दिनों तक रखा जाता है। लंबी अवधि के लिए, डेटा को एक्सपोर्ट करके अपनी प्रणालियों में स्टोर करें।
+</Warning>
